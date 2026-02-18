@@ -1,0 +1,21 @@
+appId: com.ghostai.app
+productName: SystemHelper
+directories:
+  buildResources: assets
+  output: release
+files:
+  - out/**/*
+  - "!out/types-*"
+  - package.json
+  - node_modules/**/*
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icons/icon.ico
+nsis:
+  oneClick: true
+  perMachine: false
+  allowToChangeInstallationDirectory: false
+  deleteAppDataOnUninstall: true

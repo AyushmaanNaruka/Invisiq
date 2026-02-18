@@ -1,0 +1,128 @@
+import { app, session, BrowserWindow } from 'electron';
+import { join } from 'path';
+import { createOverlayWindow } from './overlay';
+import { registerAllHotkeys, unregisterAllHotkeys } from './hotkeys';
+import { registerIPCHandlers } from './ipc-handlers';
+import { AI_API_DOMAINS } from '@shared/constants';
+
+// ══════════════════════════════════════
+//  SINGLE INSTANCE LOCK
+// ══════════════════════════════════════
+
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    // If a second instance is launched, focus our existing window
+    const windows = BrowserWindow.getAllWindows();
+    if (windows.length > 0) {
+      const win = windows[0];
+      if (!win.isVisible()) win.show();
+      win.focus();
+    }
+  });
+}
+
+// ══════════════════════════════════════
+//  CORS BYPASS FOR AI API DOMAINS
+// ══════════════════════════════════════
+
+function setupCORSBypass(): void {
+  console.log('[CORS] Setting up bypass for:', AI_API_DOMAINS);
+
+  // Inject CORS headers into AI API responses
+  session.defaultSession.webRequest.onHeadersReceived(
+    { urls: AI_API_DOMAINS },
+    (details, callback) => {
+      console.log('[CORS] Intercepting response:', details.method, details.url.substring(0, 80));
+      const responseHeaders = { ...details.responseHeaders };
+
+      // Delete existing CORS headers (case-insensitive) to prevent duplicates
+      // API servers may already include these, causing "multiple values" CORS errors
+      const corsHeaders = [
+        'access-control-allow-origin',
+        'access-control-allow-methods',
+        'access-control-allow-headers',
+      ];
+      for (const key of Object.keys(responseHeaders)) {
+        if (corsHeaders.includes(key.toLowerCase())) {
+          delete responseHeaders[key];
+        }
+      }
+
+      responseHeaders['Access-Control-Allow-Origin'] = ['*'];
+      responseHeaders['Access-Control-Allow-Methods'] = ['GET, POST, PUT, DELETE, OPTIONS'];
+      responseHeaders['Access-Control-Allow-Headers'] = ['*'];
+      responseHeaders['Access-Control-Max-Age'] = ['86400'];
+
+      callback({ responseHeaders });
+    }
+  );
+
+  // Strip Sec-Fetch-* headers from outgoing requests to AI APIs
+  session.defaultSession.webRequest.onBeforeSendHeaders(
+    { urls: AI_API_DOMAINS },
+    (details, callback) => {
+      const requestHeaders = { ...details.requestHeaders };
+
+      delete requestHeaders['Sec-Fetch-Mode'];
+      delete requestHeaders['Sec-Fetch-Site'];
+      delete requestHeaders['Sec-Fetch-Dest'];
+
+      callback({ requestHeaders });
+    }
+  );
+}
+
+// ══════════════════════════════════════
+//  APP LIFECYCLE
+// ══════════════════════════════════════
+
+app.whenReady().then(() => {
+  // Setup CORS bypass before loading any renderer content
+  setupCORSBypass();
+
+  // Register IPC handlers
+  registerIPCHandlers();
+
+  // Create the overlay window
+  const overlayWindow = createOverlayWindow();
+
+  // Load the renderer
+  if (process.env['ELECTRON_RENDERER_URL']) {
+    overlayWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+    // Open DevTools in dev mode (detached so it doesn't affect overlay size)
+    overlayWindow.webContents.openDevTools({ mode: 'detach' });
+  } else {
+    overlayWindow.loadFile(join(__dirname, '../renderer/index.html'));
+  }
+
+  // Register global hotkeys
+  registerAllHotkeys();
+});
+
+app.on('window-all-closed', () => {
+  // On Windows and Linux, quit when all windows are closed
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('will-quit', () => {
+  // Unregister all global shortcuts before quitting
+  unregisterAllHotkeys();
+});
+
+app.on('activate', () => {
+  // On macOS, re-create a window when dock icon is clicked
+  if (BrowserWindow.getAllWindows().length === 0) {
+    const overlayWindow = createOverlayWindow();
+    if (process.env['ELECTRON_RENDERER_URL']) {
+      overlayWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+    } else {
+      overlayWindow.loadFile(join(__dirname, '../renderer/index.html'));
+    }
+  }
+});
