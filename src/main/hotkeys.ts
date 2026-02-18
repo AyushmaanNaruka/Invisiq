@@ -81,6 +81,7 @@ function handleHotkeyAction(action: HotkeyAction): void {
 
     case 'copy-response':
     case 'new-conversation':
+    case 'paste-response':
       if (win && !win.isDestroyed()) {
         sendHotkeyEvent(win, action);
       }

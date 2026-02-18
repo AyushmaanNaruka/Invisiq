@@ -11,7 +11,8 @@ export type HotkeyAction =
   | 'focus-input'
   | 'copy-response'
   | 'new-conversation'
-  | 'hide-overlay';
+  | 'hide-overlay'
+  | 'paste-response';
 
 export interface ModelConfig {
   id: string;

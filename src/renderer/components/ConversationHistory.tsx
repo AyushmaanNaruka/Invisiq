@@ -120,8 +120,23 @@ export default function ConversationHistory({
         {/* Conversation list */}
         <div className="flex-1 overflow-y-auto">
           {isLoading && conversations.length === 0 && (
-            <div className="flex items-center justify-center py-8 text-text-secondary">
-              <Loader2 size={16} className="animate-spin" />
+            <div className="p-3 space-y-1">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="px-3 py-2.5 border-b border-border-subtle/50 animate-pulse">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-text-placeholder/30" />
+                    <div className="h-3 bg-text-placeholder/20 rounded w-3/4" />
+                  </div>
+                  <div className="ml-3 mb-1.5">
+                    <div className="h-2.5 bg-text-placeholder/15 rounded w-full" />
+                  </div>
+                  <div className="flex items-center gap-2 ml-3">
+                    <div className="h-2 bg-text-placeholder/15 rounded w-12" />
+                    <div className="h-2 bg-text-placeholder/15 rounded w-10" />
+                    <div className="h-2 bg-text-placeholder/15 rounded w-8" />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

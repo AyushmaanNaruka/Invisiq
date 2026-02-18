@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import HeaderBar from './components/HeaderBar';
 import ChatPanel from './components/ChatPanel';
 import InputArea from './components/InputArea';
+import TranscriptPanel from './components/TranscriptPanel';
 import StatusBar from './components/StatusBar';
 import Settings from './components/Settings';
 import ConversationHistory from './components/ConversationHistory';
@@ -13,6 +14,7 @@ import { useAI } from './hooks/useAI';
 import { useScreenshot } from './hooks/useScreenshot';
 import { useSettings } from './hooks/useSettings';
 import { useHotkeys } from './hooks/useHotkeys';
+import { useAudioTranscription } from './hooks/useAudioTranscription';
 import { BUILT_IN_MODES } from '@shared/constants';
 import type { ProviderID, CustomMode } from '@shared/types';
 
@@ -20,8 +22,10 @@ import type { ProviderID, CustomMode } from '@shared/types';
 import './services/ai-providers/index';
 
 // Clipboard monitor — lives inside ToastProvider so it can show toasts
-function ClipboardListener(): null {
+function ClipboardListener({ onAnalyze }: { onAnalyze: (text: string) => void }): null {
   const { showToast } = useToast();
+  const analyzeRef = useRef(onAnalyze);
+  analyzeRef.current = onAnalyze;
 
   useEffect(() => {
     window.ghostAPI.clipboard.startMonitor();
@@ -29,7 +33,10 @@ function ClipboardListener(): null {
       const { text } = data as { text: string; timestamp: number };
       if (text && text.length > 10) {
         const preview = text.length > 50 ? `${text.substring(0, 50)}...` : text;
-        showToast('info', `Clipboard: "${preview}"`);
+        showToast('info', `Clipboard: "${preview}"`, {
+          label: 'Analyze with AI',
+          onClick: () => analyzeRef.current(text),
+        });
       }
     });
     return () => {
@@ -75,6 +82,26 @@ export default function App(): JSX.Element {
   const { pendingScreenshots, captureFull, captureRegion, clearScreenshot, clearAllScreenshots } = useScreenshot();
   const { registerCallback } = useHotkeys();
 
+  // Audio transcription (lifted from InputArea for TranscriptPanel + meeting auto-context)
+  const {
+    isListening,
+    transcript,
+    interimTranscript,
+    isAvailable: micAvailable,
+    error: micError,
+    startListening,
+    stopListening,
+    clearTranscript,
+  } = useAudioTranscription();
+
+  const handleToggleMic = useCallback(() => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening(settings.audio?.engine || 'browser', settings.audio?.language || 'en-US');
+    }
+  }, [isListening, startListening, stopListening, settings.audio?.engine, settings.audio?.language]);
+
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [modeEditorOpen, setModeEditorOpen] = useState(false);
@@ -116,6 +143,12 @@ export default function App(): JSX.Element {
       }
     });
     registerCallback('new-conversation', handleNewConversation);
+    registerCallback('paste-response', () => {
+      const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+      if (lastAssistant && lastAssistant.content) {
+        window.ghostAPI.clipboard.smartPaste(lastAssistant.content);
+      }
+    });
   }, [registerCallback, captureFull, captureRegion, messages]);
 
   // ── New Conversation ─────────────────────────────────────
@@ -211,7 +244,17 @@ export default function App(): JSX.Element {
       // Build images array from pending screenshots
       const images = pendingScreenshots.length > 0 ? pendingScreenshots : undefined;
 
-      // Add user message to conversation
+      // Meeting mode auto-context: prepend transcript for AI but show original text in chat
+      let aiText = text;
+      if (
+        settings.activeMode === 'meeting' &&
+        settings.audio?.autoIncludeTranscript &&
+        transcript.trim()
+      ) {
+        aiText = `[Current meeting transcript:\n${transcript.trim()}]\n\n${text}`;
+      }
+
+      // Add user message to conversation (shows original text)
       addUserMessage(text, images);
       clearAllScreenshots();
 
@@ -224,7 +267,7 @@ export default function App(): JSX.Element {
         BUILT_IN_MODES.find((m) => m.id === settings.activeMode) ||
         settings.customModes.find((m) => m.id === settings.activeMode);
 
-      await sendMessage(text, [...getContextMessages(), { id: '', role: 'user', content: text, images, timestamp: '' }], {
+      await sendMessage(aiText, [...getContextMessages(), { id: '', role: 'user', content: aiText, images, timestamp: '' }], {
         model: settings.activeModel,
         systemPrompt: currentMode?.systemPrompt,
         onToken: (token) => {
@@ -258,6 +301,8 @@ export default function App(): JSX.Element {
       settings.activeMode,
       settings.activeModel,
       settings.customModes,
+      settings.audio?.autoIncludeTranscript,
+      transcript,
       sendMessage,
       appendToMessage,
       updateMessage,
@@ -290,7 +335,7 @@ export default function App(): JSX.Element {
 
   return (
     <ToastProvider>
-    <ClipboardListener />
+    <ClipboardListener onAnalyze={handleSend} />
     <div className="flex flex-col h-screen w-screen bg-bg-overlay rounded-lg overflow-hidden select-none">
       <HeaderBar
         activeMode={settings.activeMode}
@@ -315,6 +360,13 @@ export default function App(): JSX.Element {
         streamingMessageId={streamingMessageId}
       />
 
+      <TranscriptPanel
+        isListening={isListening}
+        transcript={transcript}
+        interimTranscript={interimTranscript}
+        onClear={clearTranscript}
+      />
+
       <InputArea
         isStreaming={isStreaming}
         pendingScreenshots={pendingScreenshots}
@@ -323,8 +375,12 @@ export default function App(): JSX.Element {
         onCaptureScreen={captureFull}
         onClearScreenshot={clearScreenshot}
         inputRef={inputRef}
-        audioEngine={settings.audio?.engine}
-        audioLanguage={settings.audio?.language}
+        isListening={isListening}
+        transcript={transcript}
+        interimTranscript={interimTranscript}
+        micAvailable={micAvailable}
+        micError={micError}
+        onToggleMic={handleToggleMic}
       />
 
       <StatusBar

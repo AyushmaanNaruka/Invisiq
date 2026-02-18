@@ -110,10 +110,12 @@ ghostai/
 │   │   │   ├── CodeBlock.tsx         # Syntax highlighted code + copy/paste buttons
 │   │   │   ├── InputArea.tsx         # Text input, send/stop, screenshot, mic
 │   │   │   ├── StatusBar.tsx         # Connection dot, token count, status
-│   │   │   ├── Settings.tsx          # Slide-in panel with 4 tab components
+│   │   │   ├── Settings.tsx          # Slide-in panel with 5 tab components
 │   │   │   ├── SettingsHotkeys.tsx   # Hotkey recording + conflict detection (Phase 2)
 │   │   │   ├── SettingsDisplay.tsx   # Theme, opacity, font size, window size (Phase 2)
 │   │   │   ├── SettingsPrivacy.tsx   # Toggles, process name, clear data (Phase 2)
+│   │   │   ├── SettingsAudio.tsx     # Speech engine, language, auto-transcript (Phase 2)
+│   │   │   ├── TranscriptPanel.tsx   # Live speech transcript with timer (Phase 2)
 │   │   │   ├── ModeSelector.tsx      # Dropdown: built-in + custom modes
 │   │   │   ├── ModelSelector.tsx     # Dropdown: grouped by provider
 │   │   │   ├── OpacityControl.tsx    # Slider for window opacity
@@ -415,6 +417,7 @@ Ctrl+Shift+S  →  Capture full screen → send to AI
 Ctrl+Shift+R  →  Capture region → send to AI
 Ctrl+Shift+A  →  Focus text input
 Ctrl+Shift+C  →  Copy last AI response
+Ctrl+Shift+V  →  Paste last AI response to active app
 Ctrl+Shift+N  →  New conversation
 Escape        →  Hide overlay immediately
 ```
@@ -606,7 +609,9 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 
 **Sprint 7:** Clipboard Integration + Smart Paste + Toast
 - [x] Smart paste via PowerShell SendKeys (hide overlay, Ctrl+V, restore)
+- [x] Ctrl+Shift+V hotkey to paste last AI response into active app
 - [x] Clipboard polling monitor (3s interval, MD5 hash comparison)
+- [x] "Analyze with AI" action on clipboard toast notifications
 - [x] Toast notification system (success/error/info, auto-dismiss, stacked)
 - [x] "Paste to App" buttons on messages and code blocks
 
@@ -614,6 +619,11 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 - [x] Dual speech engine: Web Speech API (free) + Whisper API (paid)
 - [x] Mic button in InputArea with recording pulse animation
 - [x] Audio transcription hook with interim results
+- [x] TranscriptPanel: live transcript display with recording timer, collapse/clear
+- [x] Meeting mode auto-context: transcript injected into AI prompts
+- [x] SettingsAudio tab: engine selector, language, auto-include transcript
+- [x] Skeleton loaders for conversation history panel
+- [x] Flicker-free streaming: memoized ReactMarkdown components + virtual hljs highlighting
 - [x] Enhanced stealth: process disguise, alt-tab hiding, stealth watchdog
 - [x] UI polish: keyboard navigation, focus-visible, reduced motion, selection styles
 
@@ -700,5 +710,5 @@ npm install @types/uuid --save-dev
 
 ---
 
-*Last updated: February 18, 2026 (Phase 2 complete)*
+*Last updated: February 18, 2026 (Phase 2 fully complete — all Sprint 5-8 features shipped)*
 *This file should be updated whenever major architecture decisions change.*

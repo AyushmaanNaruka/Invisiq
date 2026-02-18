@@ -1,8 +1,7 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, type RefObject } from 'react';
 import { Camera, Send, Square, X, Mic, MicOff } from 'lucide-react';
-import { useAudioTranscription } from '../hooks/useAudioTranscription';
 import { useToast } from './Toast';
-import type { ImageAttachment, SpeechEngine } from '@shared/types';
+import type { ImageAttachment } from '@shared/types';
 
 const MAX_SCREENSHOTS = 3;
 
@@ -14,8 +13,13 @@ interface InputAreaProps {
   onCaptureScreen: () => void;
   onClearScreenshot: (index: number) => void;
   inputRef?: React.RefObject<HTMLTextAreaElement | null>;
-  audioEngine?: SpeechEngine;
-  audioLanguage?: string;
+  // Audio props (lifted from useAudioTranscription hook)
+  isListening: boolean;
+  transcript: string;
+  interimTranscript: string;
+  micAvailable: boolean;
+  micError: string | null;
+  onToggleMic: () => void;
 }
 
 export default function InputArea({
@@ -26,23 +30,17 @@ export default function InputArea({
   onCaptureScreen,
   onClearScreenshot,
   inputRef: externalInputRef,
-  audioEngine = 'browser',
-  audioLanguage = 'en-US',
+  isListening,
+  transcript,
+  interimTranscript,
+  micAvailable,
+  micError,
+  onToggleMic,
 }: InputAreaProps): JSX.Element {
   const [text, setText] = useState('');
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = externalInputRef || internalRef;
   const { showToast } = useToast();
-  const {
-    isListening,
-    transcript,
-    interimTranscript,
-    isAvailable: micAvailable,
-    error: micError,
-    startListening,
-    stopListening,
-    clearTranscript,
-  } = useAudioTranscription();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -52,13 +50,23 @@ export default function InputArea({
     el.style.height = Math.min(el.scrollHeight, 100) + 'px';
   }, [text, textareaRef]);
 
-  // Append transcript to text
+  // Append NEW transcript text to the input without clearing the shared transcript state.
+  // We track how much of the transcript we've already consumed via a ref.
+  const consumedLenRef = useRef(0);
+
   useEffect(() => {
-    if (transcript) {
-      setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
-      clearTranscript();
+    if (transcript.length > consumedLenRef.current) {
+      const newText = transcript.substring(consumedLenRef.current).trim();
+      if (newText) {
+        console.log('[InputArea] Consuming new transcript chunk:', newText.substring(0, 40));
+        setText((prev) => (prev ? `${prev} ${newText}` : newText));
+      }
+      consumedLenRef.current = transcript.length;
+    } else if (transcript.length < consumedLenRef.current) {
+      // Transcript was cleared externally (e.g. TranscriptPanel clear button)
+      consumedLenRef.current = transcript.length;
     }
-  }, [transcript, clearTranscript]);
+  }, [transcript]);
 
   // Show mic errors via toast
   useEffect(() => {
@@ -67,22 +75,14 @@ export default function InputArea({
     }
   }, [micError, showToast]);
 
-  const handleToggleMic = useCallback(() => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening(audioEngine, audioLanguage);
-    }
-  }, [isListening, startListening, stopListening, audioEngine, audioLanguage]);
-
   const handleSend = useCallback(() => {
     const trimmed = text.trim();
     if (!trimmed && pendingScreenshots.length === 0) return;
     if (isStreaming) return;
-    if (isListening) stopListening();
+    if (isListening) onToggleMic();
     onSend(trimmed);
     setText('');
-  }, [text, pendingScreenshots, isStreaming, isListening, stopListening, onSend]);
+  }, [text, pendingScreenshots, isStreaming, isListening, onToggleMic, onSend]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -138,7 +138,7 @@ export default function InputArea({
         {/* Mic button */}
         {micAvailable && (
           <button
-            onClick={handleToggleMic}
+            onClick={onToggleMic}
             disabled={isStreaming}
             className={`p-1.5 rounded transition-colors shrink-0 mb-0.5 ${
               isListening

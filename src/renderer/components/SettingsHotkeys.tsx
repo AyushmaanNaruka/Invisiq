@@ -17,6 +17,7 @@ const HOTKEY_LABELS: Record<HotkeyAction, string> = {
   'copy-response': 'Copy Last Response',
   'new-conversation': 'New Conversation',
   'hide-overlay': 'Hide Overlay',
+  'paste-response': 'Paste Last Response',
 };
 
 const ACTIONS = Object.keys(HOTKEY_LABELS) as HotkeyAction[];

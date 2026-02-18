@@ -4,6 +4,7 @@ import { providerManager } from '../services/ai-providers/provider-manager';
 import SettingsHotkeys from './SettingsHotkeys';
 import SettingsDisplay from './SettingsDisplay';
 import SettingsPrivacy from './SettingsPrivacy';
+import SettingsAudio from './SettingsAudio';
 import { DEFAULT_HOTKEYS } from '@shared/constants';
 import type { ProviderID, AppSettings, HotkeyAction } from '@shared/types';
 
@@ -27,7 +28,7 @@ const PROVIDERS: { id: ProviderID; name: string; placeholder: string }[] = [
   { id: 'gemini', name: 'Google Gemini', placeholder: 'AIza...' },
 ];
 
-type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy';
+type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio';
 
 export default function Settings({ isOpen, onClose, settings, onUpdateSetting }: SettingsProps): JSX.Element | null {
   const [activeTab, setActiveTab] = useState<TabId>('api-keys');
@@ -134,6 +135,7 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting }:
     { id: 'hotkeys', label: 'Hotkeys' },
     { id: 'display', label: 'Display' },
     { id: 'privacy', label: 'Privacy' },
+    { id: 'audio', label: 'Audio' },
   ];
 
   return (
@@ -284,6 +286,13 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting }:
               onOpenDataFolder={async () => {
                 await window.ghostAPI.app.openDataFolder();
               }}
+            />
+          )}
+
+          {activeTab === 'audio' && (
+            <SettingsAudio
+              settings={settings.audio}
+              onUpdate={onUpdateSetting}
             />
           )}
         </div>

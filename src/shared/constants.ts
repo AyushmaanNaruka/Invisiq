@@ -12,6 +12,7 @@ export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
   'copy-response': 'CommandOrControl+Alt+C',
   'new-conversation': 'CommandOrControl+Alt+N',
   'hide-overlay': 'Escape',
+  'paste-response': 'CommandOrControl+Shift+V',
 };
 
 // ══════════════════════════════════════

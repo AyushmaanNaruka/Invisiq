@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { Copy, Check, ClipboardPaste, Loader2 } from 'lucide-react';
 import hljs from 'highlight.js';
 import { useToast } from './Toast';
@@ -11,12 +11,17 @@ interface CodeBlockProps {
 export default function CodeBlock({ code, language }: CodeBlockProps): JSX.Element {
   const [copied, setCopied] = useState(false);
   const [pasting, setPasting] = useState(false);
-  const codeRef = useRef<HTMLElement>(null);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    if (codeRef.current) {
-      hljs.highlightElement(codeRef.current);
+  // Use hljs.highlight() instead of hljs.highlightElement() to avoid
+  // direct DOM mutation that fights React's reconciliation during streaming.
+  const highlightedHtml = useMemo(() => {
+    if (!language) return null;
+    try {
+      const result = hljs.highlight(code, { language, ignoreIllegals: true });
+      return result.value;
+    } catch {
+      return null;
     }
   }, [code, language]);
 
@@ -94,13 +99,19 @@ export default function CodeBlock({ code, language }: CodeBlockProps): JSX.Eleme
 
       {/* Code */}
       <pre className="overflow-x-auto p-3 text-xs leading-5">
-        <code
-          ref={codeRef}
-          className={language ? `language-${language}` : ''}
-          style={{ background: 'transparent', color: 'var(--text-code)' }}
-        >
-          {code}
-        </code>
+        {highlightedHtml ? (
+          <code
+            className={`language-${language}`}
+            style={{ background: 'transparent', color: 'var(--text-code)' }}
+            dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          />
+        ) : (
+          <code
+            style={{ background: 'transparent', color: 'var(--text-code)' }}
+          >
+            {code}
+          </code>
+        )}
       </pre>
     </div>
   );

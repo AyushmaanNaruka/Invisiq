@@ -90,7 +90,7 @@ Copy AI responses or code blocks directly into any application with **Smart Past
 <td width="50%" valign="top">
 
 ### Voice Input (Speech-to-Text)
-Dual engine speech recognition: **Web Speech API** (free, browser-native) with automatic fallback to **OpenAI Whisper** (paid, higher accuracy). Interim results shown in real-time.
+Dual engine speech recognition: **Web Speech API** (free, browser-native) with automatic fallback to **OpenAI Whisper** (paid, higher accuracy). Live transcript panel with recording timer. Audio settings for engine, language, and meeting auto-context.
 
 </td>
 <td width="50%" valign="top">
@@ -228,6 +228,7 @@ npm run package
 | `Ctrl+Alt+R` | Capture region (crosshair selector) |
 | `Ctrl+Alt+A` | Focus text input |
 | `Ctrl+Alt+C` | Copy last AI response |
+| `Ctrl+Shift+V` | Paste last AI response to active app |
 | `Ctrl+Alt+N` | New conversation |
 | `Escape` | Hide overlay |
 
@@ -286,8 +287,9 @@ ghostai/
 │   │   ├── components/          # HeaderBar, ChatPanel, MessageBubble,
 │   │   │                        # CodeBlock, InputArea, Settings,
 │   │   │                        # ConversationHistory, CustomModeEditor,
-│   │   │                        # Toast, SettingsHotkeys, SettingsDisplay,
-│   │   │                        # SettingsPrivacy, etc.
+│   │   │                        # Toast, TranscriptPanel, SettingsHotkeys,
+│   │   │                        # SettingsDisplay, SettingsPrivacy,
+│   │   │                        # SettingsAudio, etc.
 │   │   ├── hooks/               # useAI, useScreenshot, useSettings,
 │   │   │                        # useHotkeys, useConversation,
 │   │   │                        # useConversationHistory,
@@ -333,13 +335,19 @@ ghostai/
 - [x] Conversation history panel with search, delete, and JSON export
 - [x] Custom modes (create, edit, delete with color picker)
 - [x] Smart paste — paste AI responses into any app via clipboard + SendKeys
-- [x] Clipboard monitoring with toast notifications
+- [x] Ctrl+Shift+V hotkey to paste last AI response into active app
+- [x] Clipboard monitoring with toast notifications + "Analyze with AI" action
 - [x] Voice input — dual engine: Web Speech API + OpenAI Whisper fallback
+- [x] Live transcript panel with recording timer and collapse/clear controls
+- [x] Meeting mode auto-context — transcript injected into AI prompts automatically
 - [x] Settings: Hotkeys tab (recording, conflict detection, reset to defaults)
 - [x] Settings: Display tab (theme, opacity, font size, window size, position)
 - [x] Settings: Privacy tab (toggles, process name, clear data)
+- [x] Settings: Audio tab (speech engine, language, auto-include transcript)
 - [x] Enhanced stealth (process disguise, alt-tab hiding, stealth watchdog)
 - [x] Toast notification system (success, error, info with auto-dismiss)
+- [x] Skeleton loaders for conversation history panel
+- [x] Flicker-free streaming (memoized markdown components + virtual highlighting)
 - [x] UI polish (keyboard nav, focus-visible, reduced motion, animations)
 
 ### Phase 3 — Future

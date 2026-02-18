@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import { Copy, Check, AlertCircle, ClipboardPaste, Loader2 } from 'lucide-react';
 import CodeBlock from './CodeBlock';
 import { useToast } from './Toast';
@@ -80,69 +81,74 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
     );
   }
 
+  // Stable components reference — prevents ReactMarkdown from
+  // unmounting/remounting child components on every streaming token.
+  const mdComponents = useMemo<Components>(
+    () => ({
+      code({ className, children, ...props }) {
+        const match = /language-(\w+)/.exec(className || '');
+        const codeStr = String(children).replace(/\n$/, '');
+        if (match) {
+          return <CodeBlock code={codeStr} language={match[1]} />;
+        }
+        return (
+          <code
+            className="bg-bg-code px-1 py-0.5 rounded text-xs font-mono text-text-code"
+            {...props}
+          >
+            {children}
+          </code>
+        );
+      },
+      a({ href, children }) {
+        return (
+          <a
+            href={href}
+            className="text-accent-blue hover:underline"
+            onClick={(e) => {
+              e.preventDefault();
+              if (href) window.open(href, '_blank');
+            }}
+          >
+            {children}
+          </a>
+        );
+      },
+      p({ children }) {
+        return <p className="mb-2 last:mb-0">{children}</p>;
+      },
+      ul({ children }) {
+        return <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>;
+      },
+      ol({ children }) {
+        return <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>;
+      },
+      h1({ children }) {
+        return <h1 className="text-lg font-bold mb-2">{children}</h1>;
+      },
+      h2({ children }) {
+        return <h2 className="text-md font-bold mb-2">{children}</h2>;
+      },
+      h3({ children }) {
+        return <h3 className="text-sm font-bold mb-1">{children}</h3>;
+      },
+      blockquote({ children }) {
+        return (
+          <blockquote className="border-l-2 border-accent-primary pl-3 my-2 text-text-secondary">
+            {children}
+          </blockquote>
+        );
+      },
+    }),
+    []
+  );
+
   // Assistant messages
   return (
     <div className="mx-3 my-2 animate-fadeIn">
       <div className="max-w-[95%]">
         <div className="px-3 py-2 rounded-lg bg-bubble-ai text-text-primary text-sm">
-          <ReactMarkdown
-            components={{
-              code({ className, children, ...props }) {
-                const match = /language-(\w+)/.exec(className || '');
-                const codeStr = String(children).replace(/\n$/, '');
-                if (match) {
-                  return <CodeBlock code={codeStr} language={match[1]} />;
-                }
-                return (
-                  <code
-                    className="bg-bg-code px-1 py-0.5 rounded text-xs font-mono text-text-code"
-                    {...props}
-                  >
-                    {children}
-                  </code>
-                );
-              },
-              a({ href, children }) {
-                return (
-                  <a
-                    href={href}
-                    className="text-accent-blue hover:underline"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (href) window.open(href, '_blank');
-                    }}
-                  >
-                    {children}
-                  </a>
-                );
-              },
-              p({ children }) {
-                return <p className="mb-2 last:mb-0">{children}</p>;
-              },
-              ul({ children }) {
-                return <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>;
-              },
-              ol({ children }) {
-                return <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>;
-              },
-              h1({ children }) {
-                return <h1 className="text-lg font-bold mb-2">{children}</h1>;
-              },
-              h2({ children }) {
-                return <h2 className="text-md font-bold mb-2">{children}</h2>;
-              },
-              h3({ children }) {
-                return <h3 className="text-sm font-bold mb-1">{children}</h3>;
-              },
-              blockquote({ children }) {
-                return (
-                  <blockquote className="border-l-2 border-accent-primary pl-3 my-2 text-text-secondary">
-                    {children}
-                  </blockquote>
-                );
-              },
-            }}
-          >
+          <ReactMarkdown components={mdComponents}>
             {message.content}
           </ReactMarkdown>
 

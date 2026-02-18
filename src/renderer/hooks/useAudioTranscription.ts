@@ -67,8 +67,13 @@ export function useAudioTranscription(): UseAudioTranscriptionReturn {
         await service.start(
           { engine: effectiveEngine, language, continuous: true },
           (text: string, isFinal: boolean) => {
+            console.log('[AudioHook] onResult:', isFinal ? 'FINAL' : 'interim', `"${text.substring(0, 60)}"`);
             if (isFinal) {
-              setTranscript((prev) => (prev ? `${prev} ${text}` : text));
+              setTranscript((prev) => {
+                const updated = prev ? `${prev} ${text}` : text;
+                console.log('[AudioHook] transcript updated, length:', updated.length);
+                return updated;
+              });
               setInterimTranscript('');
             } else {
               setInterimTranscript(text);
