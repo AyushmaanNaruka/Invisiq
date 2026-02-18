@@ -1,18 +1,28 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Plus, Pencil } from 'lucide-react';
 import { BUILT_IN_MODES } from '@shared/constants';
-import type { Mode } from '@shared/types';
+import type { Mode, CustomMode } from '@shared/types';
 
 interface ModeSelectorProps {
   activeMode: string;
+  customModes: CustomMode[];
   onModeChange: (modeId: string) => void;
+  onCreateMode: () => void;
+  onEditMode: (mode: CustomMode) => void;
 }
 
-export default function ModeSelector({ activeMode, onModeChange }: ModeSelectorProps): JSX.Element {
+export default function ModeSelector({
+  activeMode,
+  customModes,
+  onModeChange,
+  onCreateMode,
+  onEditMode,
+}: ModeSelectorProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const currentMode = BUILT_IN_MODES.find((m) => m.id === activeMode) || BUILT_IN_MODES[0];
+  const allModes: Mode[] = [...BUILT_IN_MODES, ...customModes];
+  const currentMode = allModes.find((m) => m.id === activeMode) || BUILT_IN_MODES[0];
 
   useEffect(() => {
     function handleClick(e: MouseEvent): void {
@@ -36,7 +46,8 @@ export default function ModeSelector({ activeMode, onModeChange }: ModeSelectorP
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-40 bg-bg-overlay border border-border-subtle rounded-md shadow-dropdown z-50">
+        <div className="absolute top-full left-0 mt-1 w-44 bg-bg-overlay border border-border-subtle rounded-md shadow-dropdown z-50">
+          {/* Built-in modes */}
           {BUILT_IN_MODES.map((mode: Mode) => (
             <button
               key={mode.id}
@@ -52,6 +63,57 @@ export default function ModeSelector({ activeMode, onModeChange }: ModeSelectorP
               {mode.name}
             </button>
           ))}
+
+          {/* Custom modes */}
+          {customModes.length > 0 && (
+            <>
+              <div className="border-t border-border-subtle my-1" />
+              <div className="px-3 py-1">
+                <span className="text-[10px] text-text-placeholder uppercase tracking-wide">Custom</span>
+              </div>
+              {customModes.map((mode) => (
+                <div key={mode.id} className="flex items-center group">
+                  <button
+                    onClick={() => {
+                      onModeChange(mode.id);
+                      setIsOpen(false);
+                    }}
+                    className={`flex-1 flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-bg-hover transition-colors ${
+                      mode.id === activeMode ? 'text-text-primary' : 'text-text-secondary'
+                    }`}
+                  >
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: mode.color }} />
+                    {mode.name}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditMode(mode);
+                      setIsOpen(false);
+                    }}
+                    className="p-1.5 mr-1 rounded opacity-0 group-hover:opacity-100 hover:bg-bg-input text-text-secondary hover:text-text-primary transition-all"
+                    title="Edit mode"
+                  >
+                    <Pencil size={10} />
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Create new mode */}
+          <div className="border-t border-border-subtle mt-1">
+            <button
+              onClick={() => {
+                onCreateMode();
+                setIsOpen(false);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left text-accent-primary hover:bg-bg-hover transition-colors"
+            >
+              <Plus size={12} />
+              Create Mode...
+            </button>
+          </div>
         </div>
       )}
     </div>

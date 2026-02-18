@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Camera, Send, Square, X } from 'lucide-react';
-import type { ImageAttachment } from '@shared/types';
+import { Camera, Send, Square, X, Mic, MicOff } from 'lucide-react';
+import { useAudioTranscription } from '../hooks/useAudioTranscription';
+import { useToast } from './Toast';
+import type { ImageAttachment, SpeechEngine } from '@shared/types';
 
 const MAX_SCREENSHOTS = 3;
 
@@ -12,6 +14,8 @@ interface InputAreaProps {
   onCaptureScreen: () => void;
   onClearScreenshot: (index: number) => void;
   inputRef?: React.RefObject<HTMLTextAreaElement | null>;
+  audioEngine?: SpeechEngine;
+  audioLanguage?: string;
 }
 
 export default function InputArea({
@@ -22,10 +26,23 @@ export default function InputArea({
   onCaptureScreen,
   onClearScreenshot,
   inputRef: externalInputRef,
+  audioEngine = 'browser',
+  audioLanguage = 'en-US',
 }: InputAreaProps): JSX.Element {
   const [text, setText] = useState('');
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = externalInputRef || internalRef;
+  const { showToast } = useToast();
+  const {
+    isListening,
+    transcript,
+    interimTranscript,
+    isAvailable: micAvailable,
+    error: micError,
+    startListening,
+    stopListening,
+    clearTranscript,
+  } = useAudioTranscription();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -35,13 +52,37 @@ export default function InputArea({
     el.style.height = Math.min(el.scrollHeight, 100) + 'px';
   }, [text, textareaRef]);
 
+  // Append transcript to text
+  useEffect(() => {
+    if (transcript) {
+      setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      clearTranscript();
+    }
+  }, [transcript, clearTranscript]);
+
+  // Show mic errors via toast
+  useEffect(() => {
+    if (micError) {
+      showToast('error', `Mic: ${micError}`);
+    }
+  }, [micError, showToast]);
+
+  const handleToggleMic = useCallback(() => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening(audioEngine, audioLanguage);
+    }
+  }, [isListening, startListening, stopListening, audioEngine, audioLanguage]);
+
   const handleSend = useCallback(() => {
     const trimmed = text.trim();
     if (!trimmed && pendingScreenshots.length === 0) return;
     if (isStreaming) return;
+    if (isListening) stopListening();
     onSend(trimmed);
     setText('');
-  }, [text, pendingScreenshots, isStreaming, onSend]);
+  }, [text, pendingScreenshots, isStreaming, isListening, stopListening, onSend]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -94,13 +135,30 @@ export default function InputArea({
           <Camera size={16} />
         </button>
 
+        {/* Mic button */}
+        {micAvailable && (
+          <button
+            onClick={handleToggleMic}
+            disabled={isStreaming}
+            className={`p-1.5 rounded transition-colors shrink-0 mb-0.5 ${
+              isListening
+                ? 'bg-status-error/20 text-status-error'
+                : 'hover:bg-bg-hover text-text-secondary hover:text-text-primary disabled:opacity-50'
+            }`}
+            style={isListening ? { animation: 'micPulse 1.5s ease-in-out infinite' } : undefined}
+            title={isListening ? 'Stop listening' : 'Start voice input'}
+          >
+            {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+          </button>
+        )}
+
         {/* Text input */}
         <textarea
           ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={hasScreenshots ? 'Ask about these screenshots...' : 'Ask anything...'}
+          placeholder={isListening && interimTranscript ? interimTranscript : hasScreenshots ? 'Ask about these screenshots...' : 'Ask anything...'}
           rows={1}
           className="flex-1 bg-bg-input border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-placeholder resize-none focus:outline-none focus:border-border-focus transition-colors"
           style={{ minHeight: '36px', maxHeight: '100px' }}

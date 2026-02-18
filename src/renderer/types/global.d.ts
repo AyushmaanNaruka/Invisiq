@@ -4,6 +4,10 @@ import type {
   ScreenshotResult,
   MonitorInfo,
   AppInfo,
+  Conversation,
+  ConversationMeta,
+  Mode,
+  CustomMode,
 } from '@shared/types';
 
 declare global {
@@ -39,15 +43,81 @@ declare global {
       clipboard: {
         copy(text: string): Promise<{ success: boolean }>;
         read(): Promise<{ text: string | null; hasImage: boolean }>;
-        smartPaste(text: string, wpm?: number): Promise<{ success: boolean }>;
+        smartPaste(text: string, wpm?: number): Promise<{ success: boolean; error?: string }>;
+        startMonitor(interval?: number): Promise<{ success: boolean }>;
+        stopMonitor(): Promise<{ success: boolean }>;
+        monitorStatus(): Promise<{ running: boolean }>;
+      };
+      modes: {
+        list(): Promise<{ builtIn: Mode[]; custom: CustomMode[] }>;
+        save(mode: CustomMode): Promise<{ success: boolean }>;
+        delete(id: string): Promise<{ success: boolean }>;
+      };
+      conversation: {
+        save(conversation: Conversation): Promise<{ success: boolean }>;
+        load(id: string): Promise<Conversation | null>;
+        list(): Promise<ConversationMeta[]>;
+        delete(id: string): Promise<{ success: boolean }>;
+        search(query: string): Promise<ConversationMeta[]>;
+        export(id: string, format?: string): Promise<{ content: string; filename: string } | null>;
+        deleteAll(): Promise<{ success: boolean; count: number }>;
       };
       app: {
         getInfo(): Promise<AppInfo>;
         quit(): Promise<void>;
+        openDataFolder(): Promise<void>;
       };
       on(channel: string, callback: (...args: unknown[]) => void): () => void;
       off(channel: string, callback: (...args: unknown[]) => void): void;
     };
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+
+  // ── Web Speech API Types ─────────────────────────────
+
+  interface SpeechRecognitionResult {
+    readonly isFinal: boolean;
+    readonly length: number;
+    [index: number]: SpeechRecognitionAlternative;
+  }
+
+  interface SpeechRecognitionAlternative {
+    readonly transcript: string;
+    readonly confidence: number;
+  }
+
+  interface SpeechRecognitionResultList {
+    readonly length: number;
+    [index: number]: SpeechRecognitionResult;
+  }
+
+  interface SpeechRecognitionEvent extends Event {
+    readonly resultIndex: number;
+    readonly results: SpeechRecognitionResultList;
+  }
+
+  interface SpeechRecognitionErrorEvent extends Event {
+    readonly error: string;
+    readonly message: string;
+  }
+
+  interface SpeechRecognition extends EventTarget {
+    lang: string;
+    continuous: boolean;
+    interimResults: boolean;
+    maxAlternatives: number;
+    onresult: ((event: SpeechRecognitionEvent) => void) | null;
+    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+    onend: (() => void) | null;
+    onstart: (() => void) | null;
+    start(): void;
+    stop(): void;
+    abort(): void;
+  }
+
+  interface SpeechRecognitionConstructor {
+    new (): SpeechRecognition;
   }
 }
 

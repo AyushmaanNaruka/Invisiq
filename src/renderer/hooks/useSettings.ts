@@ -15,7 +15,24 @@ export function useSettings(): UseSettingsReturn {
   useEffect(() => {
     window.ghostAPI.store.getAll()
       .then((loaded) => {
-        setSettings(loaded as AppSettings);
+        // Deep-merge with defaults so newly added keys are always present
+        const merged = { ...DEFAULT_SETTINGS } as Record<string, unknown>;
+        const src = loaded as Record<string, unknown>;
+        for (const key of Object.keys(src)) {
+          if (
+            src[key] !== null &&
+            typeof src[key] === 'object' &&
+            !Array.isArray(src[key]) &&
+            typeof merged[key] === 'object' &&
+            merged[key] !== null &&
+            !Array.isArray(merged[key])
+          ) {
+            merged[key] = { ...(merged[key] as Record<string, unknown>), ...(src[key] as Record<string, unknown>) };
+          } else {
+            merged[key] = src[key];
+          }
+        }
+        setSettings(merged as AppSettings);
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));

@@ -6,6 +6,7 @@ const VALID_CHANNELS = [
   'overlay:visibility-changed',
   'screenshot:captured',
   'app:error',
+  'clipboard:changed',
 ];
 
 const ghostAPI = {
@@ -81,6 +82,44 @@ const ghostAPI = {
       ipcRenderer.invoke('clipboard:read'),
     smartPaste: (text: string, wpm?: number) =>
       ipcRenderer.invoke('clipboard:smart-paste', { text, wpm }),
+    startMonitor: (interval?: number) =>
+      ipcRenderer.invoke('clipboard:start-monitor', { interval }),
+    stopMonitor: () =>
+      ipcRenderer.invoke('clipboard:stop-monitor'),
+    monitorStatus: () =>
+      ipcRenderer.invoke('clipboard:monitor-status'),
+  },
+
+  // ══════════════════════════════════════
+  //  MODES
+  // ══════════════════════════════════════
+  modes: {
+    list: () =>
+      ipcRenderer.invoke('modes:list'),
+    save: (mode: unknown) =>
+      ipcRenderer.invoke('modes:save', { mode }),
+    delete: (id: string) =>
+      ipcRenderer.invoke('modes:delete', { id }),
+  },
+
+  // ══════════════════════════════════════
+  //  CONVERSATION
+  // ══════════════════════════════════════
+  conversation: {
+    save: (conversation: unknown) =>
+      ipcRenderer.invoke('conversation:save', { conversation }),
+    load: (id: string) =>
+      ipcRenderer.invoke('conversation:load', { id }),
+    list: () =>
+      ipcRenderer.invoke('conversation:list'),
+    delete: (id: string) =>
+      ipcRenderer.invoke('conversation:delete', { id }),
+    search: (query: string) =>
+      ipcRenderer.invoke('conversation:search', { query }),
+    export: (id: string, format: string = 'markdown') =>
+      ipcRenderer.invoke('conversation:export', { id, format }),
+    deleteAll: () =>
+      ipcRenderer.invoke('conversation:delete-all'),
   },
 
   // ══════════════════════════════════════
@@ -91,6 +130,8 @@ const ghostAPI = {
       ipcRenderer.invoke('app:get-info'),
     quit: () =>
       ipcRenderer.invoke('app:quit'),
+    openDataFolder: () =>
+      ipcRenderer.invoke('app:open-data-folder'),
   },
 
   // ══════════════════════════════════════

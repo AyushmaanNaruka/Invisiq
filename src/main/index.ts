@@ -3,6 +3,10 @@ import { join } from 'path';
 import { createOverlayWindow } from './overlay';
 import { registerAllHotkeys, unregisterAllHotkeys } from './hotkeys';
 import { registerIPCHandlers } from './ipc-handlers';
+import { ensureConversationsDir } from './conversations';
+import { disguiseProcess, applyFullStealth, startStealthWatchdog } from './stealth';
+import { getNestedSetting } from './store';
+import { stopClipboardMonitor } from './clipboard-monitor';
 import { AI_API_DOMAINS } from '@shared/constants';
 
 // ══════════════════════════════════════
@@ -80,15 +84,26 @@ function setupCORSBypass(): void {
 //  APP LIFECYCLE
 // ══════════════════════════════════════
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Disguise process name
+  const processName = getNestedSetting('privacy.processName') as string || 'SystemHelper';
+  disguiseProcess(processName);
+
   // Setup CORS bypass before loading any renderer content
   setupCORSBypass();
 
   // Register IPC handlers
   registerIPCHandlers();
 
+  // Ensure conversations directory exists
+  await ensureConversationsDir();
+
   // Create the overlay window
   const overlayWindow = createOverlayWindow();
+
+  // Apply full stealth measures
+  applyFullStealth(overlayWindow);
+  startStealthWatchdog(overlayWindow);
 
   // Load the renderer
   if (process.env['ELECTRON_RENDERER_URL']) {
@@ -113,6 +128,8 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => {
   // Unregister all global shortcuts before quitting
   unregisterAllHotkeys();
+  // Stop clipboard monitor
+  stopClipboardMonitor();
 });
 
 app.on('activate', () => {

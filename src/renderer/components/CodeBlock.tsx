@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, ClipboardPaste, Loader2 } from 'lucide-react';
 import hljs from 'highlight.js';
+import { useToast } from './Toast';
 
 interface CodeBlockProps {
   code: string;
@@ -9,7 +10,9 @@ interface CodeBlockProps {
 
 export default function CodeBlock({ code, language }: CodeBlockProps): JSX.Element {
   const [copied, setCopied] = useState(false);
+  const [pasting, setPasting] = useState(false);
   const codeRef = useRef<HTMLElement>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (codeRef.current) {
@@ -28,6 +31,23 @@ export default function CodeBlock({ code, language }: CodeBlockProps): JSX.Eleme
     }
   };
 
+  const handlePaste = async (): Promise<void> => {
+    if (pasting) return;
+    setPasting(true);
+    try {
+      const result = await window.ghostAPI.clipboard.smartPaste(code);
+      if (result.success) {
+        showToast('success', 'Code pasted to active app');
+      } else {
+        showToast('error', result.error || 'Paste failed');
+      }
+    } catch {
+      showToast('error', 'Paste failed');
+    } finally {
+      setPasting(false);
+    }
+  };
+
   const displayLang = language || 'text';
 
   return (
@@ -35,22 +55,41 @@ export default function CodeBlock({ code, language }: CodeBlockProps): JSX.Eleme
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-1 bg-bg-code border-b border-border-subtle">
         <span className="text-text-secondary text-[10px] font-mono uppercase">{displayLang}</span>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
-        >
-          {copied ? (
-            <>
-              <Check size={10} className="text-status-success" />
-              <span className="text-status-success">Copied!</span>
-            </>
-          ) : (
-            <>
-              <Copy size={10} />
-              <span>Copy</span>
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+          >
+            {copied ? (
+              <>
+                <Check size={10} className="text-status-success" />
+                <span className="text-status-success">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy size={10} />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+          <button
+            onClick={handlePaste}
+            disabled={pasting}
+            className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-text-secondary hover:text-text-primary hover:bg-bg-hover disabled:opacity-50 transition-colors"
+          >
+            {pasting ? (
+              <>
+                <Loader2 size={10} className="animate-spin" />
+                <span>Pasting...</span>
+              </>
+            ) : (
+              <>
+                <ClipboardPaste size={10} />
+                <span>Paste</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Code */}

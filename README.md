@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-1.0.0-00B894?style=for-the-badge&labelColor=1a1a2e" alt="Version" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-2.0.0-00B894?style=for-the-badge&labelColor=1a1a2e" alt="Version" /></a>
   <a href="#"><img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4?style=for-the-badge&logo=windows&logoColor=white&labelColor=1a1a2e" alt="Platform" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-FDCB6E?style=for-the-badge&labelColor=1a1a2e" alt="License" /></a>
   <a href="#"><img src="https://img.shields.io/badge/electron-33+-47848F?style=for-the-badge&logo=electron&logoColor=white&labelColor=1a1a2e" alt="Electron" /></a>
@@ -68,7 +68,35 @@ Every action is a keyboard shortcut away. Toggle visibility, capture screens, st
 <td width="50%" valign="top">
 
 ### Smart Modes
-Four built-in modes with tuned system prompts: **General**, **Coding**, **Meeting**, and **Exam**. Each mode shapes the AI's behavior for your current task.
+Four built-in modes with tuned system prompts: **General**, **Coding**, **Meeting**, and **Exam**. Create your own custom modes with personalized system prompts and colors.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### Chat History & Persistence
+Conversations auto-save with debounced persistence. Browse, search, and export your full conversation history. Restore mode and model when loading past sessions.
+
+</td>
+<td width="50%" valign="top">
+
+### Smart Paste & Clipboard
+Copy AI responses or code blocks directly into any application with **Smart Paste** — the overlay hides, activates the target window, and simulates Ctrl+V. Clipboard monitoring detects external changes.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### Voice Input (Speech-to-Text)
+Dual engine speech recognition: **Web Speech API** (free, browser-native) with automatic fallback to **OpenAI Whisper** (paid, higher accuracy). Interim results shown in real-time.
+
+</td>
+<td width="50%" valign="top">
+
+### Enhanced Stealth
+Process disguise randomizes the app's visible process name. Alt-Tab hiding removes the overlay from the task switcher. A stealth watchdog continuously re-enforces content protection.
 
 </td>
 </tr>
@@ -242,10 +270,13 @@ ghostai/
 │   │   ├── hotkeys.ts           # Global shortcut registration
 │   │   ├── screenshot.ts        # desktopCapturer integration
 │   │   ├── region-selector.ts   # Crosshair region selection window
-│   │   ├── stealth.ts           # Process hiding utilities
+│   │   ├── stealth.ts           # Process disguise, alt-tab hiding, watchdog
 │   │   ├── store.ts             # Encrypted electron-store wrapper
 │   │   ├── crypto.ts            # AES-256-GCM + PBKDF2 key derivation
-│   │   └── ipc-handlers.ts      # All IPC channel handlers
+│   │   ├── ipc-handlers.ts      # All IPC channel handlers
+│   │   ├── conversations.ts     # Filesystem-based conversation CRUD
+│   │   ├── clipboard.ts         # Smart paste via PowerShell SendKeys
+│   │   └── clipboard-monitor.ts # Clipboard polling monitor
 │   │
 │   ├── preload/
 │   │   └── index.ts             # contextBridge API surface
@@ -253,11 +284,17 @@ ghostai/
 │   ├── renderer/                # React Frontend
 │   │   ├── App.tsx              # Root component
 │   │   ├── components/          # HeaderBar, ChatPanel, MessageBubble,
-│   │   │                        # CodeBlock, InputArea, Settings, etc.
+│   │   │                        # CodeBlock, InputArea, Settings,
+│   │   │                        # ConversationHistory, CustomModeEditor,
+│   │   │                        # Toast, SettingsHotkeys, SettingsDisplay,
+│   │   │                        # SettingsPrivacy, etc.
 │   │   ├── hooks/               # useAI, useScreenshot, useSettings,
-│   │   │                        # useHotkeys, useConversation
+│   │   │                        # useHotkeys, useConversation,
+│   │   │                        # useConversationHistory,
+│   │   │                        # useAudioTranscription
 │   │   ├── services/
-│   │   │   └── ai-providers/    # OpenAI, Anthropic, Gemini adapters
+│   │   │   ├── ai-providers/    # OpenAI, Anthropic, Gemini adapters
+│   │   │   └── speech.ts        # Web Speech + Whisper fallback
 │   │   ├── styles/
 │   │   │   └── globals.css      # Tailwind + custom dark theme
 │   │   └── types/
@@ -281,6 +318,7 @@ ghostai/
 
 ## Roadmap
 
+### Phase 1 — Core MVP
 - [x] Invisible overlay with content protection
 - [x] Full-screen and region screenshot capture
 - [x] OpenAI, Anthropic, and Gemini streaming chat
@@ -289,11 +327,26 @@ ghostai/
 - [x] AES-256-GCM encrypted API key storage
 - [x] Global keyboard shortcuts
 - [x] 4 built-in modes with tuned system prompts
-- [ ] Audio transcription (meeting mode)
-- [ ] Chat history persistence
+
+### Phase 2 — Enhanced
+- [x] Chat history persistence with auto-save and auto-titling
+- [x] Conversation history panel with search, delete, and JSON export
+- [x] Custom modes (create, edit, delete with color picker)
+- [x] Smart paste — paste AI responses into any app via clipboard + SendKeys
+- [x] Clipboard monitoring with toast notifications
+- [x] Voice input — dual engine: Web Speech API + OpenAI Whisper fallback
+- [x] Settings: Hotkeys tab (recording, conflict detection, reset to defaults)
+- [x] Settings: Display tab (theme, opacity, font size, window size, position)
+- [x] Settings: Privacy tab (toggles, process name, clear data)
+- [x] Enhanced stealth (process disguise, alt-tab hiding, stealth watchdog)
+- [x] Toast notification system (success, error, info with auto-dismiss)
+- [x] UI polish (keyboard nav, focus-visible, reduced motion, animations)
+
+### Phase 3 — Future
 - [ ] Multi-monitor support
-- [ ] Custom modes with user-defined system prompts
 - [ ] Auto-updater
+- [ ] Plugin system
+- [ ] Custom themes
 - [ ] macOS support
 
 <br/>

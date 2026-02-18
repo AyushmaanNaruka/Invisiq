@@ -1,32 +1,126 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { ChatMessage, ImageAttachment, TokenUsage } from '@shared/types';
+import type { ChatMessage, ImageAttachment, Conversation } from '@shared/types';
+
+// ══════════════════════════════════════
+//  TYPES
+// ══════════════════════════════════════
+
+interface UseConversationConfig {
+  persistChatHistory: boolean;
+  activeMode: string;
+  activeModel: string;
+}
 
 interface UseConversationReturn {
   messages: ChatMessage[];
+  conversationId: string | null;
+  conversationTitle: string;
   addUserMessage: (content: string, images?: ImageAttachment[]) => ChatMessage;
   addAssistantMessage: () => ChatMessage;
   addErrorMessage: (error: string) => void;
   updateMessage: (id: string, updates: Partial<ChatMessage>) => void;
   appendToMessage: (id: string, text: string) => void;
+  startNewConversation: () => void;
+  loadConversation: (id: string) => Promise<{ mode?: string; model?: string } | null>;
   clearConversation: () => void;
   getContextMessages: () => ChatMessage[];
 }
 
-export function useConversation(): UseConversationReturn {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+// ══════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════
 
-  const addUserMessage = useCallback((content: string, images?: ImageAttachment[]): ChatMessage => {
-    const msg: ChatMessage = {
-      id: uuidv4(),
-      role: 'user',
-      content,
-      images,
-      timestamp: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, msg]);
-    return msg;
-  }, []);
+function generateTitle(firstUserMessage: string): string {
+  const trimmed = firstUserMessage.trim();
+  if (trimmed.length <= 50) return trimmed;
+
+  const truncated = trimmed.substring(0, 50);
+  const lastSpace = truncated.lastIndexOf(' ');
+  if (lastSpace > 20) {
+    return truncated.substring(0, lastSpace) + '...';
+  }
+  return truncated + '...';
+}
+
+// ══════════════════════════════════════
+//  HOOK
+// ══════════════════════════════════════
+
+export function useConversation(config: UseConversationConfig): UseConversationReturn {
+  const { persistChatHistory, activeMode, activeModel } = config;
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationTitle, setConversationTitle] = useState<string>('');
+
+  const createdAtRef = useRef<string>(new Date().toISOString());
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const titleGeneratedRef = useRef<boolean>(false);
+
+  // ── Auto-save (debounced 500ms) ──────────────────────────
+  useEffect(() => {
+    if (!conversationId || messages.length === 0 || !persistChatHistory) return;
+
+    clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      const conversation: Conversation = {
+        id: conversationId,
+        title: conversationTitle || 'Untitled',
+        messages,
+        mode: activeMode,
+        model: activeModel,
+        createdAt: createdAtRef.current,
+        updatedAt: new Date().toISOString(),
+        totalTokens: messages.reduce((sum, m) => sum + (m.usage?.totalTokens || 0), 0),
+        estimatedCost: messages.reduce((sum, m) => sum + (m.usage?.estimatedCostUSD || 0), 0),
+      };
+      window.ghostAPI.conversation.save(conversation).catch(console.error);
+    }, 500);
+
+    return () => clearTimeout(saveTimeoutRef.current);
+  }, [messages, conversationId, conversationTitle, persistChatHistory, activeMode, activeModel]);
+
+  // ── Auto-generate title from first user message ──────────
+  useEffect(() => {
+    if (titleGeneratedRef.current || conversationTitle) return;
+    if (messages.length < 2) return;
+
+    const firstUser = messages.find((m) => m.role === 'user');
+    const hasAssistant = messages.some((m) => m.role === 'assistant' && m.content.length > 0);
+
+    if (firstUser && hasAssistant) {
+      const title = generateTitle(firstUser.content);
+      setConversationTitle(title);
+      titleGeneratedRef.current = true;
+    }
+  }, [messages, conversationTitle]);
+
+  // ── Message operations ───────────────────────────────────
+
+  const addUserMessage = useCallback(
+    (content: string, images?: ImageAttachment[]): ChatMessage => {
+      // Create conversation ID on first message if none exists
+      let currentId = conversationId;
+      if (!currentId) {
+        currentId = uuidv4();
+        setConversationId(currentId);
+        createdAtRef.current = new Date().toISOString();
+        titleGeneratedRef.current = false;
+      }
+
+      const msg: ChatMessage = {
+        id: uuidv4(),
+        role: 'user',
+        content,
+        images,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, msg]);
+      return msg;
+    },
+    [conversationId]
+  );
 
   const addAssistantMessage = useCallback((): ChatMessage => {
     const msg: ChatMessage = {
@@ -63,9 +157,39 @@ export function useConversation(): UseConversationReturn {
     );
   }, []);
 
-  const clearConversation = useCallback(() => {
+  // ── Conversation management ──────────────────────────────
+
+  const startNewConversation = useCallback(() => {
+    // Flush any pending save before clearing
+    clearTimeout(saveTimeoutRef.current);
+
     setMessages([]);
+    setConversationId(null);
+    setConversationTitle('');
+    createdAtRef.current = new Date().toISOString();
+    titleGeneratedRef.current = false;
   }, []);
+
+  const loadConversation = useCallback(async (id: string): Promise<{ mode?: string; model?: string } | null> => {
+    try {
+      const conversation = await window.ghostAPI.conversation.load(id);
+      if (!conversation) return null;
+
+      setMessages(conversation.messages);
+      setConversationId(conversation.id);
+      setConversationTitle(conversation.title);
+      createdAtRef.current = conversation.createdAt;
+      titleGeneratedRef.current = true;
+      return { mode: conversation.mode, model: conversation.model };
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+      return null;
+    }
+  }, []);
+
+  const clearConversation = useCallback(() => {
+    startNewConversation();
+  }, [startNewConversation]);
 
   const getContextMessages = useCallback((): ChatMessage[] => {
     return messages.filter((m) => m.role === 'user' || m.role === 'assistant');
@@ -73,11 +197,15 @@ export function useConversation(): UseConversationReturn {
 
   return {
     messages,
+    conversationId,
+    conversationTitle,
     addUserMessage,
     addAssistantMessage,
     addErrorMessage,
     updateMessage,
     appendToMessage,
+    startNewConversation,
+    loadConversation,
     clearConversation,
     getContextMessages,
   };

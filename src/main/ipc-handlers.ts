@@ -1,4 +1,4 @@
-import { ipcMain, app, clipboard } from 'electron';
+import { ipcMain, app, clipboard, shell } from 'electron';
 import {
   toggleOverlay,
   hideOverlay,
@@ -23,7 +23,19 @@ import {
 } from './hotkeys';
 import { captureFullScreen, getAvailableMonitors } from './screenshot';
 import { openRegionSelector } from './region-selector';
-import type { HotkeyAction, ProviderID } from '@shared/types';
+import { smartPaste } from './clipboard';
+import { startClipboardMonitor, stopClipboardMonitor, isClipboardMonitorRunning } from './clipboard-monitor';
+import {
+  saveConversation,
+  loadConversation,
+  listConversations,
+  deleteConversation,
+  searchConversations,
+  exportConversation,
+  deleteAllConversations,
+} from './conversations';
+import { BUILT_IN_MODES } from '@shared/constants';
+import type { HotkeyAction, ProviderID, Conversation, CustomMode } from '@shared/types';
 
 const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini'];
 
@@ -243,9 +255,34 @@ export function registerIPCHandlers(): void {
     return { text, hasImage };
   });
 
-  ipcMain.handle('clipboard:smart-paste', () => {
-    // TODO: Implement smart paste with typing simulation in Phase 2
-    return { success: false, error: 'Not implemented yet' };
+  ipcMain.handle('clipboard:smart-paste', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { text } = args as { text: string };
+    if (typeof text !== 'string' || !text.trim()) {
+      return { success: false, error: 'Text must be a non-empty string' };
+    }
+    if (text.length > 50000) {
+      return { success: false, error: 'Text exceeds maximum length (50,000 chars)' };
+    }
+    return smartPaste(text);
+  });
+
+  ipcMain.handle('clipboard:start-monitor', (_event, args: unknown) => {
+    const interval = (args && typeof args === 'object' && 'interval' in args)
+      ? (args as { interval: number }).interval
+      : 3000;
+    const safeInterval = Math.max(1000, Math.min(10000, interval || 3000));
+    startClipboardMonitor(safeInterval);
+    return { success: true };
+  });
+
+  ipcMain.handle('clipboard:stop-monitor', () => {
+    stopClipboardMonitor();
+    return { success: true };
+  });
+
+  ipcMain.handle('clipboard:monitor-status', () => {
+    return { running: isClipboardMonitorRunning() };
   });
 
   // ══════════════════════════════════════
@@ -263,5 +300,193 @@ export function registerIPCHandlers(): void {
 
   ipcMain.handle('app:quit', () => {
     app.quit();
+  });
+
+  ipcMain.handle('app:open-data-folder', async () => {
+    await shell.openPath(app.getPath('userData'));
+  });
+
+  // ══════════════════════════════════════
+  //  CONVERSATIONS
+  // ══════════════════════════════════════
+
+  ipcMain.handle('conversation:save', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { conversation } = args as { conversation: Conversation };
+    if (!conversation || typeof conversation !== 'object') {
+      throw new Error('Invalid conversation object');
+    }
+    if (typeof conversation.id !== 'string' || conversation.id.length === 0) {
+      throw new Error('Conversation must have a valid id');
+    }
+    if (!Array.isArray(conversation.messages)) {
+      throw new Error('Conversation must have a messages array');
+    }
+
+    try {
+      await saveConversation(conversation);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to save conversation',
+      };
+    }
+  });
+
+  ipcMain.handle('conversation:load', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { id } = args as { id: string };
+    if (typeof id !== 'string' || id.length === 0) {
+      throw new Error('ID must be a non-empty string');
+    }
+
+    return await loadConversation(id);
+  });
+
+  ipcMain.handle('conversation:list', async () => {
+    return await listConversations();
+  });
+
+  ipcMain.handle('conversation:delete', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { id } = args as { id: string };
+    if (typeof id !== 'string' || id.length === 0) {
+      throw new Error('ID must be a non-empty string');
+    }
+
+    try {
+      const deleted = await deleteConversation(id);
+      return { success: deleted };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete conversation',
+      };
+    }
+  });
+
+  ipcMain.handle('conversation:search', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { query } = args as { query: string };
+    if (typeof query !== 'string') {
+      throw new Error('Query must be a string');
+    }
+
+    return await searchConversations(query);
+  });
+
+  ipcMain.handle('conversation:export', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { id, format } = args as { id: string; format?: string };
+    if (typeof id !== 'string' || id.length === 0) {
+      throw new Error('ID must be a non-empty string');
+    }
+
+    const validFormats = ['markdown'];
+    const exportFormat = (format || 'markdown') as 'markdown';
+    if (!validFormats.includes(exportFormat)) {
+      throw new Error(`Invalid format. Valid formats: ${validFormats.join(', ')}`);
+    }
+
+    return await exportConversation(id, exportFormat);
+  });
+
+  ipcMain.handle('conversation:delete-all', async () => {
+    try {
+      const count = await deleteAllConversations();
+      return { success: true, count };
+    } catch (error) {
+      return {
+        success: false,
+        count: 0,
+        error: error instanceof Error ? error.message : 'Failed to delete conversations',
+      };
+    }
+  });
+
+  // ══════════════════════════════════════
+  //  CUSTOM MODES
+  // ══════════════════════════════════════
+
+  ipcMain.handle('modes:list', () => {
+    const settings = getSettings();
+    return {
+      builtIn: BUILT_IN_MODES,
+      custom: settings.customModes || [],
+    };
+  });
+
+  ipcMain.handle('modes:save', (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { mode } = args as { mode: CustomMode };
+    if (!mode || typeof mode !== 'object') {
+      throw new Error('Invalid mode object');
+    }
+    if (typeof mode.id !== 'string' || mode.id.length === 0) {
+      throw new Error('Mode must have an id');
+    }
+    if (typeof mode.name !== 'string' || mode.name.length === 0 || mode.name.length > 30) {
+      throw new Error('Mode name must be 1-30 characters');
+    }
+    if (typeof mode.systemPrompt !== 'string' || mode.systemPrompt.length < 10 || mode.systemPrompt.length > 2000) {
+      throw new Error('System prompt must be 10-2000 characters');
+    }
+    if (typeof mode.color !== 'string') {
+      throw new Error('Mode must have a color');
+    }
+
+    try {
+      const settings = getSettings();
+      const customModes = settings.customModes || [];
+      const existingIndex = customModes.findIndex((m) => m.id === mode.id);
+
+      const savedMode: CustomMode = {
+        ...mode,
+        isBuiltIn: false as const,
+        updatedAt: new Date().toISOString(),
+        createdAt: existingIndex >= 0 ? customModes[existingIndex].createdAt : new Date().toISOString(),
+      };
+
+      if (existingIndex >= 0) {
+        customModes[existingIndex] = savedMode;
+      } else {
+        customModes.push(savedMode);
+      }
+
+      setNestedSetting('customModes', customModes);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to save mode',
+      };
+    }
+  });
+
+  ipcMain.handle('modes:delete', (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { id } = args as { id: string };
+    if (typeof id !== 'string' || id.length === 0) {
+      throw new Error('ID must be a non-empty string');
+    }
+
+    try {
+      const settings = getSettings();
+      const customModes = (settings.customModes || []).filter((m) => m.id !== id);
+      setNestedSetting('customModes', customModes);
+
+      // Reset activeMode if deleted mode was active
+      if (settings.activeMode === id) {
+        setNestedSetting('activeMode', 'general');
+      }
+
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete mode',
+      };
+    }
   });
 }

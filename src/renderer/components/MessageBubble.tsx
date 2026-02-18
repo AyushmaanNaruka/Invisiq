@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Copy, Check, AlertCircle } from 'lucide-react';
+import { Copy, Check, AlertCircle, ClipboardPaste, Loader2 } from 'lucide-react';
 import CodeBlock from './CodeBlock';
+import { useToast } from './Toast';
 import type { ChatMessage } from '@shared/types';
 
 interface MessageBubbleProps {
@@ -11,6 +12,8 @@ interface MessageBubbleProps {
 
 export default function MessageBubble({ message, isStreaming }: MessageBubbleProps): JSX.Element {
   const [copied, setCopied] = useState(false);
+  const [pasting, setPasting] = useState(false);
+  const { showToast } = useToast();
 
   const handleCopy = async (): Promise<void> => {
     try {
@@ -18,6 +21,23 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {}
+  };
+
+  const handlePaste = async (): Promise<void> => {
+    if (pasting) return;
+    setPasting(true);
+    try {
+      const result = await window.ghostAPI.clipboard.smartPaste(message.content);
+      if (result.success) {
+        showToast('success', 'Pasted to active app');
+      } else {
+        showToast('error', result.error || 'Paste failed');
+      }
+    } catch {
+      showToast('error', 'Paste failed');
+    } finally {
+      setPasting(false);
+    }
   };
 
   // Error messages
@@ -148,6 +168,23 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
                 <>
                   <Copy size={10} />
                   Copy
+                </>
+              )}
+            </button>
+            <button
+              onClick={handlePaste}
+              disabled={pasting}
+              className="flex items-center gap-1 text-[10px] text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors"
+            >
+              {pasting ? (
+                <>
+                  <Loader2 size={10} className="animate-spin" />
+                  Pasting...
+                </>
+              ) : (
+                <>
+                  <ClipboardPaste size={10} />
+                  Paste
                 </>
               )}
             </button>

@@ -75,9 +75,11 @@ export function getOverlayWindow(): BrowserWindow | null {
 
 export function showOverlay(): void {
   if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.setAlwaysOnTop(true); // Restore always-on-top (may have been dropped for smart paste)
     overlayWindow.show();
     ensureContentProtection(overlayWindow);
     overlayWindow.webContents.send('overlay:visibility-changed', { visible: true });
+    console.log('[Overlay] showOverlay — visible, alwaysOnTop restored');
   }
 }
 
@@ -85,6 +87,7 @@ export function hideOverlay(): void {
   if (overlayWindow && !overlayWindow.isDestroyed()) {
     overlayWindow.hide();
     overlayWindow.webContents.send('overlay:visibility-changed', { visible: false });
+    console.log('[Overlay] hideOverlay — hidden');
   }
 }
 

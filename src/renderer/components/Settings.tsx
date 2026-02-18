@@ -1,11 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Eye, EyeOff, Check, AlertCircle, Loader2, Trash2 } from 'lucide-react';
 import { providerManager } from '../services/ai-providers/provider-manager';
-import type { ProviderID } from '@shared/types';
+import SettingsHotkeys from './SettingsHotkeys';
+import SettingsDisplay from './SettingsDisplay';
+import SettingsPrivacy from './SettingsPrivacy';
+import { DEFAULT_HOTKEYS } from '@shared/constants';
+import type { ProviderID, AppSettings, HotkeyAction } from '@shared/types';
 
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
+  settings: AppSettings;
+  onUpdateSetting: (key: string, value: unknown) => Promise<void>;
 }
 
 interface KeyState {
@@ -23,7 +29,7 @@ const PROVIDERS: { id: ProviderID; name: string; placeholder: string }[] = [
 
 type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy';
 
-export default function Settings({ isOpen, onClose }: SettingsProps): JSX.Element | null {
+export default function Settings({ isOpen, onClose, settings, onUpdateSetting }: SettingsProps): JSX.Element | null {
   const [activeTab, setActiveTab] = useState<TabId>('api-keys');
   const [keys, setKeys] = useState<Record<ProviderID, KeyState>>({
     openai: { value: '', masked: true, status: 'idle' },
@@ -241,10 +247,44 @@ export default function Settings({ isOpen, onClose }: SettingsProps): JSX.Elemen
             </div>
           )}
 
-          {activeTab !== 'api-keys' && (
-            <div className="flex flex-col items-center justify-center h-40 text-text-secondary text-sm">
-              <p>Coming soon</p>
-            </div>
+          {activeTab === 'hotkeys' && (
+            <SettingsHotkeys
+              hotkeys={settings.hotkeys}
+              onUpdate={async (action: HotkeyAction, shortcut: string) => {
+                const result = await window.ghostAPI.hotkeys.update(action, shortcut);
+                if (result.success) {
+                  await onUpdateSetting(`hotkeys.${action}`, shortcut);
+                }
+                return result;
+              }}
+              onResetAll={async () => {
+                for (const [action, shortcut] of Object.entries(DEFAULT_HOTKEYS)) {
+                  await window.ghostAPI.hotkeys.update(action, shortcut);
+                  await onUpdateSetting(`hotkeys.${action}`, shortcut);
+                }
+              }}
+            />
+          )}
+
+          {activeTab === 'display' && (
+            <SettingsDisplay
+              settings={settings.display}
+              onUpdate={onUpdateSetting}
+            />
+          )}
+
+          {activeTab === 'privacy' && (
+            <SettingsPrivacy
+              settings={settings.privacy}
+              onUpdate={onUpdateSetting}
+              onClearAll={async () => {
+                await window.ghostAPI.store.clearAll();
+                await window.ghostAPI.conversation.deleteAll();
+              }}
+              onOpenDataFolder={async () => {
+                await window.ghostAPI.app.openDataFolder();
+              }}
+            />
           )}
         </div>
       </div>

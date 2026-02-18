@@ -88,9 +88,12 @@ ghostai/
 │   │   ├── hotkeys.ts                # globalShortcut registration
 │   │   ├── screenshot.ts             # desktopCapturer, full + region capture
 │   │   ├── region-selector.ts        # Temporary full-screen selection window
-│   │   ├── stealth.ts                # Process disguise, taskbar hiding
+│   │   ├── stealth.ts                # Process disguise, stealth watchdog, alt-tab hiding
 │   │   ├── store.ts                  # electron-store with AES-256 encryption
-│   │   └── ipc-handlers.ts           # All ipcMain.handle() registrations
+│   │   ├── ipc-handlers.ts           # All ipcMain.handle() registrations
+│   │   ├── conversations.ts          # Filesystem-based conversation CRUD (Phase 2)
+│   │   ├── clipboard.ts              # Smart paste via PowerShell SendKeys (Phase 2)
+│   │   └── clipboard-monitor.ts      # Clipboard polling monitor (Phase 2)
 │   │
 │   ├── preload/
 │   │   └── index.ts                  # contextBridge — exposes ghostAPI to renderer
@@ -102,15 +105,21 @@ ghostai/
 │   │   │
 │   │   ├── components/
 │   │   │   ├── HeaderBar.tsx         # Drag handle, mode/model selectors, settings
-│   │   │   ├── ChatPanel.tsx         # Message list, scroll, welcome screen
-│   │   │   ├── MessageBubble.tsx     # Single message with markdown rendering
-│   │   │   ├── CodeBlock.tsx         # Syntax highlighted code + copy button
-│   │   │   ├── InputArea.tsx         # Text input, send/stop, screenshot attach
+│   │   │   ├── ChatPanel.tsx         # Message list, scroll, keyboard nav, welcome screen
+│   │   │   ├── MessageBubble.tsx     # Single message with markdown + copy/paste
+│   │   │   ├── CodeBlock.tsx         # Syntax highlighted code + copy/paste buttons
+│   │   │   ├── InputArea.tsx         # Text input, send/stop, screenshot, mic
 │   │   │   ├── StatusBar.tsx         # Connection dot, token count, status
-│   │   │   ├── Settings.tsx          # Slide-in panel with tabs
-│   │   │   ├── ModeSelector.tsx      # Dropdown: General/Coding/Meeting/Exam
+│   │   │   ├── Settings.tsx          # Slide-in panel with 4 tab components
+│   │   │   ├── SettingsHotkeys.tsx   # Hotkey recording + conflict detection (Phase 2)
+│   │   │   ├── SettingsDisplay.tsx   # Theme, opacity, font size, window size (Phase 2)
+│   │   │   ├── SettingsPrivacy.tsx   # Toggles, process name, clear data (Phase 2)
+│   │   │   ├── ModeSelector.tsx      # Dropdown: built-in + custom modes
 │   │   │   ├── ModelSelector.tsx     # Dropdown: grouped by provider
 │   │   │   ├── OpacityControl.tsx    # Slider for window opacity
+│   │   │   ├── CustomModeEditor.tsx  # Modal for creating/editing custom modes (Phase 2)
+│   │   │   ├── ConversationHistory.tsx # Slide-in history panel with search (Phase 2)
+│   │   │   ├── Toast.tsx             # Toast notification system (Phase 2)
 │   │   │   ├── RegionOverlay.tsx     # Full-screen region selection UI
 │   │   │   └── Onboarding.tsx        # First-launch setup wizard
 │   │   │
@@ -119,7 +128,9 @@ ghostai/
 │   │   │   ├── useScreenshot.ts      # Screenshot state, auto-attach
 │   │   │   ├── useSettings.ts        # Settings read/write via IPC
 │   │   │   ├── useHotkeys.ts         # Listen for hotkey events from main
-│   │   │   └── useConversation.ts    # Message history, context management
+│   │   │   ├── useConversation.ts    # Message history, persistence, auto-save (Phase 2)
+│   │   │   ├── useConversationHistory.ts # Conversation list, search, export (Phase 2)
+│   │   │   └── useAudioTranscription.ts  # Speech-to-text hook (Phase 2)
 │   │   │
 │   │   ├── services/
 │   │   │   ├── ai-providers/
@@ -128,17 +139,18 @@ ghostai/
 │   │   │   │   ├── openai.ts         # OpenAI adapter
 │   │   │   │   ├── anthropic.ts      # Anthropic adapter
 │   │   │   │   └── gemini.ts         # Google Gemini adapter
+│   │   │   ├── speech.ts             # SpeechService: Web Speech + Whisper (Phase 2)
 │   │   │   └── ocr-service.ts        # Tesseract.js wrapper
 │   │   │
 │   │   ├── styles/
-│   │   │   └── globals.css           # Tailwind directives + custom CSS
+│   │   │   └── globals.css           # Tailwind directives + custom CSS + animations
 │   │   │
 │   │   └── types/
-│   │       └── global.d.ts           # Window.ghostAPI type declarations
+│   │       └── global.d.ts           # Window.ghostAPI + SpeechRecognition types
 │   │
 │   └── shared/                       # Types shared between main + renderer
-│       ├── types.ts                  # AppSettings, ChatMessage, etc.
-│       ├── constants.ts              # Default hotkeys, modes, colors
+│       ├── types.ts                  # AppSettings, ChatMessage, SpeechEngine, etc.
+│       ├── constants.ts              # Default hotkeys, modes, colors, audio defaults
 │       └── errors.ts                 # GhostAIError enum + helpers
 │
 ├── assets/
@@ -236,7 +248,18 @@ screenshot:capture-full   screenshot:capture-region
 store:get             store:set             store:set-api-key
 hotkeys:register-all  hotkeys:update        hotkeys:triggered
 clipboard:copy        clipboard:smart-paste
-app:get-info          app:quit
+clipboard:start-monitor   clipboard:stop-monitor  clipboard:monitor-status
+conversation:save     conversation:load     conversation:list
+conversation:delete   conversation:search   conversation:export
+conversation:delete-all
+modes:list            modes:save            modes:delete
+app:get-info          app:quit              app:open-data-folder
+```
+
+Renderer event channels (main → renderer):
+```
+hotkeys:triggered     overlay:visibility-changed
+screenshot:captured   app:error             clipboard:changed
 ```
 
 Full IPC contract is in `docs/GhostAI-API-Contract.md` Section 2.
@@ -560,48 +583,45 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 
 ## Development Phases
 
-### Phase 1 — Core MVP (Current Priority)
+### Phase 1 — Core MVP (COMPLETE)
 
-**Sprint 1 (Days 1-3):** Invisible overlay + hotkeys
-- [ ] Electron project setup with Vite + React + TypeScript
-- [ ] BrowserWindow with `setContentProtection(true)`
-- [ ] Global hotkey registration (toggle, capture, hide)
-- [ ] Stealth verification across Zoom/Meet/Teams/OBS
+**Sprint 1-4:** Invisible overlay + hotkeys, screen capture + AI integration, chat UI, integration + packaging. All done.
 
-**Sprint 2 (Days 4-7):** Screen capture + AI integration
-- [ ] Full-screen capture via `desktopCapturer`
-- [ ] Region selection window
-- [ ] AI provider abstraction layer (`types.ts`)
-- [ ] OpenAI adapter with streaming
-- [ ] Anthropic adapter with streaming
-- [ ] Gemini adapter with streaming
-- [ ] Settings panel for API key management
+### Phase 2 — Enhanced (COMPLETE)
 
-**Sprint 3 (Days 8-11):** Chat UI
-- [ ] Chat panel with message bubbles
-- [ ] Markdown rendering (react-markdown)
-- [ ] Code block syntax highlighting + copy
-- [ ] Streaming token display
-- [ ] Multi-turn conversation context
-- [ ] Input area with screenshot attachment
+**Sprint 5:** Chat Persistence + Conversation History UI
+- [x] Filesystem-based conversation storage (JSON per conversation)
+- [x] 7 new IPC channels for conversation CRUD
+- [x] Conversation history slide-in panel (search, delete, export)
+- [x] Auto-save (debounced 500ms), auto-title generation
+- [x] History + New Chat buttons in header
 
-**Sprint 4 (Days 12-14):** Integration + packaging
-- [ ] End-to-end flow: hotkey → capture → AI → response
-- [ ] Status bar (connection, tokens, streaming)
-- [ ] electron-builder packaging for Windows
-- [ ] Bug fixes and performance tuning
+**Sprint 6:** Smart Modes + Custom Modes + Settings Tabs
+- [x] Enhanced built-in mode prompts (General, Coding, Meeting, Exam)
+- [x] Custom mode CRUD (create, edit, delete with color picker)
+- [x] CustomModeEditor modal component
+- [x] SettingsHotkeys tab (shortcut recording, conflict detection, reset)
+- [x] SettingsDisplay tab (theme, opacity, font size, window size, position)
+- [x] SettingsPrivacy tab (toggles, process name, clear data, open data folder)
 
-### Phase 2 — Enhanced (Weeks 3-4)
-- Audio transcription
-- Smart modes (Coding, Meeting, Exam)
-- Chat history persistence
-- Clipboard integration
+**Sprint 7:** Clipboard Integration + Smart Paste + Toast
+- [x] Smart paste via PowerShell SendKeys (hide overlay, Ctrl+V, restore)
+- [x] Clipboard polling monitor (3s interval, MD5 hash comparison)
+- [x] Toast notification system (success/error/info, auto-dismiss, stacked)
+- [x] "Paste to App" buttons on messages and code blocks
 
-### Phase 3 — Polish (Weeks 5-6)
-- Process stealth (rename, memory optimization)
-- UI polish and animations
+**Sprint 8:** Audio Transcription + Process Stealth + Polish
+- [x] Dual speech engine: Web Speech API (free) + Whisper API (paid)
+- [x] Mic button in InputArea with recording pulse animation
+- [x] Audio transcription hook with interim results
+- [x] Enhanced stealth: process disguise, alt-tab hiding, stealth watchdog
+- [x] UI polish: keyboard navigation, focus-visible, reduced motion, selection styles
+
+### Phase 3 — Future Enhancements
 - Multi-monitor support
 - Auto-updater
+- Plugin system
+- Custom themes
 
 ---
 
@@ -680,5 +700,5 @@ npm install @types/uuid --save-dev
 
 ---
 
-*Last updated: February 18, 2026*
+*Last updated: February 18, 2026 (Phase 2 complete)*
 *This file should be updated whenever major architecture decisions change.*

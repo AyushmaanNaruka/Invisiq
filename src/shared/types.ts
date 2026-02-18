@@ -107,6 +107,18 @@ export interface Conversation {
   estimatedCost: number;
 }
 
+export interface ConversationMeta {
+  id: string;
+  title: string;
+  preview: string;
+  mode: string;
+  model: string;
+  messageCount: number;
+  tokenCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ══════════════════════════════════════
 //  MODES
 // ══════════════════════════════════════
@@ -124,6 +136,12 @@ export interface CustomMode extends Mode {
   createdAt: string;
   updatedAt: string;
 }
+
+// ══════════════════════════════════════
+//  AUDIO
+// ══════════════════════════════════════
+
+export type SpeechEngine = 'browser' | 'whisper';
 
 // ══════════════════════════════════════
 //  APPLICATION SETTINGS
@@ -165,6 +183,12 @@ export interface AppSettings {
   };
 
   customModes: CustomMode[];
+
+  audio: {
+    engine: SpeechEngine;
+    language: string;
+    autoIncludeTranscript: boolean;
+  };
 
   isFirstLaunch: boolean;
   onboardingComplete: boolean;

@@ -1,18 +1,23 @@
-import { GripVertical, Settings, X } from 'lucide-react';
+import { GripVertical, Settings, X, Clock, Plus } from 'lucide-react';
 import ModeSelector from './ModeSelector';
 import ModelSelector from './ModelSelector';
 import OpacityControl from './OpacityControl';
-import type { ProviderID } from '@shared/types';
+import type { ProviderID, CustomMode } from '@shared/types';
 
 interface HeaderBarProps {
   activeMode: string;
   activeModel: string;
   opacity: number;
   availableProviders: Set<ProviderID>;
+  customModes: CustomMode[];
   onModeChange: (modeId: string) => void;
   onModelChange: (modelId: string) => void;
   onOpacityChange: (opacity: number) => void;
   onOpenSettings: () => void;
+  onOpenHistory: () => void;
+  onNewConversation: () => void;
+  onCreateMode: () => void;
+  onEditMode: (mode: CustomMode) => void;
   onClose: () => void;
 }
 
@@ -21,10 +26,15 @@ export default function HeaderBar({
   activeModel,
   opacity,
   availableProviders,
+  customModes,
   onModeChange,
   onModelChange,
   onOpacityChange,
   onOpenSettings,
+  onOpenHistory,
+  onNewConversation,
+  onCreateMode,
+  onEditMode,
   onClose,
 }: HeaderBarProps): JSX.Element {
   return (
@@ -37,8 +47,29 @@ export default function HeaderBar({
         <GripVertical size={14} />
       </div>
 
+      {/* History + New Chat buttons */}
+      <div className="flex items-center gap-0.5 no-drag mr-1">
+        <button
+          onClick={onOpenHistory}
+          className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
+          title="Conversation history"
+        >
+          <Clock size={13} />
+        </button>
+        <button
+          onClick={onNewConversation}
+          className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
+          title="New conversation"
+        >
+          <Plus size={13} />
+        </button>
+      </div>
+
+      {/* Separator */}
+      <div className="w-px h-4 bg-border-subtle mx-1" />
+
       {/* Mode selector */}
-      <ModeSelector activeMode={activeMode} onModeChange={onModeChange} />
+      <ModeSelector activeMode={activeMode} customModes={customModes} onModeChange={onModeChange} onCreateMode={onCreateMode} onEditMode={onEditMode} />
 
       {/* Separator */}
       <div className="w-px h-4 bg-border-subtle mx-1" />
