@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-2.0.0-00B894?style=for-the-badge&labelColor=1a1a2e" alt="Version" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-1.1.0-00B894?style=for-the-badge&labelColor=1a1a2e" alt="Version" /></a>
   <a href="#"><img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4?style=for-the-badge&logo=windows&logoColor=white&labelColor=1a1a2e" alt="Platform" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-FDCB6E?style=for-the-badge&labelColor=1a1a2e" alt="License" /></a>
   <a href="#"><img src="https://img.shields.io/badge/electron-33+-47848F?style=for-the-badge&logo=electron&logoColor=white&labelColor=1a1a2e" alt="Electron" /></a>
@@ -13,6 +13,7 @@
   <a href="#"><img src="https://img.shields.io/badge/OpenAI-supported-412991?style=flat-square&logo=openai&logoColor=white" alt="OpenAI" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Anthropic-supported-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Anthropic" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Google%20Gemini-supported-4285F4?style=flat-square&logo=googlegemini&logoColor=white" alt="Gemini" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/Ollama-supported-ffffff?style=flat-square&logo=ollama&logoColor=black" alt="Ollama" /></a>
 </p>
 
 ---
@@ -23,7 +24,7 @@
 
 GhostAI is a desktop overlay that sits on top of every application on your screen — completely invisible to all screen capture, screen sharing, recording software, and proctoring tools. It uses Windows' native `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` API to make the overlay window undetectable.
 
-Capture your screen, ask questions, get real-time AI responses with streaming — all through a sleek dark interface controlled entirely by keyboard shortcuts. Bring your own API keys. Zero cloud dependency. Everything stays on your machine.
+Capture your screen, ask questions, get real-time AI responses with streaming — all through a sleek interface (dark or light theme) controlled entirely by keyboard shortcuts. Connect cloud AI providers with your own API keys, or run fully local with Ollama. Zero cloud dependency. Everything stays on your machine.
 
 <br/>
 
@@ -40,7 +41,7 @@ The window is **excluded from all capture APIs** at the OS level. Snipping Tool,
 <td width="50%" valign="top">
 
 ### Multi-Provider AI
-Connect to **OpenAI**, **Anthropic Claude**, or **Google Gemini** with your own API keys. Switch models mid-conversation. Stream responses token-by-token with real-time rendering.
+Connect to **OpenAI**, **Anthropic Claude**, **Google Gemini**, or run fully local with **Ollama**. Switch models mid-conversation. Stream responses token-by-token with real-time rendering. Ollama models are always free.
 
 </td>
 </tr>
@@ -48,7 +49,7 @@ Connect to **OpenAI**, **Anthropic Claude**, or **Google Gemini** with your own 
 <td width="50%" valign="top">
 
 ### Screen Capture + Vision
-Full-screen or region capture with a crosshair selector. Screenshots are sent directly to AI vision models. Attach up to **3 screenshots per message**. The capture UI itself is also invisible.
+Full-screen or region capture with a crosshair selector. Screenshots are sent directly to AI vision models. Attach up to **3 screenshots per message**. Multi-monitor aware — captures the correct display.
 
 </td>
 <td width="50%" valign="top">
@@ -61,42 +62,70 @@ API keys are encrypted with a machine-specific key derived via **PBKDF2** (100k 
 <tr>
 <td width="50%" valign="top">
 
-### Global Hotkeys
-Every action is a keyboard shortcut away. Toggle visibility, capture screens, start new conversations, copy responses — all without touching the mouse or leaving your current app.
+### Multi-Monitor Support
+Monitor detection with hot-plug events. Screenshots capture the correct display. Region selector opens on the monitor where your cursor is. Overlay position validated against connected displays.
 
 </td>
+<td width="50%" valign="top">
+
+### Dark & Light Themes
+Full dark and light color palettes via CSS custom properties. Toggle in Display settings. Syntax highlighting adapts to the active theme. All Tailwind opacity modifiers work with both themes.
+
+</td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 
 ### Smart Modes
 Four built-in modes with tuned system prompts: **General**, **Coding**, **Meeting**, and **Exam**. Create your own custom modes with personalized system prompts and colors.
 
 </td>
-</tr>
-<tr>
 <td width="50%" valign="top">
 
 ### Chat History & Persistence
 Conversations auto-save with debounced persistence. Browse, search, and export your full conversation history. Restore mode and model when loading past sessions.
 
 </td>
+</tr>
+<tr>
 <td width="50%" valign="top">
 
 ### Smart Paste & Clipboard
 Copy AI responses or code blocks directly into any application with **Smart Paste** — the overlay hides, activates the target window, and simulates Ctrl+V. Clipboard monitoring detects external changes.
 
 </td>
+<td width="50%" valign="top">
+
+### Voice Input (Speech-to-Text)
+Dual engine speech recognition: **Web Speech API** (free, browser-native) with automatic fallback to **OpenAI Whisper** (paid, higher accuracy). Live transcript panel with recording timer. Meeting mode auto-context.
+
+</td>
 </tr>
 <tr>
 <td width="50%" valign="top">
 
-### Voice Input (Speech-to-Text)
-Dual engine speech recognition: **Web Speech API** (free, browser-native) with automatic fallback to **OpenAI Whisper** (paid, higher accuracy). Live transcript panel with recording timer. Audio settings for engine, language, and meeting auto-context.
+### Cost Tracking
+Per-request, per-conversation, and per-session token and cost tracking. Status bar shows conversation tokens and estimated cost. Hover tooltip with full breakdown. Ollama models always show "Free".
 
 </td>
 <td width="50%" valign="top">
 
+### Auto-Updater
+Automatic update checks via GitHub Releases. Toast notifications for available and downloaded updates. Manual download and install-on-restart flow. "Check for Updates" button in settings.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
 ### Enhanced Stealth
 Process disguise randomizes the app's visible process name. Alt-Tab hiding removes the overlay from the task switcher. A stealth watchdog continuously re-enforces content protection.
+
+</td>
+<td width="50%" valign="top">
+
+### Responsive Layout
+Adapts to any window size. Compact mode (< 350px) abbreviates controls. Expanded mode (> 600px) shows full labels. Settings and history panels go full-width in compact mode.
 
 </td>
 </tr>
@@ -115,6 +144,9 @@ Process disguise randomizes the app's visible process name. Alt-Tab hiding remov
 | **Anthropic** | Claude Haiku 4.5 | Yes | 200K | Fast |
 | **Google** | Gemini 2.0 Flash | Yes | 1M | Fast |
 | **Google** | Gemini 2.5 Pro | Yes | 1M | Medium |
+| **Ollama** | *Any local model* | Varies | Varies | Local |
+
+> Ollama models are discovered dynamically via `/api/tags`. Vision support detected automatically for llava, bakllava, moondream, etc.
 
 <br/>
 
@@ -133,10 +165,12 @@ Process disguise randomizes the app's visible process name. Alt-Tab hiding remov
 | Runtime | Electron 33+ | Desktop shell, system APIs, content protection |
 | Frontend | React 18 | Component UI with hooks |
 | Language | TypeScript 5 (strict) | Type safety across all processes |
-| Styling | TailwindCSS 3 | Utility-first dark theme |
+| Styling | TailwindCSS 3 | Utility-first theming (dark + light) |
 | Build | electron-vite 5 | Unified main/preload/renderer builds |
-| AI | openai, @anthropic-ai/sdk, @google/generative-ai | Provider SDKs with streaming |
+| AI (Cloud) | openai, @anthropic-ai/sdk, @google/generative-ai | Provider SDKs with streaming (lazy-loaded) |
+| AI (Local) | Ollama (native fetch, NDJSON) | Local LLM inference |
 | Storage | electron-store + AES-256-GCM | Encrypted key storage |
+| Updates | electron-updater | Auto-update via GitHub Releases |
 | Markdown | react-markdown + highlight.js | Rich response rendering |
 | Icons | lucide-react | UI iconography |
 | Packaging | electron-builder | Windows NSIS installer |
@@ -153,6 +187,10 @@ Process disguise randomizes the app's visible process name. Alt-Tab hiding remov
 │  │ Overlay  │  │ Hotkeys  │  │Screenshot │  │  Store    │  │
 │  │ Window   │  │ Manager  │  │ Capture   │  │ (AES-256) │  │
 │  └──────────┘  └──────────┘  └───────────┘  └───────────┘  │
+│  ┌──────────┐  ┌──────────┐  ┌───────────┐  ┌───────────┐  │
+│  │ Monitor  │  │ Updater  │  │  Stealth  │  │  System   │  │
+│  │ Manager  │  │          │  │ Watchdog  │  │  Tray     │  │
+│  └──────────┘  └──────────┘  └───────────┘  └───────────┘  │
 │       │              │              │              │         │
 │       └──────────────┴──────────────┴──────────────┘         │
 │                          IPC Bridge                          │
@@ -162,18 +200,18 @@ Process disguise randomizes the app's visible process name. Alt-Tab hiding remov
 │                    RENDERER PROCESS                          │
 │                                                             │
 │  ┌──────────┐  ┌──────────┐  ┌───────────┐  ┌───────────┐  │
-│  │ Chat UI  │  │ AI       │  │ Settings  │  │ Mode      │  │
-│  │ Panel    │  │ Providers│  │ Panel     │  │ Selector  │  │
+│  │ Chat UI  │  │ AI       │  │ Settings  │  │ Onboarding│  │
+│  │ Panel    │  │ Providers│  │ Panel     │  │ Wizard    │  │
 │  └──────────┘  └──────────┘  └───────────┘  └───────────┘  │
 │                                                             │
-│  OpenAI SDK ──── Anthropic SDK ──── Google GenAI SDK        │
-│      ↕                ↕                   ↕                 │
-│  api.openai.com   api.anthropic.com   googleapis.com        │
+│  OpenAI ─── Anthropic ─── Gemini ─── Ollama (local)        │
+│    ↕             ↕            ↕          ↕                  │
+│  Cloud API    Cloud API   Cloud API  localhost:11434        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-> All AI API calls happen in the renderer process via browser-compatible SDKs.
-> The main process handles CORS header injection so SDKs work without a proxy.
+> AI SDKs are lazy-loaded on first use (~4MB saved at startup).
+> All cloud AI calls happen in the renderer. Ollama connects to localhost.
 
 <br/>
 
@@ -184,7 +222,7 @@ Process disguise randomizes the app's visible process name. Alt-Tab hiding remov
 - **Node.js** 18+
 - **npm** 9+
 - **Windows 10** version 2004 or later (required for `WDA_EXCLUDEFROMCAPTURE`)
-- API key from at least one provider: [OpenAI](https://platform.openai.com/api-keys) / [Anthropic](https://console.anthropic.com/) / [Google AI Studio](https://aistudio.google.com/apikey)
+- API key from at least one provider: [OpenAI](https://platform.openai.com/api-keys) / [Anthropic](https://console.anthropic.com/) / [Google AI Studio](https://aistudio.google.com/apikey) — or install [Ollama](https://ollama.com/) for free local AI
 
 ### Install & Run
 
@@ -206,20 +244,28 @@ npm run dev
 # Production build
 npm run build
 
+# Pre-build verification (stealth + security checks)
+npm run verify
+
 # Package as Windows installer (.exe)
 npm run package
+
+# Package unpacked for testing
+npm run package:dir
 ```
 
 ### First Launch
 
-1. Press **Ctrl+Shift+G** to toggle the overlay
-2. Click the gear icon to open **Settings**
-3. Enter your API key for any provider and click **Test Key**
+1. The **onboarding wizard** guides you through API key setup, hotkey reference, and a stealth self-test
+2. Or skip onboarding and press **Ctrl+Shift+G** to toggle the overlay
+3. Click the gear icon to open **Settings** and enter your API key
 4. Close settings — you're ready to go
 
 <br/>
 
 ## Keyboard Shortcuts
+
+### Global Hotkeys (work from any app)
 
 | Shortcut | Action |
 |:---------|:-------|
@@ -231,6 +277,14 @@ npm run package
 | `Ctrl+Shift+V` | Paste last AI response to active app |
 | `Ctrl+Alt+N` | New conversation |
 | `Escape` | Hide overlay |
+
+### Internal Shortcuts (when overlay is focused)
+
+| Shortcut | Action |
+|:---------|:-------|
+| `Ctrl+,` | Toggle Settings panel |
+| `Ctrl+L` | Clear conversation (double-press) |
+| `Ctrl+K` | Open conversation search |
 
 <br/>
 
@@ -250,11 +304,13 @@ npm run package
 | Aspect | Implementation |
 |:-------|:---------------|
 | **Window Invisibility** | `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` via Electron's `setContentProtection(true)` |
+| **Stealth Watchdog** | Re-applies content protection every 2 seconds to guard against state drops |
 | **Key Encryption** | AES-256-GCM with PBKDF2-derived machine-specific key (100K iterations, SHA-512) |
 | **Process Isolation** | `contextIsolation: true`, `nodeIntegration: false`, IPC-only communication |
 | **Data Residency** | All data stored locally via `electron-store`. Zero cloud storage. Zero telemetry. |
 | **API Architecture** | BYOK (Bring Your Own Key). Direct API calls to providers. No intermediary servers. |
 | **Screenshot Lifecycle** | Screenshots cleared from memory after sending. Not persisted to disk. |
+| **Process Disguise** | Configurable process name in Task Manager (default: `SystemHelper`) |
 
 <br/>
 
@@ -277,7 +333,10 @@ ghostai/
 │   │   ├── ipc-handlers.ts      # All IPC channel handlers
 │   │   ├── conversations.ts     # Filesystem-based conversation CRUD
 │   │   ├── clipboard.ts         # Smart paste via PowerShell SendKeys
-│   │   └── clipboard-monitor.ts # Clipboard polling monitor
+│   │   ├── clipboard-monitor.ts # Clipboard polling monitor
+│   │   ├── monitors.ts          # Multi-monitor detection + management
+│   │   ├── updater.ts           # electron-updater auto-update
+│   │   └── tray.ts              # Optional system tray icon
 │   │
 │   ├── preload/
 │   │   └── index.ts             # contextBridge API surface
@@ -287,30 +346,33 @@ ghostai/
 │   │   ├── components/          # HeaderBar, ChatPanel, MessageBubble,
 │   │   │                        # CodeBlock, InputArea, Settings,
 │   │   │                        # ConversationHistory, CustomModeEditor,
-│   │   │                        # Toast, TranscriptPanel, SettingsHotkeys,
-│   │   │                        # SettingsDisplay, SettingsPrivacy,
-│   │   │                        # SettingsAudio, etc.
+│   │   │                        # Toast, TranscriptPanel, OnboardingFlow,
+│   │   │                        # UpdateNotification, Settings tabs
 │   │   ├── hooks/               # useAI, useScreenshot, useSettings,
 │   │   │                        # useHotkeys, useConversation,
-│   │   │                        # useConversationHistory,
+│   │   │                        # useConversationHistory, useTokenCost,
+│   │   │                        # useWindowSize, useInternalKeyboard,
 │   │   │                        # useAudioTranscription
 │   │   ├── services/
-│   │   │   ├── ai-providers/    # OpenAI, Anthropic, Gemini adapters
+│   │   │   ├── ai-providers/    # OpenAI, Anthropic, Gemini, Ollama
 │   │   │   └── speech.ts        # Web Speech + Whisper fallback
 │   │   ├── styles/
-│   │   │   └── globals.css      # Tailwind + custom dark theme
+│   │   │   └── globals.css      # Tailwind + dark/light themes
 │   │   └── types/
 │   │       └── global.d.ts      # Window.ghostAPI declarations
 │   │
 │   └── shared/                  # Cross-process types & constants
 │       ├── types.ts
 │       ├── constants.ts
-│       └── errors.ts
+│       ├── errors.ts
+│       └── logger.ts
 │
-├── docs/                        # PRD, Wireframes, API Contract, Planning
-├── electron.vite.config.ts
+├── docs/                        # PRD, Wireframes, API Contract, Testing
+├── scripts/
+│   └── verify-build.ts          # Pre-build security/stealth checks
+├── electron-builder.yml
 ├── tailwind.config.ts
-├── tsconfig.json
+├── CHANGELOG.md
 └── package.json
 ```
 
@@ -340,21 +402,29 @@ ghostai/
 - [x] Voice input — dual engine: Web Speech API + OpenAI Whisper fallback
 - [x] Live transcript panel with recording timer and collapse/clear controls
 - [x] Meeting mode auto-context — transcript injected into AI prompts automatically
-- [x] Settings: Hotkeys tab (recording, conflict detection, reset to defaults)
-- [x] Settings: Display tab (theme, opacity, font size, window size, position)
-- [x] Settings: Privacy tab (toggles, process name, clear data)
-- [x] Settings: Audio tab (speech engine, language, auto-include transcript)
+- [x] Settings: Hotkeys, Display, Privacy, Audio tabs
 - [x] Enhanced stealth (process disguise, alt-tab hiding, stealth watchdog)
 - [x] Toast notification system (success, error, info with auto-dismiss)
-- [x] Skeleton loaders for conversation history panel
 - [x] Flicker-free streaming (memoized markdown components + virtual highlighting)
-- [x] UI polish (keyboard nav, focus-visible, reduced motion, animations)
 
-### Phase 3 — Future
-- [ ] Multi-monitor support
-- [ ] Auto-updater
+### Phase 3 — Production Polish
+- [x] Multi-monitor support with hot-plug detection
+- [x] 3-step onboarding wizard (API keys, hotkeys, stealth test)
+- [x] Ollama local AI provider (NDJSON streaming, vision, free)
+- [x] Light theme with full dark/light toggle
+- [x] Per-request/conversation/session cost tracking
+- [x] Auto-updater via GitHub Releases with toast UI
+- [x] Responsive layout (compact / normal / expanded)
+- [x] Internal keyboard shortcuts (Ctrl+, Ctrl+L, Ctrl+K)
+- [x] Optional system tray icon
+- [x] Lazy-loaded AI SDKs (~4MB saved at startup)
+- [x] Build verification script + testing documentation
+- [x] NSIS installer with stealth options
+
+### Phase 4 — Future
 - [ ] Plugin system
-- [ ] Custom themes
+- [ ] Voice-to-voice conversation mode
+- [ ] Multi-window support
 - [ ] macOS support
 
 <br/>
@@ -369,6 +439,9 @@ npm run typecheck
 
 # Lint
 npm run lint
+
+# Pre-build verification
+npm run verify
 
 # Build
 npm run build
