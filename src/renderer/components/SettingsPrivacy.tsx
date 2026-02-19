@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Trash2, FolderOpen, Shield } from 'lucide-react';
+import { Trash2, FolderOpen, Shield, RefreshCw, Monitor } from 'lucide-react';
 import type { AppSettings } from '@shared/types';
 
 interface SettingsPrivacyProps {
@@ -90,6 +90,19 @@ export default function SettingsPrivacy({
             className="rounded accent-accent-primary"
           />
         </label>
+
+        <label className="flex items-center justify-between cursor-pointer">
+          <div>
+            <span className="text-text-primary text-xs block">Show System Tray Icon</span>
+            <span className="text-text-placeholder text-[10px]">Adds a tray icon for quick access. Requires restart.</span>
+          </div>
+          <input
+            type="checkbox"
+            checked={settings.showTrayIcon ?? false}
+            onChange={(e) => onUpdate('privacy.showTrayIcon', e.target.checked)}
+            className="rounded accent-accent-primary"
+          />
+        </label>
       </div>
 
       {/* Process Name */}
@@ -109,6 +122,20 @@ export default function SettingsPrivacy({
 
       {/* Actions */}
       <div className="space-y-2 pt-2 border-t border-border-subtle">
+        <button
+          onClick={async () => {
+            try {
+              await window.ghostAPI.update.check();
+            } catch {
+              // silently fail
+            }
+          }}
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+        >
+          <RefreshCw size={12} />
+          Check for Updates
+        </button>
+
         <button
           onClick={onOpenDataFolder}
           className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"

@@ -1,5 +1,8 @@
 import type { Config } from 'tailwindcss';
 
+// Helper to create rgb() with Tailwind <alpha-value> support
+const rgb = (name: string): string => `rgb(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
   content: ['./src/renderer/**/*.{tsx,ts}'],
   darkMode: 'class',
@@ -7,38 +10,38 @@ const config: Config = {
     extend: {
       colors: {
         // Background layers
-        'bg-overlay': '#1a1a2e',
-        'bg-chat': '#16213e',
-        'bg-header': '#1e1e36',
-        'bg-input': '#252547',
-        'bg-code': '#0d1117',
-        'bg-hover': '#2a2a4a',
+        'bg-overlay': rgb('bg-overlay'),
+        'bg-chat': rgb('bg-chat'),
+        'bg-header': rgb('bg-header'),
+        'bg-input': rgb('bg-input'),
+        'bg-code': rgb('bg-code'),
+        'bg-hover': rgb('bg-hover'),
 
         // Message bubbles
-        'bubble-user': '#2E75B6',
-        'bubble-ai': '#2d2d44',
-        'bubble-system': '#1a3a2a',
+        'bubble-user': rgb('bubble-user'),
+        'bubble-ai': rgb('bubble-ai'),
+        'bubble-system': rgb('bubble-system'),
 
         // Text
-        'text-primary': '#E8E8E8',
-        'text-secondary': '#8B8B9E',
-        'text-placeholder': '#5a5a7a',
-        'text-code': '#E6EDF3',
+        'text-primary': rgb('text-primary'),
+        'text-secondary': rgb('text-secondary'),
+        'text-placeholder': rgb('text-placeholder'),
+        'text-code': rgb('text-code'),
 
         // Accents
-        'accent-primary': '#00B894',
-        'accent-blue': '#2E75B6',
-        'accent-purple': '#6C5CE7',
+        'accent-primary': rgb('accent-primary'),
+        'accent-blue': rgb('accent-blue'),
+        'accent-purple': rgb('accent-purple'),
 
         // Status
-        'status-success': '#00B894',
-        'status-warning': '#FDCB6E',
-        'status-error': '#D63031',
-        'status-streaming': '#74B9FF',
+        'status-success': rgb('status-success'),
+        'status-warning': rgb('status-warning'),
+        'status-error': rgb('status-error'),
+        'status-streaming': rgb('status-streaming'),
 
         // Borders
-        'border-subtle': '#2a2a4a',
-        'border-focus': '#00B894',
+        'border-subtle': rgb('border-subtle'),
+        'border-focus': rgb('border-focus'),
       },
       fontFamily: {
         sans: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif'],

@@ -57,11 +57,20 @@ export function useScreenshot(): UseScreenshotReturn {
   }, [processResult]);
 
   const clearScreenshot = useCallback((index: number) => {
-    setPendingScreenshots((prev) => prev.filter((_, i) => i !== index));
+    setPendingScreenshots((prev) => {
+      // Null out base64 data to help GC before removing reference
+      const removed = prev[index];
+      if (removed) (removed as { data: string | null }).data = null;
+      return prev.filter((_, i) => i !== index);
+    });
   }, []);
 
   const clearAllScreenshots = useCallback(() => {
-    setPendingScreenshots([]);
+    setPendingScreenshots((prev) => {
+      // Null out all base64 data to help GC
+      prev.forEach((s) => { (s as { data: string | null }).data = null; });
+      return [];
+    });
   }, []);
 
   return {

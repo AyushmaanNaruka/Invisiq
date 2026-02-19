@@ -114,6 +114,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     openai: { hasKey: false, isValid: false },
     anthropic: { hasKey: false, isValid: false },
     gemini: { hasKey: false, isValid: false },
+    ollama: { hasKey: false, isValid: false },
   },
 
   activeProvider: 'openai',
@@ -140,6 +141,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     persistChatHistory: true,
     logApiRequests: false,
     processName: 'SystemHelper',
+    showTrayIcon: false,
   },
 
   customModes: [],
@@ -259,6 +261,8 @@ export const AI_API_DOMAINS = [
   'https://api.openai.com/*',
   'https://api.anthropic.com/*',
   'https://generativelanguage.googleapis.com/*',
+  'http://localhost:11434/*',
+  'http://127.0.0.1:11434/*',
 ];
 
 // ══════════════════════════════════════
@@ -271,4 +275,11 @@ export const VALID_RENDERER_CHANNELS = [
   'screenshot:captured',
   'app:error',
   'clipboard:changed',
+  'monitors:changed',
+  'update:checking',
+  'update:available',
+  'update:not-available',
+  'update:progress',
+  'update:downloaded',
+  'update:error',
 ] as const;

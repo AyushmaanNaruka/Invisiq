@@ -54,7 +54,9 @@ All project documentation lives in the `/docs` directory. **Read the relevant do
 | AI (Anthropic) | @anthropic-ai/sdk | latest |
 | AI (Google) | @google/generative-ai | latest |
 | OCR | tesseract.js | 5.x |
+| AI (Ollama) | Native fetch (NDJSON) | — |
 | Storage | electron-store | latest (with encryption) |
+| Auto-Update | electron-updater | latest |
 | Markdown | react-markdown + rehype-highlight | latest |
 | Code Highlight | highlight.js | latest |
 | Bundler | Vite | 5.x |
@@ -93,7 +95,10 @@ ghostai/
 │   │   ├── ipc-handlers.ts           # All ipcMain.handle() registrations
 │   │   ├── conversations.ts          # Filesystem-based conversation CRUD (Phase 2)
 │   │   ├── clipboard.ts              # Smart paste via PowerShell SendKeys (Phase 2)
-│   │   └── clipboard-monitor.ts      # Clipboard polling monitor (Phase 2)
+│   │   ├── clipboard-monitor.ts      # Clipboard polling monitor (Phase 2)
+│   │   ├── monitors.ts              # Multi-monitor detection + management (Phase 3)
+│   │   ├── updater.ts               # electron-updater auto-update (Phase 3)
+│   │   └── tray.ts                  # Optional system tray icon (Phase 3)
 │   │
 │   ├── preload/
 │   │   └── index.ts                  # contextBridge — exposes ghostAPI to renderer
@@ -123,7 +128,11 @@ ghostai/
 │   │   │   ├── ConversationHistory.tsx # Slide-in history panel with search (Phase 2)
 │   │   │   ├── Toast.tsx             # Toast notification system (Phase 2)
 │   │   │   ├── RegionOverlay.tsx     # Full-screen region selection UI
-│   │   │   └── Onboarding.tsx        # First-launch setup wizard
+│   │   │   ├── OnboardingFlow.tsx    # First-launch 3-step wizard (Phase 3)
+│   │   │   ├── OnboardingApiKey.tsx  # Onboarding step 1: API key setup (Phase 3)
+│   │   │   ├── OnboardingHotkeys.tsx # Onboarding step 2: shortcut reference (Phase 3)
+│   │   │   ├── OnboardingStealthTest.tsx # Onboarding step 3: stealth test (Phase 3)
+│   │   │   └── UpdateNotification.tsx # Auto-update toast notifications (Phase 3)
 │   │   │
 │   │   ├── hooks/
 │   │   │   ├── useAI.ts              # AI chat logic, streaming, abort
@@ -132,15 +141,19 @@ ghostai/
 │   │   │   ├── useHotkeys.ts         # Listen for hotkey events from main
 │   │   │   ├── useConversation.ts    # Message history, persistence, auto-save (Phase 2)
 │   │   │   ├── useConversationHistory.ts # Conversation list, search, export (Phase 2)
-│   │   │   └── useAudioTranscription.ts  # Speech-to-text hook (Phase 2)
+│   │   │   ├── useAudioTranscription.ts  # Speech-to-text hook (Phase 2)
+│   │   │   ├── useTokenCost.ts       # Token/cost tracking per request/conversation/session (Phase 3)
+│   │   │   ├── useWindowSize.ts      # Responsive breakpoints: compact/normal/expanded (Phase 3)
+│   │   │   └── useInternalKeyboard.ts # Ctrl+, Ctrl+L, Ctrl+K shortcuts (Phase 3)
 │   │   │
 │   │   ├── services/
 │   │   │   ├── ai-providers/
 │   │   │   │   ├── types.ts          # AIProvider interface, ChatMessage, etc.
 │   │   │   │   ├── provider-manager.ts # Provider registry, model lookup
-│   │   │   │   ├── openai.ts         # OpenAI adapter
-│   │   │   │   ├── anthropic.ts      # Anthropic adapter
-│   │   │   │   └── gemini.ts         # Google Gemini adapter
+│   │   │   │   ├── openai.ts         # OpenAI adapter (lazy-loaded)
+│   │   │   │   ├── anthropic.ts      # Anthropic adapter (lazy-loaded)
+│   │   │   │   ├── gemini.ts         # Google Gemini adapter (lazy-loaded)
+│   │   │   │   └── ollama.ts         # Ollama local LLM adapter (Phase 3)
 │   │   │   ├── speech.ts             # SpeechService: Web Speech + Whisper (Phase 2)
 │   │   │   └── ocr-service.ts        # Tesseract.js wrapper
 │   │   │
@@ -153,7 +166,8 @@ ghostai/
 │   └── shared/                       # Types shared between main + renderer
 │       ├── types.ts                  # AppSettings, ChatMessage, SpeechEngine, etc.
 │       ├── constants.ts              # Default hotkeys, modes, colors, audio defaults
-│       └── errors.ts                 # GhostAIError enum + helpers
+│       ├── errors.ts                 # GhostAIError enum + helpers
+│       └── logger.ts                 # Production-safe logger (Phase 3)
 │
 ├── assets/
 │   └── icons/                        # App icons (256x256, 128x128, etc.)
@@ -163,8 +177,18 @@ ghostai/
 │       ├── binding.gyp
 │       └── window-utils.cc
 │
-└── scripts/
-    └── build.js                      # Custom build scripts
+├── scripts/
+│   ├── build.js                      # Custom build scripts
+│   └── verify-build.ts              # Pre-build security/stealth verification (Phase 3)
+│
+├── docs/
+│   ├── GhostAI-PRD.md
+│   ├── GhostAI-Wireframes.md
+│   ├── GhostAI-API-Contract.md
+│   ├── GhostAI-Planning.md
+│   └── TESTING.md                    # Stealth matrix, benchmarks, checklists (Phase 3)
+│
+└── CHANGELOG.md                      # Version history (Phase 3)
 ```
 
 ---
@@ -256,12 +280,17 @@ conversation:delete   conversation:search   conversation:export
 conversation:delete-all
 modes:list            modes:save            modes:delete
 app:get-info          app:quit              app:open-data-folder
+monitors:get-all      monitors:move-overlay
+update:check          update:download       update:install
 ```
 
 Renderer event channels (main → renderer):
 ```
 hotkeys:triggered     overlay:visibility-changed
 screenshot:captured   app:error             clipboard:changed
+monitors:changed
+update:checking       update:available      update:not-available
+update:progress       update:downloaded     update:error
 ```
 
 Full IPC contract is in `docs/GhostAI-API-Contract.md` Section 2.
@@ -463,6 +492,7 @@ Stream ends → yield final ChatResponse with usage stats
 OpenAI:     content: [{ type: "image_url", image_url: { url: "data:image/png;base64,..." } }]
 Anthropic:  content: [{ type: "image", source: { type: "base64", media_type: "image/png", data: "..." } }]
 Gemini:     parts: [{ inline_data: { mime_type: "image/png", data: "..." } }]
+Ollama:     images: ["base64string"]  (no data URI prefix, NDJSON streaming not SSE)
 ```
 
 Full API formats in `docs/GhostAI-API-Contract.md` Sections 4-6.
@@ -627,11 +657,37 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 - [x] Enhanced stealth: process disguise, alt-tab hiding, stealth watchdog
 - [x] UI polish: keyboard navigation, focus-visible, reduced motion, selection styles
 
-### Phase 3 — Future Enhancements
-- Multi-monitor support
-- Auto-updater
+### Phase 3 — Production Polish (COMPLETE)
+
+**Sprint 9:** Multi-Monitor Support + Onboarding Wizard
+- [x] Monitor detection with hot-plug events (display-added/removed/changed)
+- [x] Screenshots capture correct display; region selector opens at cursor monitor
+- [x] Overlay position validation against connected displays
+- [x] 3-step onboarding wizard: API key setup, hotkey reference, stealth test
+
+**Sprint 10:** Ollama Local AI + Light Theme + Cost Tracking
+- [x] Ollama AIProvider: NDJSON streaming, /api/tags discovery, vision support
+- [x] Light theme via RGB triplet CSS variables + Tailwind opacity compatibility
+- [x] Per-request, per-conversation, per-session token & cost tracking in StatusBar
+
+**Sprint 11:** Auto-Updater + Responsive + Keyboard Nav + System Tray
+- [x] electron-updater with GitHub Releases, toast UI, deferred auto-check
+- [x] Responsive layout: compact/normal/expanded breakpoints
+- [x] Internal keyboard shortcuts: Ctrl+, Ctrl+L, Ctrl+K
+- [x] Optional system tray icon (default off for stealth)
+
+**Sprint 12:** Performance + Testing + Packaging
+- [x] Lazy-load AI SDKs via dynamic import (~4MB saved at startup)
+- [x] Deferred non-critical startup tasks, screenshot memory cleanup
+- [x] React.memo on ModeSelector/ModelSelector
+- [x] Production logger, build verification script
+- [x] Testing documentation (stealth matrix, benchmarks, checklists)
+- [x] CHANGELOG.md, updated CLAUDE.md
+
+### Phase 4 — Future Enhancements
 - Plugin system
-- Custom themes
+- Voice-to-voice conversation mode
+- Multi-window support
 
 ---
 
@@ -710,5 +766,5 @@ npm install @types/uuid --save-dev
 
 ---
 
-*Last updated: February 18, 2026 (Phase 2 fully complete — all Sprint 5-8 features shipped)*
+*Last updated: February 19, 2026 (Phase 3 fully complete — all Sprint 9-12 features shipped)*
 *This file should be updated whenever major architecture decisions change.*

@@ -10,6 +10,7 @@ interface HeaderBarProps {
   opacity: number;
   availableProviders: Set<ProviderID>;
   customModes: CustomMode[];
+  compact?: boolean;
   onModeChange: (modeId: string) => void;
   onModelChange: (modelId: string) => void;
   onOpacityChange: (opacity: number) => void;
@@ -27,6 +28,7 @@ export default function HeaderBar({
   opacity,
   availableProviders,
   customModes,
+  compact = false,
   onModeChange,
   onModelChange,
   onOpacityChange,
@@ -69,7 +71,7 @@ export default function HeaderBar({
       <div className="w-px h-4 bg-border-subtle mx-1" />
 
       {/* Mode selector */}
-      <ModeSelector activeMode={activeMode} customModes={customModes} onModeChange={onModeChange} onCreateMode={onCreateMode} onEditMode={onEditMode} />
+      <ModeSelector activeMode={activeMode} customModes={customModes} compact={compact} onModeChange={onModeChange} onCreateMode={onCreateMode} onEditMode={onEditMode} />
 
       {/* Separator */}
       <div className="w-px h-4 bg-border-subtle mx-1" />
@@ -80,6 +82,7 @@ export default function HeaderBar({
         onModelChange={onModelChange}
         availableProviders={availableProviders}
         onOpenSettings={onOpenSettings}
+        compact={compact}
       />
 
       {/* Spacer */}
@@ -87,7 +90,7 @@ export default function HeaderBar({
 
       {/* Right controls */}
       <div className="flex items-center gap-0.5 no-drag">
-        <OpacityControl opacity={opacity} onOpacityChange={onOpacityChange} />
+        {!compact && <OpacityControl opacity={opacity} onOpacityChange={onOpacityChange} />}
 
         <button
           onClick={onOpenSettings}

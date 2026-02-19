@@ -2,7 +2,7 @@
 //  PROVIDER & MODEL TYPES
 // ══════════════════════════════════════
 
-export type ProviderID = 'openai' | 'anthropic' | 'gemini';
+export type ProviderID = 'openai' | 'anthropic' | 'gemini' | 'ollama';
 
 export type HotkeyAction =
   | 'toggle-overlay'
@@ -153,6 +153,7 @@ export interface AppSettings {
     openai: ProviderConfig;
     anthropic: ProviderConfig;
     gemini: ProviderConfig;
+    ollama: ProviderConfig;
   };
 
   activeProvider: ProviderID;
@@ -181,6 +182,7 @@ export interface AppSettings {
     persistChatHistory: boolean;
     logApiRequests: boolean;
     processName: string;
+    showTrayIcon: boolean;
   };
 
   customModes: CustomMode[];

@@ -23,9 +23,13 @@ declare global {
         getBounds(): Promise<{ x: number; y: number; width: number; height: number }>;
       };
       screenshot: {
-        captureFull(): Promise<ScreenshotResult>;
+        captureFull(monitorId?: string): Promise<ScreenshotResult>;
         captureRegion(): Promise<ScreenshotResult | null>;
         getMonitors(): Promise<{ monitors: MonitorInfo[] }>;
+      };
+      monitors: {
+        getAll(): Promise<{ monitors: MonitorInfo[] }>;
+        moveOverlay(monitorId: string): Promise<{ success: boolean }>;
       };
       store: {
         get(key: string): Promise<{ value: unknown }>;
@@ -66,6 +70,11 @@ declare global {
         getInfo(): Promise<AppInfo>;
         quit(): Promise<void>;
         openDataFolder(): Promise<void>;
+      };
+      update: {
+        check(): Promise<void>;
+        download(): Promise<void>;
+        install(): Promise<void>;
       };
       on(channel: string, callback: (...args: unknown[]) => void): () => void;
       off(channel: string, callback: (...args: unknown[]) => void): void;

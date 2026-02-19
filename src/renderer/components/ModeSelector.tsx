@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Plus, Pencil } from 'lucide-react';
 import { BUILT_IN_MODES } from '@shared/constants';
 import type { Mode, CustomMode } from '@shared/types';
@@ -6,14 +6,16 @@ import type { Mode, CustomMode } from '@shared/types';
 interface ModeSelectorProps {
   activeMode: string;
   customModes: CustomMode[];
+  compact?: boolean;
   onModeChange: (modeId: string) => void;
   onCreateMode: () => void;
   onEditMode: (mode: CustomMode) => void;
 }
 
-export default function ModeSelector({
+function ModeSelector({
   activeMode,
   customModes,
+  compact = false,
   onModeChange,
   onCreateMode,
   onEditMode,
@@ -39,9 +41,10 @@ export default function ModeSelector({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-bg-hover text-text-primary text-xs transition-colors"
+        title={compact ? currentMode.name : undefined}
       >
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: currentMode.color }} />
-        <span>{currentMode.name}</span>
+        {!compact && <span>{currentMode.name}</span>}
         <ChevronDown size={12} className="text-text-secondary" />
       </button>
 
@@ -119,3 +122,5 @@ export default function ModeSelector({
     </div>
   );
 }
+
+export default React.memo(ModeSelector);

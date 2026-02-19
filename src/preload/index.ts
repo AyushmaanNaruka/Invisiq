@@ -7,6 +7,13 @@ const VALID_CHANNELS = [
   'screenshot:captured',
   'app:error',
   'clipboard:changed',
+  'monitors:changed',
+  'update:checking',
+  'update:available',
+  'update:not-available',
+  'update:progress',
+  'update:downloaded',
+  'update:error',
 ];
 
 const ghostAPI = {
@@ -34,12 +41,22 @@ const ghostAPI = {
   //  SCREENSHOT
   // ══════════════════════════════════════
   screenshot: {
-    captureFull: () =>
-      ipcRenderer.invoke('screenshot:capture-full'),
+    captureFull: (monitorId?: string) =>
+      ipcRenderer.invoke('screenshot:capture-full', monitorId ? { monitorId } : undefined),
     captureRegion: () =>
       ipcRenderer.invoke('screenshot:capture-region'),
     getMonitors: () =>
       ipcRenderer.invoke('screenshot:capture-monitors'),
+  },
+
+  // ══════════════════════════════════════
+  //  MONITORS
+  // ══════════════════════════════════════
+  monitors: {
+    getAll: () =>
+      ipcRenderer.invoke('monitors:get-all'),
+    moveOverlay: (monitorId: string) =>
+      ipcRenderer.invoke('monitors:move-overlay', { monitorId }),
   },
 
   // ══════════════════════════════════════
@@ -132,6 +149,18 @@ const ghostAPI = {
       ipcRenderer.invoke('app:quit'),
     openDataFolder: () =>
       ipcRenderer.invoke('app:open-data-folder'),
+  },
+
+  // ══════════════════════════════════════
+  //  AUTO-UPDATER
+  // ══════════════════════════════════════
+  update: {
+    check: () =>
+      ipcRenderer.invoke('update:check'),
+    download: () =>
+      ipcRenderer.invoke('update:download'),
+    install: () =>
+      ipcRenderer.invoke('update:install'),
   },
 
   // ══════════════════════════════════════

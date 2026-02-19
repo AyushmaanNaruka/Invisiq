@@ -1,5 +1,6 @@
 import { BrowserWindow, screen } from 'electron';
 import { captureRegion } from './screenshot';
+import { getMonitorAtCursor } from './monitors';
 import type { ScreenshotResult } from '@shared/types';
 
 const REGION_SELECTOR_HTML = `<!DOCTYPE html>
@@ -124,12 +125,13 @@ let regionSelectorWindow: BrowserWindow | null = null;
 
 export function openRegionSelector(): Promise<ScreenshotResult | null> {
   return new Promise((resolve) => {
-    const primaryDisplay = screen.getPrimaryDisplay();
-    const { width, height } = primaryDisplay.size;
+    // Open region selector on the monitor where the cursor is
+    const targetDisplay = getMonitorAtCursor();
+    const { width, height } = targetDisplay.size;
 
     regionSelectorWindow = new BrowserWindow({
-      x: primaryDisplay.bounds.x,
-      y: primaryDisplay.bounds.y,
+      x: targetDisplay.bounds.x,
+      y: targetDisplay.bounds.y,
       width,
       height,
       transparent: true,
@@ -158,6 +160,9 @@ export function openRegionSelector(): Promise<ScreenshotResult | null> {
       regionSelectorWindow = null;
     }
 
+    // Store target display ID for passing to captureRegion
+    const targetMonitorId = targetDisplay.id.toString();
+
     // Listen for signals from the region selector via document.title changes
     regionSelectorWindow.on('page-title-updated', async (_event, title) => {
       try {
@@ -165,7 +170,7 @@ export function openRegionSelector(): Promise<ScreenshotResult | null> {
         if (data.action === 'selected') {
           cleanup();
           try {
-            const result = await captureRegion(data.x, data.y, data.width, data.height);
+            const result = await captureRegion(data.x, data.y, data.width, data.height, targetMonitorId);
             resolve(result);
           } catch {
             resolve(null);

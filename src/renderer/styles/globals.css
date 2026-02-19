@@ -5,47 +5,140 @@
 @tailwind utilities;
 
 /* ══════════════════════════════════════
-   CSS CUSTOM PROPERTIES (from Wireframes)
+   CSS CUSTOM PROPERTIES — RGB TRIPLETS
+   Enables Tailwind opacity modifiers AND theme switching
+   Usage: rgb(var(--name) / <alpha>) or via Tailwind classes
    ══════════════════════════════════════ */
 
 :root {
   /* Background layers */
-  --bg-overlay: #1a1a2e;
-  --bg-chat: #16213e;
-  --bg-header: #1e1e36;
-  --bg-input: #252547;
-  --bg-code: #0d1117;
-  --bg-hover: #2a2a4a;
+  --bg-overlay: 26 26 46;
+  --bg-chat: 22 33 62;
+  --bg-header: 30 30 54;
+  --bg-input: 37 37 71;
+  --bg-code: 13 17 23;
+  --bg-hover: 42 42 74;
 
   /* Message bubbles */
-  --bubble-user: #2E75B6;
-  --bubble-ai: #2d2d44;
-  --bubble-system: #1a3a2a;
+  --bubble-user: 46 117 182;
+  --bubble-ai: 45 45 68;
+  --bubble-system: 26 58 42;
 
   /* Text */
-  --text-primary: #E8E8E8;
-  --text-secondary: #8B8B9E;
-  --text-placeholder: #5a5a7a;
-  --text-code: #E6EDF3;
+  --text-primary: 232 232 232;
+  --text-secondary: 139 139 158;
+  --text-placeholder: 90 90 122;
+  --text-code: 230 237 243;
 
   /* Accents */
-  --accent-primary: #00B894;
-  --accent-blue: #2E75B6;
-  --accent-purple: #6C5CE7;
+  --accent-primary: 0 184 148;
+  --accent-blue: 46 117 182;
+  --accent-purple: 108 92 231;
 
   /* Status */
-  --status-success: #00B894;
-  --status-warning: #FDCB6E;
-  --status-error: #D63031;
-  --status-streaming: #74B9FF;
+  --status-success: 0 184 148;
+  --status-warning: 253 203 110;
+  --status-error: 214 48 49;
+  --status-streaming: 116 185 255;
 
   /* Borders */
-  --border-subtle: #2a2a4a;
-  --border-focus: #00B894;
+  --border-subtle: 42 42 74;
+  --border-focus: 0 184 148;
 
-  /* Shadows */
+  /* Shadows (not converted — shadows use rgba directly) */
   --shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ══════════════════════════════════════
+   LIGHT THEME
+   ══════════════════════════════════════ */
+
+.light-theme {
+  /* Background layers */
+  --bg-overlay: 240 242 245;
+  --bg-chat: 255 255 255;
+  --bg-header: 248 249 250;
+  --bg-input: 243 244 246;
+  --bg-code: 246 248 250;
+  --bg-hover: 233 236 239;
+
+  /* Message bubbles */
+  --bubble-user: 59 130 246;
+  --bubble-ai: 243 244 246;
+  --bubble-system: 236 253 245;
+
+  /* Text */
+  --text-primary: 36 41 46;
+  --text-secondary: 100 116 139;
+  --text-placeholder: 156 163 175;
+  --text-code: 36 41 46;
+
+  /* Accents (kept vibrant) */
+  --accent-primary: 0 166 133;
+  --accent-blue: 37 99 235;
+  --accent-purple: 99 82 210;
+
+  /* Status */
+  --status-success: 22 163 74;
+  --status-warning: 234 179 8;
+  --status-error: 220 38 38;
+  --status-streaming: 59 130 246;
+
+  /* Borders */
+  --border-subtle: 226 232 240;
+  --border-focus: 0 166 133;
+
+  /* Shadows */
+  --shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Light theme hljs overrides */
+.light-theme .hljs {
+  background: rgb(246 248 250) !important;
+  color: rgb(36 41 46) !important;
+}
+
+.light-theme .hljs-keyword,
+.light-theme .hljs-selector-tag,
+.light-theme .hljs-literal,
+.light-theme .hljs-section,
+.light-theme .hljs-link {
+  color: rgb(207 34 46) !important;
+}
+
+.light-theme .hljs-string,
+.light-theme .hljs-title,
+.light-theme .hljs-name,
+.light-theme .hljs-type,
+.light-theme .hljs-attribute,
+.light-theme .hljs-symbol,
+.light-theme .hljs-bullet,
+.light-theme .hljs-addition,
+.light-theme .hljs-variable,
+.light-theme .hljs-template-tag,
+.light-theme .hljs-template-variable {
+  color: rgb(10 48 105) !important;
+}
+
+.light-theme .hljs-comment,
+.light-theme .hljs-quote,
+.light-theme .hljs-deletion,
+.light-theme .hljs-meta {
+  color: rgb(110 119 129) !important;
+}
+
+.light-theme .hljs-number,
+.light-theme .hljs-regexp,
+.light-theme .hljs-tag .hljs-attr,
+.light-theme .hljs-params {
+  color: rgb(5 80 174) !important;
+}
+
+.light-theme .hljs-built_in,
+.light-theme .hljs-title.function_ {
+  color: rgb(102 57 186) !important;
 }
 
 /* ══════════════════════════════════════
@@ -66,14 +159,14 @@ html, body {
   font-family: 'Inter', 'SF Pro Display', system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--text-primary);
+  color: rgb(var(--text-primary));
   -webkit-font-smoothing: antialiased;
 }
 
 #root {
   width: 100%;
   height: 100%;
-  background: var(--bg-overlay);
+  background: rgb(var(--bg-overlay));
   border-radius: 12px;
 }
 
@@ -90,12 +183,12 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
+  background: rgb(var(--border-subtle));
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: rgb(var(--text-secondary));
 }
 
 /* ══════════════════════════════════════
@@ -171,7 +264,7 @@ html, body {
    ══════════════════════════════════════ */
 
 *:focus-visible {
-  outline: 2px solid var(--accent-primary);
+  outline: 2px solid rgb(var(--accent-primary));
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -203,6 +296,6 @@ button, a, input, textarea, select {
    ══════════════════════════════════════ */
 
 ::selection {
-  background: rgba(0, 184, 148, 0.3);
-  color: var(--text-primary);
+  background: rgb(var(--accent-primary) / 0.3);
+  color: rgb(var(--text-primary));
 }

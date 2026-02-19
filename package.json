@@ -1,6 +1,6 @@
 {
   "name": "ghostai",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Your AI copilot that sees everything, but is seen by no one.",
   "main": "./out/main/index.js",
   "author": "Ayushmaan Singh Naruka",
@@ -12,35 +12,39 @@
     "postinstall": "electron-builder install-app-deps",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "lint": "eslint src/ --ext .ts,.tsx",
-    "package": "electron-vite build && electron-builder --win"
+    "verify": "npx ts-node scripts/verify-build.ts",
+    "package": "electron-vite build && electron-builder --win",
+    "package:dir": "electron-vite build && electron-builder --win --dir",
+    "publish": "electron-vite build && electron-builder --win --publish always"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "openai": "^4.75.0",
     "@anthropic-ai/sdk": "^0.35.0",
     "@google/generative-ai": "^0.21.0",
     "electron-store": "^10.0.0",
-    "react-markdown": "^9.0.1",
-    "rehype-highlight": "^7.0.1",
+    "electron-updater": "^6.8.3",
     "highlight.js": "^11.10.0",
     "lucide-react": "^0.460.0",
+    "node-machine-id": "^1.1.12",
+    "openai": "^4.75.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "rehype-highlight": "^7.0.1",
     "tesseract.js": "^5.1.1",
-    "uuid": "^10.0.0",
-    "node-machine-id": "^1.1.12"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
     "electron-vite": "^5.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.7.2",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@types/node": "^22.10.0",
-    "@types/uuid": "^10.0.0",
-    "tailwindcss": "^3.4.16",
     "postcss": "^8.4.49",
-    "autoprefixer": "^10.4.20"
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2"
   }
 }

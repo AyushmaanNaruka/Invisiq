@@ -9,6 +9,7 @@ interface StoreSchema {
     openai?: EncryptedPayload;
     anthropic?: EncryptedPayload;
     gemini?: EncryptedPayload;
+    ollama?: EncryptedPayload;
   };
   windowState: WindowState;
 }
@@ -58,7 +59,7 @@ export function getNestedSetting(key: string): unknown {
 //  API KEYS (ENCRYPTED)
 // ══════════════════════════════════════
 
-const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini'];
+const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'ollama'];
 
 export function setApiKey(provider: ProviderID, key: string): void {
   if (!VALID_PROVIDERS.includes(provider)) {

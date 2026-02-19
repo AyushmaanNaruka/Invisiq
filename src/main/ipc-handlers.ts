@@ -21,9 +21,11 @@ import {
   registerAllHotkeys,
   updateHotkey,
 } from './hotkeys';
-import { captureFullScreen, getAvailableMonitors } from './screenshot';
+import { captureFullScreen } from './screenshot';
 import { openRegionSelector } from './region-selector';
+import { getMonitors, moveOverlayToMonitor } from './monitors';
 import { smartPaste } from './clipboard';
+import { checkForUpdates, downloadUpdate, installUpdate } from './updater';
 import { startClipboardMonitor, stopClipboardMonitor, isClipboardMonitorRunning } from './clipboard-monitor';
 import {
   saveConversation,
@@ -37,7 +39,7 @@ import {
 import { BUILT_IN_MODES } from '@shared/constants';
 import type { HotkeyAction, ProviderID, Conversation, CustomMode } from '@shared/types';
 
-const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini'];
+const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'ollama'];
 
 export function registerIPCHandlers(): void {
   // ══════════════════════════════════════
@@ -92,9 +94,12 @@ export function registerIPCHandlers(): void {
   //  SCREENSHOT (stubs for Sprint 2)
   // ══════════════════════════════════════
 
-  ipcMain.handle('screenshot:capture-full', async () => {
+  ipcMain.handle('screenshot:capture-full', async (_event, args?: unknown) => {
     try {
-      const result = await captureFullScreen();
+      const monitorId = (args && typeof args === 'object' && 'monitorId' in args)
+        ? (args as { monitorId: string }).monitorId
+        : undefined;
+      const result = await captureFullScreen(monitorId);
       return result;
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Screenshot capture failed');
@@ -112,7 +117,25 @@ export function registerIPCHandlers(): void {
   });
 
   ipcMain.handle('screenshot:capture-monitors', () => {
-    return { monitors: getAvailableMonitors() };
+    return { monitors: getMonitors() };
+  });
+
+  // ══════════════════════════════════════
+  //  MONITORS
+  // ══════════════════════════════════════
+
+  ipcMain.handle('monitors:get-all', () => {
+    return { monitors: getMonitors() };
+  });
+
+  ipcMain.handle('monitors:move-overlay', (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { monitorId } = args as { monitorId: string };
+    if (typeof monitorId !== 'string' || monitorId.length === 0) {
+      throw new Error('monitorId must be a non-empty string');
+    }
+    const success = moveOverlayToMonitor(monitorId);
+    return { success };
   });
 
   // ══════════════════════════════════════
@@ -488,5 +511,21 @@ export function registerIPCHandlers(): void {
         error: error instanceof Error ? error.message : 'Failed to delete mode',
       };
     }
+  });
+
+  // ══════════════════════════════════════
+  //  AUTO-UPDATER
+  // ══════════════════════════════════════
+
+  ipcMain.handle('update:check', async () => {
+    await checkForUpdates();
+  });
+
+  ipcMain.handle('update:download', () => {
+    downloadUpdate();
+  });
+
+  ipcMain.handle('update:install', () => {
+    installUpdate();
   });
 }

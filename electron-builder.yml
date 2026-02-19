@@ -8,6 +8,9 @@ files:
   - "!out/types-*"
   - package.json
   - node_modules/**/*
+extraResources:
+  - from: assets/icons/tray-icon.png
+    to: assets/icons/tray-icon.png
 win:
   target:
     - target: nsis
@@ -15,7 +18,13 @@ win:
         - x64
   icon: assets/icons/icon.ico
 nsis:
-  oneClick: true
+  oneClick: false
   perMachine: false
-  allowToChangeInstallationDirectory: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: false
+  createStartMenuShortcut: false
   deleteAppDataOnUninstall: true
+publish:
+  provider: github
+  owner: Nezeon
+  repo: GhostAI

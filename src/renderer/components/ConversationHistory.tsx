@@ -13,6 +13,7 @@ interface ConversationHistoryProps {
   conversations: ConversationMeta[];
   isLoading: boolean;
   searchQuery: string;
+  compact?: boolean;
   onSearchChange: (query: string) => void;
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string) => void;
@@ -63,6 +64,7 @@ export default function ConversationHistory({
   conversations,
   isLoading,
   searchQuery,
+  compact = false,
   onSearchChange,
   onSelectConversation,
   onDeleteConversation,
@@ -89,7 +91,7 @@ export default function ConversationHistory({
     <div className="fixed inset-0 z-40 flex">
       {/* History panel */}
       <div
-        className="w-[280px] h-full bg-bg-overlay border-r border-border-subtle flex flex-col"
+        className={`${compact ? 'w-full' : 'w-[280px]'} h-full bg-bg-overlay border-r border-border-subtle flex flex-col`}
         style={{ animation: 'slideInLeft 250ms ease-out' }}
       >
         {/* Header */}

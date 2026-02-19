@@ -7,6 +7,9 @@ import { ensureConversationsDir } from './conversations';
 import { disguiseProcess, applyFullStealth, startStealthWatchdog } from './stealth';
 import { getNestedSetting } from './store';
 import { stopClipboardMonitor } from './clipboard-monitor';
+import { initMonitorManager } from './monitors';
+import { initializeAutoUpdater } from './updater';
+import { createTray } from './tray';
 import { AI_API_DOMAINS } from '@shared/constants';
 
 // ══════════════════════════════════════
@@ -85,25 +88,24 @@ function setupCORSBypass(): void {
 // ══════════════════════════════════════
 
 app.whenReady().then(async () => {
-  // Disguise process name
+  // Disguise process name (critical — do first)
   const processName = getNestedSetting('privacy.processName') as string || 'SystemHelper';
   disguiseProcess(processName);
 
   // Setup CORS bypass before loading any renderer content
   setupCORSBypass();
 
-  // Register IPC handlers
+  // Register IPC handlers (needed before renderer loads)
   registerIPCHandlers();
-
-  // Ensure conversations directory exists
-  await ensureConversationsDir();
 
   // Create the overlay window
   const overlayWindow = createOverlayWindow();
 
-  // Apply full stealth measures
+  // Initialize multi-monitor manager (must be before stealth so events are wired)
+  initMonitorManager(overlayWindow);
+
+  // Apply full stealth measures (critical — before window shows)
   applyFullStealth(overlayWindow);
-  startStealthWatchdog(overlayWindow);
 
   // Load the renderer
   if (process.env['ELECTRON_RENDERER_URL']) {
@@ -116,6 +118,21 @@ app.whenReady().then(async () => {
 
   // Register global hotkeys
   registerAllHotkeys();
+
+  // Defer non-critical startup tasks to after first paint
+  overlayWindow.webContents.once('did-finish-load', () => {
+    // Ensure conversations directory exists (async, non-blocking)
+    ensureConversationsDir().catch(() => {});
+
+    // Start stealth watchdog (periodic, not critical for first paint)
+    startStealthWatchdog(overlayWindow);
+
+    // Initialize auto-updater (already defers check by 10s internally)
+    initializeAutoUpdater(overlayWindow);
+
+    // Create system tray (if enabled in settings)
+    createTray();
+  });
 });
 
 app.on('window-all-closed', () => {

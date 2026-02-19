@@ -2,6 +2,7 @@ import { BrowserWindow, screen } from 'electron';
 import path from 'path';
 import { getWindowState, setWindowState } from './store';
 import { ensureContentProtection } from './stealth';
+import { validateOverlayPosition, moveOverlayToMonitor as moveToMonitorImpl } from './monitors';
 
 let overlayWindow: BrowserWindow | null = null;
 
@@ -33,11 +34,17 @@ export function createOverlayWindow(): BrowserWindow {
   // CRITICAL — Makes window invisible to screen capture
   overlayWindow.setContentProtection(true);
 
-  // Position bottom-right of primary display
+  // Position: use saved coordinates if valid, otherwise bottom-right of primary display
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
   const posX = windowState.x || screenW - windowState.width - 20;
   const posY = windowState.y || screenH - windowState.height - 20;
   overlayWindow.setPosition(posX, posY);
+
+  // Validate position is on a connected display (handles saved position for disconnected monitor)
+  // Deferred to after 'ready-to-show' so initMonitorManager has been called
+  overlayWindow.once('show', () => {
+    validateOverlayPosition();
+  });
 
   // Set initial opacity
   overlayWindow.setOpacity(windowState.opacity);
@@ -130,4 +137,8 @@ export function setOverlaySize(width: number, height: number): void {
     const h = Math.max(200, Math.round(height));
     overlayWindow.setSize(w, h);
   }
+}
+
+export function moveToMonitor(monitorId: string): boolean {
+  return moveToMonitorImpl(monitorId);
 }

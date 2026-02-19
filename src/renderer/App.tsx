@@ -7,6 +7,8 @@ import StatusBar from './components/StatusBar';
 import Settings from './components/Settings';
 import ConversationHistory from './components/ConversationHistory';
 import CustomModeEditor from './components/CustomModeEditor';
+import OnboardingFlow from './components/OnboardingFlow';
+import UpdateNotification from './components/UpdateNotification';
 import { ToastProvider, useToast } from './components/Toast';
 import { useConversation } from './hooks/useConversation';
 import { useConversationHistory } from './hooks/useConversationHistory';
@@ -15,6 +17,9 @@ import { useScreenshot } from './hooks/useScreenshot';
 import { useSettings } from './hooks/useSettings';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useAudioTranscription } from './hooks/useAudioTranscription';
+import { useTokenCost } from './hooks/useTokenCost';
+import { useInternalKeyboard } from './hooks/useInternalKeyboard';
+import { useWindowSize } from './hooks/useWindowSize';
 import { BUILT_IN_MODES } from '@shared/constants';
 import type { ProviderID, CustomMode } from '@shared/types';
 
@@ -49,7 +54,21 @@ function ClipboardListener({ onAnalyze }: { onAnalyze: (text: string) => void })
 }
 
 export default function App(): JSX.Element {
-  const { settings, updateSetting } = useSettings();
+  const { settings, isLoading: settingsLoading, updateSetting } = useSettings();
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+
+  // Determine whether to show onboarding after settings load
+  useEffect(() => {
+    if (!settingsLoading) {
+      setShowOnboarding(!settings.onboardingComplete);
+    }
+  }, [settingsLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apply theme class on documentElement
+  useEffect(() => {
+    document.documentElement.classList.toggle('light-theme', settings.display.theme === 'light');
+  }, [settings.display.theme]);
+
   const {
     messages,
     conversationId,
@@ -81,6 +100,7 @@ export default function App(): JSX.Element {
   const { isStreaming, error, lastUsage, sendMessage, stopGeneration } = useAI();
   const { pendingScreenshots, captureFull, captureRegion, clearScreenshot, clearAllScreenshots } = useScreenshot();
   const { registerCallback } = useHotkeys();
+  const { lastRequest: costLastRequest, conversation: costConversation, session: costSession, recordUsage, resetConversation: resetCostConversation } = useTokenCost();
 
   // Audio transcription (lifted from InputArea for TranscriptPanel + meeting auto-context)
   const {
@@ -101,6 +121,23 @@ export default function App(): JSX.Element {
       startListening(settings.audio?.engine || 'browser', settings.audio?.language || 'en-US');
     }
   }, [isListening, startListening, stopListening, settings.audio?.engine, settings.audio?.language]);
+
+  // Responsive layout
+  const { mode: layoutMode } = useWindowSize();
+  const compact = layoutMode === 'compact';
+
+  // Internal keyboard shortcuts
+  useInternalKeyboard({
+    toggleSettings: () => setSettingsOpen((prev) => !prev),
+    clearConversation: () => {
+      startNewConversation();
+      resetCostConversation();
+    },
+    focusSearch: () => {
+      refreshHistory();
+      setHistoryOpen(true);
+    },
+  });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -126,6 +163,8 @@ export default function App(): JSX.Element {
         const { key } = await window.ghostAPI.store.getApiKey(p);
         if (key) available.add(p);
       }
+      // Ollama is always "available" — no API key required
+      available.add('ollama');
       setAvailableProviders(available);
     }
     checkProviders();
@@ -155,9 +194,10 @@ export default function App(): JSX.Element {
 
   const handleNewConversation = useCallback(() => {
     startNewConversation();
+    resetCostConversation();
     refreshHistory();
     inputRef.current?.focus();
-  }, [startNewConversation, refreshHistory]);
+  }, [startNewConversation, resetCostConversation, refreshHistory]);
 
   // ── Select conversation from history ─────────────────────
 
@@ -186,9 +226,10 @@ export default function App(): JSX.Element {
         if (result.mode) await updateSetting('activeMode', result.mode);
         if (result.model) await updateSetting('activeModel', result.model);
       }
+      resetCostConversation();
       setHistoryOpen(false);
     },
-    [conversationId, conversationTitle, messages, settings.privacy.persistChatHistory, settings.activeMode, settings.activeModel, loadConversation, updateSetting]
+    [conversationId, conversationTitle, messages, settings.privacy.persistChatHistory, settings.activeMode, settings.activeModel, loadConversation, updateSetting, resetCostConversation]
   );
 
   // ── Open/close history ───────────────────────────────────
@@ -279,6 +320,7 @@ export default function App(): JSX.Element {
             latencyMs: latency,
             model: settings.activeModel,
           });
+          recordUsage(usage);
           setStreamingMessageId(null);
         },
         onError: (errMsg) => {
@@ -307,6 +349,7 @@ export default function App(): JSX.Element {
       appendToMessage,
       updateMessage,
       addErrorMessage,
+      recordUsage,
     ]
   );
 
@@ -333,9 +376,20 @@ export default function App(): JSX.Element {
     window.ghostAPI.overlay.hide();
   }, []);
 
+  // Show nothing while settings are loading
+  if (settingsLoading || showOnboarding === null) {
+    return <div className="h-screen w-screen bg-bg-overlay rounded-lg" />;
+  }
+
+  // Onboarding gate
+  if (showOnboarding) {
+    return <OnboardingFlow onComplete={() => setShowOnboarding(false)} />;
+  }
+
   return (
     <ToastProvider>
     <ClipboardListener onAnalyze={handleSend} />
+    <UpdateNotification />
     <div className="flex flex-col h-screen w-screen bg-bg-overlay rounded-lg overflow-hidden select-none">
       <HeaderBar
         activeMode={settings.activeMode}
@@ -343,6 +397,7 @@ export default function App(): JSX.Element {
         opacity={settings.display.opacity}
         availableProviders={availableProviders}
         customModes={settings.customModes}
+        compact={compact}
         onModeChange={(mode) => updateSetting('activeMode', mode)}
         onModelChange={(model) => updateSetting('activeModel', model)}
         onOpacityChange={handleOpacityChange}
@@ -387,6 +442,12 @@ export default function App(): JSX.Element {
         isStreaming={isStreaming}
         error={error}
         lastUsage={lastUsage}
+        compact={compact}
+        costs={{
+          lastRequest: costLastRequest,
+          conversation: costConversation,
+          session: costSession,
+        }}
       />
 
       <Settings
@@ -394,6 +455,7 @@ export default function App(): JSX.Element {
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onUpdateSetting={updateSetting}
+        compact={compact}
       />
 
       <ConversationHistory
@@ -403,6 +465,7 @@ export default function App(): JSX.Element {
         conversations={conversations}
         isLoading={historyLoading}
         searchQuery={searchQuery}
+        compact={compact}
         onSearchChange={setSearchQuery}
         onSelectConversation={handleSelectConversation}
         onDeleteConversation={handleDeleteHistoryConversation}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Eye, EyeOff, Check, AlertCircle, Loader2, Trash2 } from 'lucide-react';
+import { X, Eye, EyeOff, Check, AlertCircle, Loader2, Trash2, Server } from 'lucide-react';
 import { providerManager } from '../services/ai-providers/provider-manager';
 import SettingsHotkeys from './SettingsHotkeys';
 import SettingsDisplay from './SettingsDisplay';
@@ -13,6 +13,7 @@ interface SettingsProps {
   onClose: () => void;
   settings: AppSettings;
   onUpdateSetting: (key: string, value: unknown) => Promise<void>;
+  compact?: boolean;
 }
 
 interface KeyState {
@@ -22,31 +23,39 @@ interface KeyState {
   error?: string;
 }
 
-const PROVIDERS: { id: ProviderID; name: string; placeholder: string }[] = [
+const PROVIDERS: { id: ProviderID; name: string; placeholder: string; isServerUrl?: boolean }[] = [
   { id: 'openai', name: 'OpenAI', placeholder: 'sk-proj-...' },
   { id: 'anthropic', name: 'Anthropic', placeholder: 'sk-ant-...' },
   { id: 'gemini', name: 'Google Gemini', placeholder: 'AIza...' },
+  { id: 'ollama', name: 'Ollama (Local)', placeholder: 'http://localhost:11434', isServerUrl: true },
 ];
 
 type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio';
 
-export default function Settings({ isOpen, onClose, settings, onUpdateSetting }: SettingsProps): JSX.Element | null {
+export default function Settings({ isOpen, onClose, settings, onUpdateSetting, compact = false }: SettingsProps): JSX.Element | null {
   const [activeTab, setActiveTab] = useState<TabId>('api-keys');
   const [keys, setKeys] = useState<Record<ProviderID, KeyState>>({
     openai: { value: '', masked: true, status: 'idle' },
     anthropic: { value: '', masked: true, status: 'idle' },
     gemini: { value: '', masked: true, status: 'idle' },
+    ollama: { value: 'http://localhost:11434', masked: false, status: 'idle' },
   });
 
   // Load existing keys on open
   useEffect(() => {
     if (!isOpen) return;
-    PROVIDERS.forEach(async ({ id }) => {
+    PROVIDERS.forEach(async ({ id, isServerUrl }) => {
       const { key } = await window.ghostAPI.store.getApiKey(id);
       if (key) {
         setKeys((prev) => ({
           ...prev,
-          [id]: { ...prev[id], value: key, status: 'idle' },
+          [id]: { ...prev[id], value: key, masked: isServerUrl ? false : prev[id].masked, status: 'idle' },
+        }));
+      } else if (isServerUrl) {
+        // Ollama defaults to localhost — no stored value means use default
+        setKeys((prev) => ({
+          ...prev,
+          [id]: { ...prev[id], value: 'http://localhost:11434', masked: false, status: 'idle' },
         }));
       }
     });
@@ -88,7 +97,7 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting }:
     }));
 
     try {
-      const p = providerManager.getProvider(provider);
+      const p = await providerManager.resolveProvider(provider);
       if (!p) {
         setKeys((prev) => ({
           ...prev,
@@ -101,11 +110,14 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting }:
       const result = await p.validateKey();
 
       if (result.valid) {
-        // Save key on successful validation
+        // Save key/URL on successful validation
         await window.ghostAPI.store.setApiKey(provider, key);
+        const validMsg = result.models && result.models.length > 0
+          ? `${result.models.length} model${result.models.length === 1 ? '' : 's'} found`
+          : undefined;
         setKeys((prev) => ({
           ...prev,
-          [provider]: { ...prev[provider], status: 'valid', error: undefined },
+          [provider]: { ...prev[provider], status: 'valid', error: validMsg },
         }));
       } else {
         setKeys((prev) => ({
@@ -145,7 +157,7 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting }:
 
       {/* Settings panel */}
       <div
-        className="w-[320px] h-full bg-bg-overlay border-l border-border-subtle flex flex-col"
+        className={`${compact ? 'w-full' : 'w-[320px]'} h-full bg-bg-overlay border-l border-border-subtle flex flex-col`}
         style={{ animation: 'slideInRight 250ms ease-out' }}
       >
         {/* Header */}
@@ -180,23 +192,30 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting }:
         <div className="flex-1 overflow-y-auto p-4">
           {activeTab === 'api-keys' && (
             <div className="space-y-5">
-              {PROVIDERS.map(({ id, name, placeholder }) => {
+              {PROVIDERS.map(({ id, name, placeholder, isServerUrl }) => {
                 const keyState = keys[id];
                 return (
                   <div key={id} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-text-primary text-sm font-medium">{name}</label>
+                      <label className="text-text-primary text-sm font-medium flex items-center gap-1.5">
+                        {isServerUrl && <Server size={12} className="text-text-secondary" />}
+                        {name}
+                      </label>
                       {keyState.status === 'valid' && (
                         <span className="flex items-center gap-1 text-status-success text-xs">
-                          <Check size={12} /> Valid
+                          <Check size={12} /> {isServerUrl ? 'Connected' : 'Valid'}
                         </span>
                       )}
                       {keyState.status === 'invalid' && (
                         <span className="flex items-center gap-1 text-status-error text-xs">
-                          <AlertCircle size={12} /> Invalid
+                          <AlertCircle size={12} /> {isServerUrl ? 'Unreachable' : 'Invalid'}
                         </span>
                       )}
                     </div>
+
+                    {isServerUrl && (
+                      <p className="text-text-secondary text-[10px]">Server URL (no API key needed)</p>
+                    )}
 
                     <div className="relative">
                       <input
@@ -207,16 +226,20 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting }:
                         placeholder={placeholder}
                         className="w-full bg-bg-input border border-border-subtle rounded-md px-3 py-2 pr-10 text-sm text-text-primary placeholder:text-text-placeholder focus:outline-none focus:border-border-focus transition-colors"
                       />
-                      <button
-                        onClick={() => toggleMask(id)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
-                      >
-                        {keyState.masked ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
+                      {!isServerUrl && (
+                        <button
+                          onClick={() => toggleMask(id)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                        >
+                          {keyState.masked ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      )}
                     </div>
 
                     {keyState.error && (
-                      <p className="text-status-error text-xs">{keyState.error}</p>
+                      <p className={`text-xs ${keyState.status === 'valid' ? 'text-status-success' : 'text-status-error'}`}>
+                        {keyState.error}
+                      </p>
                     )}
 
                     <div className="flex items-center gap-2">
@@ -230,10 +253,10 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting }:
                             <Loader2 size={12} className="animate-spin" /> Testing...
                           </>
                         ) : (
-                          'Test Key'
+                          isServerUrl ? 'Test Connection' : 'Test Key'
                         )}
                       </button>
-                      {keyState.value.trim() && (
+                      {keyState.value.trim() && !isServerUrl && (
                         <button
                           onClick={() => handleRemoveKey(id)}
                           className="p-1 rounded text-text-secondary hover:text-status-error hover:bg-bg-hover transition-colors"

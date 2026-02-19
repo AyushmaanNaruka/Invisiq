@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { providerManager } from '../services/ai-providers/provider-manager';
 import type { AIProvider } from '../services/ai-providers/types';
-import type { ChatMessage, ImageAttachment, ChatRequest, TokenUsage, ProviderID } from '@shared/types';
+import type { ChatMessage, ImageAttachment, ChatRequest, TokenUsage } from '@shared/types';
 
 interface UseAIReturn {
   isStreaming: boolean;
@@ -33,13 +33,26 @@ export function useAI(): UseAIReturn {
     const result = providerManager.getModelById(modelId);
     if (!result) throw new Error(`Model ${modelId} not found`);
 
-    const { provider } = result;
+    const { providerId } = result;
 
-    if (!initializedProviders.current.has(provider.id)) {
-      const { key: apiKey } = await window.ghostAPI.store.getApiKey(provider.id);
-      if (!apiKey) throw new Error(`No API key for ${provider.name}. Open Settings to add one.`);
-      provider.initialize(apiKey);
-      initializedProviders.current.add(provider.id);
+    // Resolve provider lazily (loads SDK on first use)
+    const provider = await providerManager.resolveProvider(providerId);
+    if (!provider) throw new Error(`Provider ${providerId} not available`);
+
+    if (!initializedProviders.current.has(providerId)) {
+      const { key: apiKey } = await window.ghostAPI.store.getApiKey(providerId);
+      // Ollama uses server URL (default localhost:11434) instead of an API key
+      if (providerId === 'ollama') {
+        provider.initialize(apiKey || 'http://localhost:11434');
+        // Refresh dynamic model list on first use if empty
+        if (provider.models.length === 0) {
+          await providerManager.refreshModels('ollama');
+        }
+      } else {
+        if (!apiKey) throw new Error(`No API key for ${provider.name}. Open Settings to add one.`);
+        provider.initialize(apiKey);
+      }
+      initializedProviders.current.add(providerId);
     }
 
     return provider;

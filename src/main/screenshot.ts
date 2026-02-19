@@ -1,6 +1,7 @@
-import { desktopCapturer, nativeImage, screen } from 'electron';
+import { desktopCapturer, screen } from 'electron';
 import { getOverlayWindow, showOverlay, hideOverlay } from './overlay';
-import type { ScreenshotResult, MonitorInfo } from '@shared/types';
+import { getMonitorForOverlay } from './monitors';
+import type { ScreenshotResult } from '@shared/types';
 
 const CAPTURE_DELAY_MS = 100;
 const MAX_WIDTH = 1920;
@@ -21,7 +22,23 @@ function resizeIfNeeded(image: Electron.NativeImage): Electron.NativeImage {
   return image;
 }
 
-export async function captureFullScreen(): Promise<ScreenshotResult> {
+/**
+ * Find the desktopCapturer source matching a specific display.
+ * Falls back to first source if no match found.
+ */
+function findSourceForDisplay(
+  sources: Electron.DesktopCapturerSource[],
+  displayId: string,
+): Electron.DesktopCapturerSource {
+  const matched = sources.find((s) => s.display_id === displayId);
+  return matched || sources[0];
+}
+
+/**
+ * Capture a full screen screenshot.
+ * @param monitorId - Optional display ID. Defaults to the monitor the overlay is on.
+ */
+export async function captureFullScreen(monitorId?: string): Promise<ScreenshotResult> {
   const overlayWindow = getOverlayWindow();
   const wasVisible = overlayWindow?.isVisible() ?? false;
 
@@ -32,17 +49,31 @@ export async function captureFullScreen(): Promise<ScreenshotResult> {
       await sleep(CAPTURE_DELAY_MS);
     }
 
+    // Determine target display
+    let targetDisplay: Electron.Display;
+    if (monitorId) {
+      targetDisplay =
+        screen.getAllDisplays().find((d) => d.id.toString() === monitorId) ||
+        screen.getPrimaryDisplay();
+    } else {
+      targetDisplay = getMonitorForOverlay();
+    }
+
+    // Request thumbnail size matching target display (respect HiDPI scaleFactor)
+    const thumbWidth = Math.round(targetDisplay.size.width * targetDisplay.scaleFactor);
+    const thumbHeight = Math.round(targetDisplay.size.height * targetDisplay.scaleFactor);
+
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
-      thumbnailSize: screen.getPrimaryDisplay().workAreaSize,
+      thumbnailSize: { width: thumbWidth, height: thumbHeight },
     });
 
     if (sources.length === 0) {
       throw new Error('No screen sources available');
     }
 
-    // Use primary display (first source)
-    const source = sources[0];
+    // Match source to target display
+    const source = findSourceForDisplay(sources, targetDisplay.id.toString());
     let image = source.thumbnail;
     image = resizeIfNeeded(image);
 
@@ -63,11 +94,16 @@ export async function captureFullScreen(): Promise<ScreenshotResult> {
   }
 }
 
+/**
+ * Capture a region of a screen.
+ * @param monitorId - Optional display ID. Defaults to the monitor the overlay is on.
+ */
 export async function captureRegion(
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
+  monitorId?: string,
 ): Promise<ScreenshotResult> {
   const overlayWindow = getOverlayWindow();
   const wasVisible = overlayWindow?.isVisible() ?? false;
@@ -79,16 +115,29 @@ export async function captureRegion(
       await sleep(CAPTURE_DELAY_MS);
     }
 
+    // Determine target display
+    let targetDisplay: Electron.Display;
+    if (monitorId) {
+      targetDisplay =
+        screen.getAllDisplays().find((d) => d.id.toString() === monitorId) ||
+        screen.getPrimaryDisplay();
+    } else {
+      targetDisplay = getMonitorForOverlay();
+    }
+
+    const thumbWidth = Math.round(targetDisplay.size.width * targetDisplay.scaleFactor);
+    const thumbHeight = Math.round(targetDisplay.size.height * targetDisplay.scaleFactor);
+
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
-      thumbnailSize: screen.getPrimaryDisplay().workAreaSize,
+      thumbnailSize: { width: thumbWidth, height: thumbHeight },
     });
 
     if (sources.length === 0) {
       throw new Error('No screen sources available');
     }
 
-    const source = sources[0];
+    const source = findSourceForDisplay(sources, targetDisplay.id.toString());
     let image = source.thumbnail;
 
     // Crop to the selected region
@@ -109,17 +158,4 @@ export async function captureRegion(
       showOverlay();
     }
   }
-}
-
-export function getAvailableMonitors(): MonitorInfo[] {
-  const displays = screen.getAllDisplays();
-  return displays.map((display) => ({
-    id: display.id.toString(),
-    name: `Display ${display.id}`,
-    width: display.size.width,
-    height: display.size.height,
-    x: display.bounds.x,
-    y: display.bounds.y,
-    isPrimary: display.id === screen.getPrimaryDisplay().id,
-  }));
 }

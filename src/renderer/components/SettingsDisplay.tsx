@@ -44,14 +44,25 @@ export default function SettingsDisplay({
       <div>
         <label className="block text-text-secondary text-xs mb-1.5">Theme</label>
         <div className="flex gap-2">
-          <button className="flex-1 px-3 py-1.5 rounded text-xs font-medium bg-accent-primary/20 text-accent-primary border border-accent-primary/40">
+          <button
+            onClick={() => onUpdate('display.theme', 'dark')}
+            className={`flex-1 px-3 py-1.5 rounded text-xs font-medium border transition-colors ${
+              settings.theme === 'dark'
+                ? 'bg-accent-primary/20 text-accent-primary border-accent-primary/40'
+                : 'bg-bg-input text-text-secondary border-border-subtle hover:text-text-primary'
+            }`}
+          >
             Dark
           </button>
           <button
-            className="flex-1 px-3 py-1.5 rounded text-xs font-medium bg-bg-input text-text-placeholder border border-border-subtle cursor-not-allowed"
-            disabled
+            onClick={() => onUpdate('display.theme', 'light')}
+            className={`flex-1 px-3 py-1.5 rounded text-xs font-medium border transition-colors ${
+              settings.theme === 'light'
+                ? 'bg-accent-primary/20 text-accent-primary border-accent-primary/40'
+                : 'bg-bg-input text-text-secondary border-border-subtle hover:text-text-primary'
+            }`}
           >
-            Light (Soon)
+            Light
           </button>
         </div>
       </div>

@@ -69,7 +69,7 @@ export function applyFullStealth(win: BrowserWindow): void {
  */
 let watchdogInterval: ReturnType<typeof setInterval> | null = null;
 
-export function startStealthWatchdog(win: BrowserWindow, intervalMs: number = 5000): void {
+export function startStealthWatchdog(win: BrowserWindow, intervalMs: number = 2000): void {
   stopStealthWatchdog();
 
   watchdogInterval = setInterval(() => {
