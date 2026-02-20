@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Keyboard } from 'lucide-react';
 import { DEFAULT_HOTKEYS } from '@shared/constants';
 import type { HotkeyAction } from '@shared/types';
 
@@ -18,7 +18,15 @@ const HOTKEY_LABELS: Record<HotkeyAction, string> = {
   'new-conversation': 'New Conversation',
   'hide-overlay': 'Hide Overlay',
   'paste-response': 'Paste Last Response',
+  'toggle-passthrough': 'Toggle Click-Through',
 };
+
+const INTERNAL_SHORTCUTS: { label: string; shortcut: string }[] = [
+  { label: 'Open Settings', shortcut: 'Ctrl+,' },
+  { label: 'Conversation History', shortcut: 'Ctrl+K' },
+  { label: 'Clear Chat (double-press)', shortcut: 'Ctrl+L' },
+  { label: 'Template Library', shortcut: 'Ctrl+T' },
+];
 
 const ACTIONS = Object.keys(HOTKEY_LABELS) as HotkeyAction[];
 
@@ -170,6 +178,24 @@ export default function SettingsHotkeys({
           <RotateCcw size={12} />
           Reset to Defaults
         </button>
+      </div>
+
+      {/* Internal shortcuts (read-only) */}
+      <div className="pt-3 border-t border-border-subtle">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Keyboard size={12} className="text-text-secondary" />
+          <span className="text-text-secondary text-[10px] font-medium uppercase tracking-wide">
+            Internal Shortcuts
+          </span>
+        </div>
+        {INTERNAL_SHORTCUTS.map((item) => (
+          <div key={item.label} className="flex items-center justify-between mb-1.5">
+            <span className="text-text-secondary text-xs">{item.label}</span>
+            <span className="px-2 py-1 rounded text-xs font-mono bg-bg-input border border-border-subtle text-text-placeholder">
+              {item.shortcut}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

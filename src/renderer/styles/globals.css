@@ -11,43 +11,52 @@
    ══════════════════════════════════════ */
 
 :root {
-  /* Background layers */
-  --bg-overlay: 26 26 46;
-  --bg-chat: 22 33 62;
-  --bg-header: 30 30 54;
-  --bg-input: 37 37 71;
-  --bg-code: 13 17 23;
-  --bg-hover: 42 42 74;
+  /* Background layers — muted command-center aesthetic */
+  --bg-overlay: 11 14 20;
+  --bg-chat: 15 18 25;
+  --bg-header: 18 22 30;
+  --bg-input: 22 27 36;
+  --bg-code: 9 12 18;
+  --bg-hover: 28 34 46;
+
+  /* Elevated surfaces (cards, panels) */
+  --surface-elevated: 24 30 40;
+  --surface-glass: 255 255 255;
 
   /* Message bubbles */
-  --bubble-user: 46 117 182;
-  --bubble-ai: 45 45 68;
-  --bubble-system: 26 58 42;
+  --bubble-user: 37 99 235;
+  --bubble-ai: 22 27 36;
+  --bubble-system: 15 42 30;
 
-  /* Text */
-  --text-primary: 232 232 232;
-  --text-secondary: 139 139 158;
-  --text-placeholder: 90 90 122;
-  --text-code: 230 237 243;
+  /* Text hierarchy */
+  --text-primary: 226 232 240;
+  --text-secondary: 100 116 139;
+  --text-placeholder: 71 85 105;
+  --text-code: 203 213 225;
 
   /* Accents */
-  --accent-primary: 0 184 148;
-  --accent-blue: 46 117 182;
-  --accent-purple: 108 92 231;
+  --accent-primary: 20 184 166;
+  --accent-cyan: 6 182 212;
+  --accent-blue: 59 130 246;
+  --accent-purple: 139 92 246;
+  --accent-amber: 251 191 36;
+  --glow-primary: 20 184 166;
 
   /* Status */
-  --status-success: 0 184 148;
-  --status-warning: 253 203 110;
-  --status-error: 214 48 49;
-  --status-streaming: 116 185 255;
+  --status-success: 34 197 94;
+  --status-warning: 234 179 8;
+  --status-error: 239 68 68;
+  --status-streaming: 99 102 241;
 
   /* Borders */
-  --border-subtle: 42 42 74;
-  --border-focus: 0 184 148;
+  --border-subtle: 30 37 50;
+  --border-active: 20 184 166;
+  --border-focus: 20 184 166;
 
-  /* Shadows (not converted — shadows use rgba directly) */
-  --shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.4);
+  /* Shadows */
+  --shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-glow-teal: 0 0 20px rgba(20, 184, 166, 0.2), 0 0 40px rgba(20, 184, 166, 0.08);
 }
 
 /* ══════════════════════════════════════
@@ -56,48 +65,57 @@
 
 .light-theme {
   /* Background layers */
-  --bg-overlay: 240 242 245;
+  --bg-overlay: 242 244 248;
   --bg-chat: 255 255 255;
-  --bg-header: 248 249 250;
-  --bg-input: 243 244 246;
+  --bg-header: 248 249 251;
+  --bg-input: 240 242 246;
   --bg-code: 246 248 250;
-  --bg-hover: 233 236 239;
+  --bg-hover: 232 235 241;
+
+  /* Elevated surfaces */
+  --surface-elevated: 255 255 255;
+  --surface-glass: 0 0 0;
 
   /* Message bubbles */
-  --bubble-user: 59 130 246;
-  --bubble-ai: 243 244 246;
+  --bubble-user: 219 234 254;
+  --bubble-ai: 240 242 246;
   --bubble-system: 236 253 245;
 
   /* Text */
-  --text-primary: 36 41 46;
-  --text-secondary: 100 116 139;
-  --text-placeholder: 156 163 175;
-  --text-code: 36 41 46;
+  --text-primary: 15 23 42;
+  --text-secondary: 71 85 105;
+  --text-placeholder: 148 163 184;
+  --text-code: 30 41 59;
 
-  /* Accents (kept vibrant) */
-  --accent-primary: 0 166 133;
+  /* Accents (slightly deeper for light bg) */
+  --accent-primary: 13 148 136;
+  --accent-cyan: 8 145 178;
   --accent-blue: 37 99 235;
-  --accent-purple: 99 82 210;
+  --accent-purple: 124 58 237;
+  --accent-amber: 217 119 6;
+  --glow-primary: 13 148 136;
 
   /* Status */
   --status-success: 22 163 74;
-  --status-warning: 234 179 8;
+  --status-warning: 202 138 4;
   --status-error: 220 38 38;
-  --status-streaming: 59 130 246;
+  --status-streaming: 79 70 229;
 
   /* Borders */
   --border-subtle: 226 232 240;
-  --border-focus: 0 166 133;
+  --border-active: 13 148 136;
+  --border-focus: 13 148 136;
 
   /* Shadows */
-  --shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-overlay: 0 8px 32px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
   --shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-glow-teal: none;
 }
 
 /* Light theme hljs overrides */
 .light-theme .hljs {
   background: rgb(246 248 250) !important;
-  color: rgb(36 41 46) !important;
+  color: rgb(15 23 42) !important;
 }
 
 .light-theme .hljs-keyword,
@@ -175,7 +193,7 @@ html, body {
    ══════════════════════════════════════ */
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -184,11 +202,11 @@ html, body {
 
 ::-webkit-scrollbar-thumb {
   background: rgb(var(--border-subtle));
-  border-radius: 3px;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--text-secondary));
+  background: rgb(var(--text-secondary) / 0.5);
 }
 
 /* ══════════════════════════════════════
@@ -204,7 +222,49 @@ html, body {
 }
 
 /* ══════════════════════════════════════
-   ANIMATIONS
+   GLASSMORPHISM
+   ══════════════════════════════════════ */
+
+.ghost-glass {
+  background: rgb(var(--surface-glass) / 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgb(var(--surface-glass) / 0.08);
+}
+
+.light-theme .ghost-glass {
+  background: rgb(var(--surface-glass) / 0.7);
+  border: 1px solid rgb(var(--surface-glass) / 0.15);
+}
+
+/* ══════════════════════════════════════
+   GRADIENT TEXT
+   ══════════════════════════════════════ */
+
+.ghost-gradient-text {
+  background: linear-gradient(135deg, rgb(var(--accent-primary)), rgb(var(--accent-cyan)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ══════════════════════════════════════
+   STREAMING CURSOR
+   ══════════════════════════════════════ */
+
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.9em;
+  background: rgb(var(--accent-primary));
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  border-radius: 9999px;
+  animation: streamingPulse 1s ease-in-out infinite;
+}
+
+/* ══════════════════════════════════════
+   ANIMATIONS (CSS fallbacks for no-framer-motion scenarios)
    ══════════════════════════════════════ */
 
 @keyframes fadeIn {
@@ -222,16 +282,19 @@ html, body {
   50% { opacity: 0; }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 200ms ease-out;
+@keyframes streamingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
-.animate-pulsingDot {
-  animation: pulsingDots 1200ms ease-in-out infinite;
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-.animate-blinkCursor {
-  animation: blinkCursor 500ms steps(2) infinite;
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(20, 184, 166, 0.15); }
+  50% { box-shadow: 0 0 20px rgba(20, 184, 166, 0.35); }
 }
 
 @keyframes slideInLeft {
@@ -250,13 +313,44 @@ html, body {
 }
 
 @keyframes micPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(211, 48, 49, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(211, 48, 49, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
 }
 
 @keyframes backdropFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes scanPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 200ms ease-out;
+}
+
+.animate-pulsingDot {
+  animation: pulsingDots 1200ms ease-in-out infinite;
+}
+
+.animate-blinkCursor {
+  animation: blinkCursor 500ms steps(2) infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgb(var(--bg-chat)) 0%, rgb(var(--bg-hover)) 50%, rgb(var(--bg-chat)) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.animate-scan-pulse {
+  animation: scanPulse 2s ease-in-out infinite;
 }
 
 /* ══════════════════════════════════════
@@ -288,7 +382,8 @@ html, body {
    ══════════════════════════════════════ */
 
 button, a, input, textarea, select {
-  transition: all 150ms ease-out;
+  transition: background-color 120ms ease-out, border-color 120ms ease-out,
+              color 120ms ease-out, box-shadow 200ms ease-out, opacity 120ms ease-out;
 }
 
 /* ══════════════════════════════════════
@@ -296,6 +391,24 @@ button, a, input, textarea, select {
    ══════════════════════════════════════ */
 
 ::selection {
-  background: rgb(var(--accent-primary) / 0.3);
+  background: rgb(var(--accent-primary) / 0.25);
   color: rgb(var(--text-primary));
+}
+
+/* ══════════════════════════════════════
+   CODE BLOCK HEADER
+   ══════════════════════════════════════ */
+
+.code-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background: rgb(var(--surface-elevated));
+  border-bottom: 1px solid rgb(var(--border-subtle));
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: rgb(var(--text-secondary));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }

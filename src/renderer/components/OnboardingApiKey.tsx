@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Eye, EyeOff, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Check, CircleAlert, LoaderCircle } from 'lucide-react';
 import { providerManager } from '../services/ai-providers/provider-manager';
 import type { ProviderID } from '@shared/types';
 
@@ -111,7 +111,7 @@ export default function OnboardingApiKey({ onContinue }: OnboardingApiKeyProps):
                   )}
                   {keyState.status === 'invalid' && (
                     <span className="flex items-center gap-1 text-status-error text-xs">
-                      <AlertCircle size={12} /> Invalid
+                      <CircleAlert size={12} /> Invalid
                     </span>
                   )}
                 </div>
@@ -143,7 +143,7 @@ export default function OnboardingApiKey({ onContinue }: OnboardingApiKeyProps):
                 >
                   {keyState.status === 'testing' ? (
                     <>
-                      <Loader2 size={12} className="animate-spin" /> Testing...
+                      <LoaderCircle size={12} className="animate-spin" /> Testing...
                     </>
                   ) : (
                     'Test Key'

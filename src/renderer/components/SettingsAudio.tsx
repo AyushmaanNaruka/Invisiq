@@ -1,8 +1,9 @@
-import { Volume2 } from 'lucide-react';
-import type { AppSettings, SpeechEngine } from '@shared/types';
+import { Volume2, Radio } from 'lucide-react';
+import type { AppSettings, SpeechEngine, AudioCaptureSource } from '@shared/types';
 
 interface SettingsAudioProps {
   settings: AppSettings['audio'];
+  meetingSettings: AppSettings['meeting'];
   onUpdate: (key: string, value: unknown) => Promise<void>;
 }
 
@@ -26,8 +27,15 @@ const ENGINES: { value: SpeechEngine; label: string; description: string }[] = [
   { value: 'whisper', label: 'OpenAI Whisper', description: 'Paid — requires OpenAI API key, higher accuracy' },
 ];
 
+const AUDIO_SOURCES: { value: AudioCaptureSource; label: string; description: string }[] = [
+  { value: 'system', label: 'System Audio', description: 'Capture what the computer plays (WASAPI loopback)' },
+  { value: 'microphone', label: 'Microphone', description: 'Capture microphone input only' },
+  { value: 'both', label: 'Both', description: 'Capture system audio and microphone combined' },
+];
+
 export default function SettingsAudio({
   settings,
+  meetingSettings,
   onUpdate,
 }: SettingsAudioProps): JSX.Element {
   return (
@@ -42,7 +50,7 @@ export default function SettingsAudio({
 
       {/* Speech Engine */}
       <div>
-        <label className="block text-text-secondary text-xs mb-1.5">Speech Engine</label>
+        <label className="block text-text-secondary text-xs mb-1.5">Speech Engine (Microphone)</label>
         <div className="space-y-2">
           {ENGINES.map((engine) => (
             <label
@@ -59,7 +67,7 @@ export default function SettingsAudio({
                 value={engine.value}
                 checked={settings.engine === engine.value}
                 onChange={() => onUpdate('audio.engine', engine.value)}
-                className="mt-0.5 accent-[#00B894]"
+                className="mt-0.5 accent-[#14B8A6]"
               />
               <div>
                 <span className="text-text-primary text-xs block">{engine.label}</span>
@@ -98,9 +106,79 @@ export default function SettingsAudio({
           type="checkbox"
           checked={settings.autoIncludeTranscript}
           onChange={(e) => onUpdate('audio.autoIncludeTranscript', e.target.checked)}
-          className="rounded accent-[#00B894]"
+          className="rounded accent-[#14B8A6]"
         />
       </label>
+
+      {/* ── Meeting / System Audio ─────────────── */}
+      <div className="pt-1 border-t border-border-subtle">
+        <div className="flex items-center gap-1.5 mb-3">
+          <Radio size={13} strokeWidth={1.75} className="text-accent-primary" />
+          <span className="text-xs font-medium text-text-primary">Meeting Mode</span>
+        </div>
+
+        {/* System audio source */}
+        <div className="mb-3">
+          <label className="block text-text-secondary text-xs mb-1.5">Audio Source</label>
+          <div className="space-y-1.5">
+            {AUDIO_SOURCES.map((src) => (
+              <label
+                key={src.value}
+                className={`flex items-start gap-2 cursor-pointer p-2 rounded-md border transition-colors ${
+                  meetingSettings.audioSource === src.value
+                    ? 'border-accent-primary bg-accent-primary/5'
+                    : 'border-border-subtle hover:border-border-focus'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="audio-source"
+                  value={src.value}
+                  checked={meetingSettings.audioSource === src.value}
+                  onChange={() => onUpdate('meeting.audioSource', src.value)}
+                  className="mt-0.5 accent-[#14B8A6]"
+                />
+                <div>
+                  <span className="text-text-primary text-xs block">{src.label}</span>
+                  <span className="text-text-placeholder text-[10px]">{src.description}</span>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Auto-suggest */}
+        <label className="flex items-center justify-between cursor-pointer mb-3">
+          <div>
+            <span className="text-text-primary text-xs block">Auto-suggest Answers</span>
+            <span className="text-text-placeholder text-[10px]">
+              AI generates answer suggestions when a question is detected
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={meetingSettings.autoSuggestEnabled}
+            onChange={(e) => onUpdate('meeting.autoSuggestEnabled', e.target.checked)}
+            className="rounded accent-[#14B8A6]"
+          />
+        </label>
+
+        {/* Live transcription */}
+        <label className="flex items-center justify-between cursor-pointer">
+          <div>
+            <span className="text-text-primary text-xs block">Live Transcription</span>
+            <span className="text-text-placeholder text-[10px]">
+              Show real-time transcript in Meeting panel
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={meetingSettings.liveTranscriptionEnabled}
+            onChange={(e) => onUpdate('meeting.liveTranscriptionEnabled', e.target.checked)}
+            className="rounded accent-[#14B8A6]"
+          />
+        </label>
+      </div>
     </div>
   );
 }

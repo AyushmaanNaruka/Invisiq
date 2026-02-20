@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
-import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { X, CircleCheck, CircleAlert, Info } from 'lucide-react';
+import { toastSlide } from './ui/animations';
 
 // ══════════════════════════════════════
 //  TYPES
@@ -48,13 +50,11 @@ export function ToastProvider({ children }: { children: ReactNode }): JSX.Elemen
       const toast: Toast = { id, type, message, action };
 
       setToasts((prev) => {
-        // Max 3 visible, remove oldest if needed
         const updated = [...prev, toast];
         return updated.length > 3 ? updated.slice(-3) : updated;
       });
 
-      // Auto-dismiss after 3 seconds
-      setTimeout(() => removeToast(id), 3000);
+      setTimeout(() => removeToast(id), 3500);
     },
     [removeToast]
   );
@@ -71,9 +71,9 @@ export function ToastProvider({ children }: { children: ReactNode }): JSX.Elemen
 //  TOAST CONTAINER
 // ══════════════════════════════════════
 
-const ICON_MAP: Record<ToastType, typeof CheckCircle2> = {
-  success: CheckCircle2,
-  error: AlertCircle,
+const ICON_MAP: Record<ToastType, typeof CircleCheck> = {
+  success: CircleCheck,
+  error: CircleAlert,
   info: Info,
 };
 
@@ -95,40 +95,49 @@ function ToastContainer({
 }: {
   toasts: Toast[];
   onDismiss: (id: string) => void;
-}): JSX.Element | null {
-  if (toasts.length === 0) return null;
-
+}): JSX.Element {
   return (
     <div className="fixed bottom-8 right-3 z-[60] flex flex-col gap-2 pointer-events-none">
-      {toasts.map((toast) => {
-        const Icon = ICON_MAP[toast.type];
-        return (
-          <div
-            key={toast.id}
-            className={`pointer-events-auto flex items-start gap-2 px-3 py-2 rounded-lg border shadow-dropdown backdrop-blur-sm ${COLOR_MAP[toast.type]}`}
-            style={{ animation: 'toastSlideIn 200ms ease-out', maxWidth: '280px' }}
-          >
-            <Icon size={14} className={`shrink-0 mt-0.5 ${ICON_COLOR_MAP[toast.type]}`} />
-            <div className="flex-1 min-w-0">
-              <p className="text-text-primary text-xs leading-relaxed">{toast.message}</p>
-              {toast.action && (
-                <button
-                  onClick={toast.action.onClick}
-                  className="text-accent-primary text-[10px] font-medium hover:underline mt-0.5"
-                >
-                  {toast.action.label}
-                </button>
-              )}
-            </div>
-            <button
-              onClick={() => onDismiss(toast.id)}
-              className="shrink-0 p-0.5 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
+      <AnimatePresence mode="popLayout">
+        {toasts.map((toast) => {
+          const Icon = ICON_MAP[toast.type];
+          return (
+            <motion.div
+              key={toast.id}
+              variants={toastSlide}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              layout
+              className={[
+                'pointer-events-auto flex items-start gap-2 px-3 py-2',
+                'rounded-lg border shadow-dropdown backdrop-blur-sm',
+                COLOR_MAP[toast.type],
+              ].join(' ')}
+              style={{ maxWidth: '280px' }}
             >
-              <X size={10} />
-            </button>
-          </div>
-        );
-      })}
+              <Icon size={14} strokeWidth={1.75} className={`shrink-0 mt-0.5 ${ICON_COLOR_MAP[toast.type]}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-text-primary text-xs leading-relaxed">{toast.message}</p>
+                {toast.action && (
+                  <button
+                    onClick={toast.action.onClick}
+                    className="text-accent-primary text-[10px] font-medium hover:underline mt-0.5"
+                  >
+                    {toast.action.label}
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => onDismiss(toast.id)}
+                className="shrink-0 p-0.5 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
+              >
+                <X size={10} strokeWidth={1.75} />
+              </button>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
     </div>
   );
 }

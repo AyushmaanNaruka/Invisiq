@@ -13,6 +13,7 @@ export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
   'new-conversation': 'CommandOrControl+Alt+N',
   'hide-overlay': 'Escape',
   'paste-response': 'CommandOrControl+Shift+V',
+  'toggle-passthrough': 'CommandOrControl+Shift+P',
 };
 
 // ══════════════════════════════════════
@@ -131,6 +132,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
     showStatusBar: true,
     autoScroll: true,
     showTimestamps: false,
+    // Phase 4
+    animationsEnabled: true,
+    glassEffect: false,
   },
 
   hotkeys: { ...DEFAULT_HOTKEYS },
@@ -142,6 +146,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
     logApiRequests: false,
     processName: 'SystemHelper',
     showTrayIcon: false,
+    // Phase 4
+    clickThroughEnabled: false,
+    codeDetectionEnabled: true,
+    codeDetectionIntervalMs: 30000,
   },
 
   customModes: [],
@@ -152,9 +160,43 @@ export const DEFAULT_SETTINGS: AppSettings = {
     autoIncludeTranscript: true,
   },
 
+  // Phase 4: Meeting
+  meeting: {
+    enableSystemAudio: false,
+    audioSource: 'microphone',
+    autoSuggestEnabled: false,
+    silenceThresholdMs: 3000,
+    liveTranscriptionEnabled: false,
+  },
+
+  // Phase 4: Companion
+  companion: {
+    enabled: false,
+    port: 3847,
+    requirePairing: true,
+    pairedDevices: [],
+    autoStart: false,
+  },
+
+  // Phase 4: Templates
+  templates: {
+    customTemplates: [],
+    recentIds: [],
+  },
+
+  // Phase 4: Memory
+  memory: {
+    enabled: true,
+    autoExtract: true,
+    maxFactsPerConversation: 10,
+    maxContextFacts: 5,
+    factRetentionDays: 0,
+    totalFactsLimit: 500,
+  },
+
   isFirstLaunch: true,
   onboardingComplete: false,
-  version: '1.0.0',
+  version: '2.0.0',
 };
 
 // ══════════════════════════════════════
@@ -282,4 +324,9 @@ export const VALID_RENDERER_CHANNELS = [
   'update:progress',
   'update:downloaded',
   'update:error',
+  // Phase 4
+  'audio:chunk',
+  'companion:message',
+  'companion:device-connected',
+  'companion:device-disconnected',
 ] as const;

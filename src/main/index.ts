@@ -10,6 +10,7 @@ import { stopClipboardMonitor } from './clipboard-monitor';
 import { initMonitorManager } from './monitors';
 import { initializeAutoUpdater } from './updater';
 import { createTray } from './tray';
+import { initMemoryStore } from './memory';
 import { AI_API_DOMAINS } from '@shared/constants';
 
 // ══════════════════════════════════════
@@ -132,6 +133,9 @@ app.whenReady().then(async () => {
 
     // Create system tray (if enabled in settings)
     createTray();
+
+    // Initialize memory store (async, non-blocking)
+    initMemoryStore().catch((err) => console.error('[Memory] Init failed:', err));
   });
 });
 

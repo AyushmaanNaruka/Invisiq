@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Copy, Check, ClipboardPaste, Loader2 } from 'lucide-react';
+import { Copy, Check, ClipboardPaste, LoaderCircle } from 'lucide-react';
 import hljs from 'highlight.js';
 import { useToast } from './Toast';
 
@@ -84,7 +84,7 @@ export default function CodeBlock({ code, language }: CodeBlockProps): JSX.Eleme
           >
             {pasting ? (
               <>
-                <Loader2 size={10} className="animate-spin" />
+                <LoaderCircle size={10} className="animate-spin" />
                 <span>Pasting...</span>
               </>
             ) : (

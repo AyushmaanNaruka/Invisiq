@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
-import { Copy, Check, AlertCircle, ClipboardPaste, Loader2 } from 'lucide-react';
+import { Copy, Check, CircleAlert, ClipboardPaste, LoaderCircle } from 'lucide-react';
 import CodeBlock from './CodeBlock';
 import { useToast } from './Toast';
+import { fadeInUp, iconSwap } from './ui/animations';
 import type { ChatMessage } from '@shared/types';
 
 interface MessageBubbleProps {
@@ -41,48 +43,9 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
     }
   };
 
-  // Error messages
-  if (message.role === 'error') {
-    return (
-      <div className="mx-3 my-2 animate-fadeIn">
-        <div className="px-3 py-2 rounded-lg bg-status-error/15 border border-status-error/30">
-          <div className="flex items-start gap-2">
-            <AlertCircle size={14} className="text-status-error mt-0.5 shrink-0" />
-            <p className="text-sm text-status-error">{message.content}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // User messages
-  if (message.role === 'user') {
-    return (
-      <div className="mx-3 my-2 flex justify-end animate-fadeIn">
-        <div className="max-w-[85%]">
-          {/* Screenshot thumbnail */}
-          {message.images && message.images.length > 0 && (
-            <div className="flex justify-end mb-1">
-              {message.images.map((img, i) => (
-                <img
-                  key={i}
-                  src={`data:${img.mimeType};base64,${img.data}`}
-                  alt="Screenshot"
-                  className="max-w-[120px] max-h-[80px] rounded border border-border-subtle object-cover"
-                />
-              ))}
-            </div>
-          )}
-          <div className="px-3 py-2 rounded-lg bg-bubble-user text-text-primary text-sm whitespace-pre-wrap">
-            {message.content}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Stable components reference — prevents ReactMarkdown from
   // unmounting/remounting child components on every streaming token.
+  // MUST be above all conditional returns to satisfy Rules of Hooks.
   const mdComponents = useMemo<Components>(
     () => ({
       code({ className, children, ...props }) {
@@ -143,19 +106,72 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
     []
   );
 
+  // Error messages
+  if (message.role === 'error') {
+    return (
+      <motion.div
+        variants={fadeInUp}
+        initial="hidden"
+        animate="visible"
+        className="mx-3 my-2"
+      >
+        <div className="px-3 py-2 rounded-lg bg-status-error/15 border border-status-error/30">
+          <div className="flex items-start gap-2">
+            <CircleAlert size={14} strokeWidth={1.75} className="text-status-error mt-0.5 shrink-0" />
+            <p className="text-sm text-status-error">{message.content}</p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // User messages
+  if (message.role === 'user') {
+    return (
+      <motion.div
+        variants={fadeInUp}
+        initial="hidden"
+        animate="visible"
+        className="mx-3 my-2 flex justify-end"
+      >
+        <div className="max-w-[85%]">
+          {/* Screenshot thumbnails */}
+          {message.images && message.images.length > 0 && (
+            <div className="flex justify-end gap-1 mb-1">
+              {message.images.map((img, i) => (
+                <img
+                  key={i}
+                  src={`data:${img.mimeType};base64,${img.data}`}
+                  alt="Screenshot"
+                  className="max-w-[120px] max-h-[80px] rounded-md border border-border-subtle object-cover"
+                />
+              ))}
+            </div>
+          )}
+          <div className="px-3 py-2 rounded-lg bg-bubble-user text-text-primary text-sm whitespace-pre-wrap">
+            {message.content}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   // Assistant messages
   return (
-    <div className="mx-3 my-2 animate-fadeIn">
+    <motion.div
+      variants={fadeInUp}
+      initial="hidden"
+      animate="visible"
+      className="mx-3 my-2"
+    >
       <div className="max-w-[95%]">
-        <div className="px-3 py-2 rounded-lg bg-bubble-ai text-text-primary text-sm">
+        <div className="px-3 py-2 rounded-lg bg-bubble-ai border border-border-subtle/50 text-text-primary text-sm">
           <ReactMarkdown components={mdComponents}>
             {message.content}
           </ReactMarkdown>
 
           {/* Streaming cursor */}
-          {isStreaming && (
-            <span className="inline-block w-2 h-4 bg-text-primary animate-blinkCursor ml-0.5" />
-          )}
+          {isStreaming && <span className="streaming-cursor" />}
         </div>
 
         {/* Actions bar (only when not streaming and has content) */}
@@ -165,17 +181,33 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
               onClick={handleCopy}
               className="flex items-center gap-1 text-[10px] text-text-secondary hover:text-text-primary transition-colors"
             >
-              {copied ? (
-                <>
-                  <Check size={10} className="text-status-success" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy size={10} />
-                  Copy
-                </>
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                {copied ? (
+                  <motion.span
+                    key="check"
+                    variants={iconSwap}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    className="flex items-center gap-1 text-status-success"
+                  >
+                    <Check size={10} strokeWidth={1.75} />
+                    Copied!
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="copy"
+                    variants={iconSwap}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    className="flex items-center gap-1"
+                  >
+                    <Copy size={10} strokeWidth={1.75} />
+                    Copy
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </button>
             <button
               onClick={handlePaste}
@@ -184,12 +216,12 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
             >
               {pasting ? (
                 <>
-                  <Loader2 size={10} className="animate-spin" />
+                  <LoaderCircle size={10} strokeWidth={1.75} className="animate-spin" />
                   Pasting...
                 </>
               ) : (
                 <>
-                  <ClipboardPaste size={10} />
+                  <ClipboardPaste size={10} strokeWidth={1.75} />
                   Paste
                 </>
               )}
@@ -202,6 +234,6 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -103,6 +103,19 @@ export default function SettingsPrivacy({
             className="rounded accent-accent-primary"
           />
         </label>
+
+        <label className="flex items-center justify-between cursor-pointer">
+          <div>
+            <span className="text-text-primary text-xs block">Auto Code Detection</span>
+            <span className="text-text-placeholder text-[10px]">Periodically scan screen to detect coding platforms</span>
+          </div>
+          <input
+            type="checkbox"
+            checked={settings.codeDetectionEnabled ?? false}
+            onChange={(e) => onUpdate('privacy.codeDetectionEnabled', e.target.checked)}
+            className="rounded accent-accent-primary"
+          />
+        </label>
       </div>
 
       {/* Process Name */}

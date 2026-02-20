@@ -1,7 +1,8 @@
-import { GripVertical, Settings, X, Clock, Plus } from 'lucide-react';
+import { GripVertical, Settings, X, Clock, Plus, MousePointer, MousePointerBan } from 'lucide-react';
 import ModeSelector from './ModeSelector';
 import ModelSelector from './ModelSelector';
 import OpacityControl from './OpacityControl';
+import { GhostTooltip } from './ui/GhostTooltip';
 import type { ProviderID, CustomMode } from '@shared/types';
 
 interface HeaderBarProps {
@@ -20,6 +21,8 @@ interface HeaderBarProps {
   onCreateMode: () => void;
   onEditMode: (mode: CustomMode) => void;
   onClose: () => void;
+  isPassthrough?: boolean;
+  onTogglePassthrough?: () => void;
 }
 
 export default function HeaderBar({
@@ -38,6 +41,8 @@ export default function HeaderBar({
   onCreateMode,
   onEditMode,
   onClose,
+  isPassthrough = false,
+  onTogglePassthrough,
 }: HeaderBarProps): JSX.Element {
   return (
     <div
@@ -46,32 +51,41 @@ export default function HeaderBar({
     >
       {/* Drag grip */}
       <div className="text-text-placeholder mr-1">
-        <GripVertical size={14} />
+        <GripVertical size={14} strokeWidth={1.75} />
       </div>
 
       {/* History + New Chat buttons */}
       <div className="flex items-center gap-0.5 no-drag mr-1">
-        <button
-          onClick={onOpenHistory}
-          className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
-          title="Conversation history"
-        >
-          <Clock size={13} />
-        </button>
-        <button
-          onClick={onNewConversation}
-          className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
-          title="New conversation"
-        >
-          <Plus size={13} />
-        </button>
+        <GhostTooltip content="History" placement="bottom">
+          <button
+            onClick={onOpenHistory}
+            className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <Clock size={13} strokeWidth={1.75} />
+          </button>
+        </GhostTooltip>
+        <GhostTooltip content="New chat" placement="bottom">
+          <button
+            onClick={onNewConversation}
+            className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <Plus size={13} strokeWidth={1.75} />
+          </button>
+        </GhostTooltip>
       </div>
 
       {/* Separator */}
       <div className="w-px h-4 bg-border-subtle mx-1" />
 
       {/* Mode selector */}
-      <ModeSelector activeMode={activeMode} customModes={customModes} compact={compact} onModeChange={onModeChange} onCreateMode={onCreateMode} onEditMode={onEditMode} />
+      <ModeSelector
+        activeMode={activeMode}
+        customModes={customModes}
+        compact={compact}
+        onModeChange={onModeChange}
+        onCreateMode={onCreateMode}
+        onEditMode={onEditMode}
+      />
 
       {/* Separator */}
       <div className="w-px h-4 bg-border-subtle mx-1" />
@@ -92,21 +106,45 @@ export default function HeaderBar({
       <div className="flex items-center gap-0.5 no-drag">
         {!compact && <OpacityControl opacity={opacity} onOpacityChange={onOpacityChange} />}
 
-        <button
-          onClick={onOpenSettings}
-          className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
-          title="Settings"
-        >
-          <Settings size={14} />
-        </button>
+        {onTogglePassthrough && (
+          <GhostTooltip
+            content={isPassthrough ? 'Click-through ON (Ctrl+Shift+P to toggle)' : 'Click-through mode (Ctrl+Shift+P)'}
+            placement="bottom"
+          >
+            <button
+              onClick={onTogglePassthrough}
+              className={`p-1 rounded transition-colors ${
+                isPassthrough
+                  ? 'text-accent-primary bg-accent-primary/10 hover:bg-accent-primary/20'
+                  : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
+              }`}
+            >
+              {isPassthrough ? (
+                <MousePointerBan size={14} strokeWidth={1.75} />
+              ) : (
+                <MousePointer size={14} strokeWidth={1.75} />
+              )}
+            </button>
+          </GhostTooltip>
+        )}
 
-        <button
-          onClick={onClose}
-          className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
-          title="Hide (Escape)"
-        >
-          <X size={14} />
-        </button>
+        <GhostTooltip content="Settings" placement="bottom">
+          <button
+            onClick={onOpenSettings}
+            className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <Settings size={14} strokeWidth={1.75} />
+          </button>
+        </GhostTooltip>
+
+        <GhostTooltip content="Hide (Esc)" placement="bottom">
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-status-error transition-colors"
+          >
+            <X size={14} strokeWidth={1.75} />
+          </button>
+        </GhostTooltip>
       </div>
     </div>
   );

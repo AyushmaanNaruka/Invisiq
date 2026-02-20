@@ -20,6 +20,9 @@ interface InputAreaProps {
   micAvailable: boolean;
   micError: string | null;
   onToggleMic: () => void;
+  // Template injection (external text to fill into the input)
+  injectedText?: string | null;
+  onInjectedTextConsumed?: () => void;
 }
 
 export default function InputArea({
@@ -36,6 +39,8 @@ export default function InputArea({
   micAvailable,
   micError,
   onToggleMic,
+  injectedText,
+  onInjectedTextConsumed,
 }: InputAreaProps): JSX.Element {
   const [text, setText] = useState('');
   const internalRef = useRef<HTMLTextAreaElement>(null);
@@ -74,6 +79,15 @@ export default function InputArea({
       showToast('error', `Mic: ${micError}`);
     }
   }, [micError, showToast]);
+
+  // Consume injected text from templates
+  useEffect(() => {
+    if (injectedText) {
+      setText(injectedText);
+      onInjectedTextConsumed?.();
+      textareaRef.current?.focus();
+    }
+  }, [injectedText, onInjectedTextConsumed, textareaRef]);
 
   const handleSend = useCallback(() => {
     const trimmed = text.trim();

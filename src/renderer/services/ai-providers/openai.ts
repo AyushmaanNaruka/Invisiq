@@ -50,6 +50,19 @@ export class OpenAIProvider implements AIProvider {
     try {
       const messages = this.buildMessages(request);
 
+      console.log('[OpenAI] API call:', {
+        model: request.model,
+        max_tokens: request.maxTokens || 4096,
+        temperature: request.temperature ?? 0.7,
+        messageCount: messages.length,
+        messages: messages.map((m) => ({
+          role: m.role,
+          contentType: typeof m.content,
+          contentLength: typeof m.content === 'string' ? m.content.length : Array.isArray(m.content) ? (m.content as unknown[]).length : 0,
+          contentPreview: typeof m.content === 'string' ? m.content.slice(0, 80) : `[${Array.isArray(m.content) ? (m.content as unknown[]).length + ' parts' : typeof m.content}]`,
+        })),
+      });
+
       const stream = await this.client.chat.completions.create(
         {
           model: request.model,
@@ -96,7 +109,14 @@ export class OpenAIProvider implements AIProvider {
         latency: Date.now() - startTime,
       };
     } catch (error: unknown) {
-      if ((error as Error).name === 'AbortError') {
+      const err = error as { name?: string; status?: number; message?: string; error?: { message?: string; type?: string; code?: string } };
+      console.error('[OpenAI] Chat error:', {
+        name: err.name,
+        status: err.status,
+        message: err.message,
+        errorBody: err.error,
+      });
+      if (err.name === 'AbortError') {
         yield { type: 'done' };
         return {
           content: fullContent,
@@ -106,7 +126,7 @@ export class OpenAIProvider implements AIProvider {
           latency: Date.now() - startTime,
         };
       }
-      yield { type: 'error', error: (error as Error).message };
+      yield { type: 'error', error: err.message || 'Unknown error' };
       return {
         content: fullContent,
         model: request.model,
@@ -138,6 +158,14 @@ export class OpenAIProvider implements AIProvider {
       if (msg.role === 'user' && msg.images && msg.images.length > 0) {
         const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
         for (const img of msg.images) {
+          if (!img.data || typeof img.data !== 'string') {
+            console.error('[OpenAI] Invalid image data in message:', {
+              mimeType: img.mimeType,
+              dataType: typeof img.data,
+              dataIsNull: img.data === null,
+            });
+            continue;
+          }
           content.push({
             type: 'image_url',
             image_url: { url: `data:${img.mimeType};base64,${img.data}` },
@@ -166,6 +194,14 @@ export class OpenAIProvider implements AIProvider {
         if (!alreadyHasImages) {
           const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
           for (const img of request.images) {
+            if (!img.data || typeof img.data !== 'string') {
+              console.error('[OpenAI] Invalid request-level image data:', {
+                mimeType: img.mimeType,
+                dataType: typeof img.data,
+                dataIsNull: img.data === null,
+              });
+              continue;
+            }
             content.push({
               type: 'image_url',
               image_url: { url: `data:${img.mimeType};base64,${img.data}` },

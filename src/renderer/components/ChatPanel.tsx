@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Ghost } from 'lucide-react';
 import MessageBubble from './MessageBubble';
+import { fadeInUp } from './ui/animations';
 import type { ChatMessage } from '@shared/types';
 
 interface ChatPanelProps {
@@ -21,7 +24,6 @@ export default function ChatPanel({ messages, isStreaming, streamingMessageId }:
     }
   }, []);
 
-  // Auto-scroll on new messages and during streaming
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
@@ -49,7 +51,6 @@ export default function ChatPanel({ messages, isStreaming, streamingMessageId }:
     [messages.length]
   );
 
-  // Scroll focused message into view
   useEffect(() => {
     if (focusedIndex >= 0 && scrollRef.current) {
       const children = scrollRef.current.children;
@@ -62,9 +63,18 @@ export default function ChatPanel({ messages, isStreaming, streamingMessageId }:
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center bg-bg-chat">
-        <div className="text-center px-6">
-          <div className="text-4xl mb-3">👻</div>
-          <h1 className="text-text-primary text-lg font-semibold mb-2">GhostAI</h1>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center px-6"
+        >
+          <div className="flex justify-center mb-3">
+            <div className="w-12 h-12 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center">
+              <Ghost size={24} strokeWidth={1.75} className="text-accent-primary" />
+            </div>
+          </div>
+          <h1 className="text-text-primary text-lg font-semibold mb-1.5">GhostAI</h1>
           <p className="text-text-secondary text-xs mb-4">
             Your invisible AI assistant
           </p>
@@ -74,7 +84,7 @@ export default function ChatPanel({ messages, isStreaming, streamingMessageId }:
             <p>Ctrl+Shift+R &mdash; Capture region</p>
             <p>Escape &mdash; Hide overlay</p>
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -87,28 +97,43 @@ export default function ChatPanel({ messages, isStreaming, streamingMessageId }:
       tabIndex={0}
       className="flex-1 overflow-y-auto bg-bg-chat py-2 focus:outline-none"
     >
-      {messages.map((msg, index) => (
-        <div
-          key={msg.id}
-          className={focusedIndex === index ? 'ring-1 ring-accent-primary/50 rounded-lg mx-1' : ''}
-        >
-          <MemoizedMessageBubble
-            message={msg}
-            isStreaming={isStreaming && msg.id === streamingMessageId}
-          />
-        </div>
-      ))}
-
-      {/* Streaming indicator (pulsing dots) */}
-      {isStreaming && messages[messages.length - 1]?.role === 'user' && (
-        <div className="mx-3 my-2">
-          <div className="inline-flex gap-1 px-3 py-2 rounded-lg bg-bubble-ai">
-            <div className="w-1.5 h-1.5 rounded-full bg-text-secondary animate-pulsingDot" />
-            <div className="w-1.5 h-1.5 rounded-full bg-text-secondary animate-pulsingDot" style={{ animationDelay: '200ms' }} />
-            <div className="w-1.5 h-1.5 rounded-full bg-text-secondary animate-pulsingDot" style={{ animationDelay: '400ms' }} />
+      <AnimatePresence initial={false}>
+        {messages.map((msg, index) => (
+          <div
+            key={msg.id}
+            className={focusedIndex === index ? 'ring-1 ring-accent-primary/40 rounded-lg mx-1' : ''}
+          >
+            <MemoizedMessageBubble
+              message={msg}
+              isStreaming={isStreaming && msg.id === streamingMessageId}
+            />
           </div>
-        </div>
-      )}
+        ))}
+      </AnimatePresence>
+
+      {/* Streaming thinking dots (while waiting for first token) */}
+      <AnimatePresence>
+        {isStreaming && messages[messages.length - 1]?.role === 'user' && (
+          <motion.div
+            key="thinking"
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="mx-3 my-2"
+          >
+            <div className="inline-flex gap-1 px-3 py-2 rounded-lg bg-bubble-ai border border-border-subtle/50">
+              {[0, 200, 400].map((delay) => (
+                <div
+                  key={delay}
+                  className="w-1.5 h-1.5 rounded-full bg-text-secondary animate-pulsingDot"
+                  style={{ animationDelay: `${delay}ms` }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

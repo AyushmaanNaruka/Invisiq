@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Shield, CircleCheck, TriangleAlert } from 'lucide-react';
 
 interface OnboardingStealthTestProps {
   onFinish: () => void;
@@ -58,14 +58,14 @@ export default function OnboardingStealthTest({ onFinish, onBack }: OnboardingSt
                 onClick={() => setTestResult('passed')}
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-status-success/40 bg-status-success/10 text-status-success text-sm font-medium hover:bg-status-success/20 transition-colors"
               >
-                <CheckCircle2 size={16} />
+                <CircleCheck size={16} />
                 No, it's invisible
               </button>
               <button
                 onClick={() => setTestResult('failed')}
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-status-error/40 bg-status-error/10 text-status-error text-sm font-medium hover:bg-status-error/20 transition-colors"
               >
-                <AlertTriangle size={16} />
+                <TriangleAlert size={16} />
                 Yes, I can see it
               </button>
             </div>
@@ -75,7 +75,7 @@ export default function OnboardingStealthTest({ onFinish, onBack }: OnboardingSt
         {testResult === 'passed' && (
           <div className="rounded-lg border border-status-success/40 bg-status-success/10 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 size={16} className="text-status-success" />
+              <CircleCheck size={16} className="text-status-success" />
               <span className="text-status-success text-sm font-semibold">Stealth Active</span>
             </div>
             <p className="text-text-secondary text-xs">
@@ -87,7 +87,7 @@ export default function OnboardingStealthTest({ onFinish, onBack }: OnboardingSt
         {testResult === 'failed' && (
           <div className="rounded-lg border border-status-warning/40 bg-status-warning/10 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle size={16} className="text-status-warning" />
+              <TriangleAlert size={16} className="text-status-warning" />
               <span className="text-status-warning text-sm font-semibold">Troubleshooting</span>
             </div>
             <ul className="space-y-1.5 text-text-secondary text-xs list-disc list-inside">

@@ -1,4 +1,5 @@
-import { ipcMain, app, clipboard, shell } from 'electron';
+import { ipcMain, app, clipboard, shell, nativeImage, dialog } from 'electron';
+import { promises as fs } from 'fs';
 import {
   toggleOverlay,
   hideOverlay,
@@ -7,6 +8,7 @@ import {
   setOverlayPosition,
   setOverlaySize,
   getOverlayBounds,
+  setPassthrough,
 } from './overlay';
 import {
   getSettings,
@@ -21,7 +23,7 @@ import {
   registerAllHotkeys,
   updateHotkey,
 } from './hotkeys';
-import { captureFullScreen } from './screenshot';
+import { captureFullScreen, captureForSnip, captureSilent } from './screenshot';
 import { openRegionSelector } from './region-selector';
 import { getMonitors, moveOverlayToMonitor } from './monitors';
 import { smartPaste } from './clipboard';
@@ -37,7 +39,9 @@ import {
   deleteAllConversations,
 } from './conversations';
 import { BUILT_IN_MODES } from '@shared/constants';
-import type { HotkeyAction, ProviderID, Conversation, CustomMode } from '@shared/types';
+import type { HotkeyAction, ProviderID, Conversation, CustomMode, RegionCropRequest, AudioCaptureSource, PromptTemplate, ExportFormat } from '@shared/types';
+import { getOverlayWindow } from './overlay';
+import { startSystemCapture, stopSystemCapture, getCaptureStatus } from './audio-capture';
 
 const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'ollama'];
 
@@ -103,6 +107,18 @@ export function registerIPCHandlers(): void {
       return result;
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Screenshot capture failed');
+    }
+  });
+
+  ipcMain.handle('screenshot:capture-silent', async (_event, args?: unknown) => {
+    try {
+      const monitorId = (args && typeof args === 'object' && 'monitorId' in args)
+        ? (args as { monitorId: string }).monitorId
+        : undefined;
+      const result = await captureSilent(monitorId);
+      return result;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Silent capture failed');
     }
   });
 
@@ -528,4 +544,253 @@ export function registerIPCHandlers(): void {
   ipcMain.handle('update:install', () => {
     installUpdate();
   });
+
+  // ══════════════════════════════════════
+  //  PHASE 4: CLICK-THROUGH & INVISIBLE SNIPPING
+  // ══════════════════════════════════════
+
+  ipcMain.handle('overlay:set-passthrough', (_event, args: unknown) => {
+    const { enabled, forward = true } = (args as { enabled: boolean; forward?: boolean }) || {};
+    setPassthrough(Boolean(enabled), Boolean(forward));
+  });
+
+  ipcMain.handle('screenshot:capture-for-snip', async () => {
+    return captureForSnip();
+  });
+
+  ipcMain.handle('screenshot:crop-region', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { screenshotBase64, x, y, width, height, devicePixelRatio } = args as RegionCropRequest;
+
+    // Clamp to positive values
+    const scale = devicePixelRatio || 1;
+    const sx = Math.max(0, Math.round(x * scale));
+    const sy = Math.max(0, Math.round(y * scale));
+    const sw = Math.max(1, Math.round(width * scale));
+    const sh = Math.max(1, Math.round(height * scale));
+
+    const img = nativeImage.createFromBuffer(Buffer.from(screenshotBase64, 'base64'));
+    const { width: imgW, height: imgH } = img.getSize();
+
+    // Clamp crop to image bounds
+    const clampedX = Math.min(sx, imgW - 1);
+    const clampedY = Math.min(sy, imgH - 1);
+    const clampedW = Math.min(sw, imgW - clampedX);
+    const clampedH = Math.min(sh, imgH - clampedY);
+
+    const cropped = img.crop({ x: clampedX, y: clampedY, width: clampedW, height: clampedH });
+    return {
+      base64: cropped.toPNG().toString('base64'),
+      width: clampedW,
+      height: clampedH,
+      timestamp: Date.now(),
+    };
+  });
+
+  // ══════════════════════════════════════
+  //  PHASE 4: AUDIO CAPTURE
+  // ══════════════════════════════════════
+
+  ipcMain.handle('audio:start-system-capture', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { source, chunkIntervalMs } = args as { source: AudioCaptureSource; chunkIntervalMs: number };
+
+    const overlayWin = getOverlayWindow();
+    if (!overlayWin) {
+      return { success: false, method: 'unavailable' };
+    }
+
+    return startSystemCapture(overlayWin, source || 'microphone', chunkIntervalMs || 5000);
+  });
+
+  ipcMain.handle('audio:stop-system-capture', () => {
+    stopSystemCapture();
+  });
+
+  ipcMain.handle('audio:capture-status', () => {
+    return getCaptureStatus();
+  });
+
+  // ══════════════════════════════════════
+  //  PHASE 4: COMPANION (stub — Sprint 16)
+  // ══════════════════════════════════════
+
+  ipcMain.handle('companion:start', async (_event, args: unknown) => {
+    // Full implementation in Sprint 16 companion-server.ts
+    const { port } = (args as { port?: number }) || {};
+    try {
+      const { startCompanionServer } = await import('./companion-server');
+      return startCompanionServer(port || 3847);
+    } catch {
+      return { success: false, url: '', qrDataUrl: '' };
+    }
+  });
+
+  ipcMain.handle('companion:stop', async () => {
+    try {
+      const { stopCompanionServer } = await import('./companion-server');
+      stopCompanionServer();
+    } catch { /* not yet implemented */ }
+  });
+
+  ipcMain.handle('companion:status', async () => {
+    try {
+      const { getCompanionStatus } = await import('./companion-server');
+      return getCompanionStatus();
+    } catch {
+      return { running: false, connectedDevices: [], port: 3847 };
+    }
+  });
+
+  ipcMain.handle('companion:devices', async () => {
+    try {
+      const { getConnectedDevices } = await import('./companion-server');
+      return getConnectedDevices();
+    } catch {
+      return [];
+    }
+  });
+
+  // ══════════════════════════════════════
+  //  PHASE 4: TEMPLATES (stub — Sprint 16)
+  // ══════════════════════════════════════
+
+  ipcMain.handle('template:list', async () => {
+    try {
+      const { listTemplates } = await import('./template-store');
+      return listTemplates();
+    } catch {
+      return { builtIn: [], custom: [] };
+    }
+  });
+
+  ipcMain.handle('template:save', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { template } = args as { template: PromptTemplate };
+    try {
+      const { saveTemplate } = await import('./template-store');
+      return saveTemplate(template);
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed' };
+    }
+  });
+
+  ipcMain.handle('template:delete', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { id } = args as { id: string };
+    try {
+      const { deleteTemplate } = await import('./template-store');
+      return deleteTemplate(id);
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Failed' };
+    }
+  });
+
+  // ══════════════════════════════════════
+  //  PHASE 4: EXPORT (Sprint 16)
+  // ══════════════════════════════════════
+
+  ipcMain.handle('export:conversation', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { id, format } = args as { id: string; format: ExportFormat };
+    try {
+      const { exportConversationFile } = await import('./export-service');
+      return exportConversationFile(id, format);
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Export failed' };
+    }
+  });
+
+  ipcMain.handle('export:save-dialog', async (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') throw new Error('Invalid args');
+    const { defaultName, format } = args as { defaultName: string; format: ExportFormat };
+
+    const ext = format === 'json' ? 'json' : format === 'markdown' ? 'md' : format === 'pdf' ? 'pdf' : 'txt';
+    const filters = [{ name: format.toUpperCase(), extensions: [ext] }];
+
+    const result = await dialog.showSaveDialog({
+      defaultPath: `${defaultName}.${ext}`,
+      filters,
+    });
+
+    return { path: result.canceled ? null : (result.filePath ?? null) };
+  });
+
+  // ══════════════════════════════════════
+  //  PHASE 4: MEMORY (Sprint 17)
+  // ══════════════════════════════════════
+
+  ipcMain.handle('memory:search', async (_event, args: unknown) => {
+    const { query, limit } = (args as { query: string; limit?: number }) || {};
+    try {
+      const { getMemoryStore } = await import('./memory');
+      const store = getMemoryStore();
+      return store ? store.search(query || '', limit || 5) : [];
+    } catch { return []; }
+  });
+
+  ipcMain.handle('memory:add', async (_event, args: unknown) => {
+    const { content, tags } = (args as { content: string; tags?: string[] }) || {};
+    try {
+      const { getMemoryStore } = await import('./memory');
+      const store = getMemoryStore();
+      if (!store) return { id: '' };
+      const id = await store.add(content, 'user', tags);
+      return { id };
+    } catch { return { id: '' }; }
+  });
+
+  ipcMain.handle('memory:delete', async (_event, args: unknown) => {
+    const { id } = (args as { id: string }) || {};
+    try {
+      const { getMemoryStore } = await import('./memory');
+      const store = getMemoryStore();
+      if (!store) return { success: false };
+      const success = await store.delete(id);
+      return { success };
+    } catch { return { success: false }; }
+  });
+
+  ipcMain.handle('memory:list', async (_event, args: unknown) => {
+    const { page, limit } = (args as { page: number; limit?: number }) || {};
+    try {
+      const { getMemoryStore } = await import('./memory');
+      const store = getMemoryStore();
+      if (!store) return { facts: [], total: 0 };
+      return store.list(page || 1, limit || 20);
+    } catch { return { facts: [], total: 0 }; }
+  });
+
+  ipcMain.handle('memory:clear-all', async () => {
+    try {
+      const { getMemoryStore } = await import('./memory');
+      const store = getMemoryStore();
+      if (!store) return { count: 0 };
+      const count = await store.clearAll();
+      return { count };
+    } catch { return { count: 0 }; }
+  });
+
+  ipcMain.handle('memory:stats', async () => {
+    try {
+      const { getMemoryStore } = await import('./memory');
+      const store = getMemoryStore();
+      if (!store) return { totalFacts: 0, totalSize: 0, oldestFact: '', newestFact: '' };
+      return store.stats();
+    } catch { return { totalFacts: 0, totalSize: 0, oldestFact: '', newestFact: '' }; }
+  });
+
+  ipcMain.handle('memory:extract', async (_event, args: unknown) => {
+    const { conversationId } = (args as { conversationId: string }) || {};
+    try {
+      const { getMemoryStore } = await import('./memory');
+      const store = getMemoryStore();
+      if (!store) return { extracted: 0 };
+      const extracted = await store.extractFromConversation(conversationId);
+      return { extracted };
+    } catch { return { extracted: 0 }; }
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  void fs; // imported for export-service use
 }

@@ -136,6 +136,10 @@ export class GeminiProvider implements AIProvider {
 
       if (msg.images && msg.images.length > 0) {
         for (const img of msg.images) {
+          if (!img.data || typeof img.data !== 'string') {
+            console.error('[Gemini] Invalid image data in history:', { dataType: typeof img.data });
+            continue;
+          }
           parts.push({
             inlineData: {
               mimeType: img.mimeType,
@@ -162,6 +166,10 @@ export class GeminiProvider implements AIProvider {
     const hasMessageImages = lastMsg?.images && lastMsg.images.length > 0;
     if (hasMessageImages) {
       for (const img of lastMsg.images) {
+        if (!img.data || typeof img.data !== 'string') {
+          console.error('[Gemini] Invalid image data in last message:', { dataType: typeof img.data });
+          continue;
+        }
         lastUserParts.push({
           inlineData: {
             mimeType: img.mimeType,
@@ -174,6 +182,10 @@ export class GeminiProvider implements AIProvider {
     // Attach request-level images only if message doesn't already have images
     if (!hasMessageImages && request.images && request.images.length > 0) {
       for (const img of request.images) {
+        if (!img.data || typeof img.data !== 'string') {
+          console.error('[Gemini] Invalid request-level image data:', { dataType: typeof img.data });
+          continue;
+        }
         lastUserParts.push({
           inlineData: {
             mimeType: img.mimeType,

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { X, Search, Trash2, Download, MessageSquare, Loader2 } from 'lucide-react';
+import { X, Search, Trash2, Download, MessageSquare, LoaderCircle } from 'lucide-react';
 import type { ConversationMeta } from '@shared/types';
 
 // ══════════════════════════════════════

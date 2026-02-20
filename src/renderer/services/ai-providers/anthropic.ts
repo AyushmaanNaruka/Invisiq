@@ -50,6 +50,19 @@ export class AnthropicProvider implements AIProvider {
     try {
       const messages = this.buildMessages(request);
 
+      console.log('[Anthropic] API call:', {
+        model: request.model,
+        max_tokens: request.maxTokens || 4096,
+        hasSystem: !!request.systemPrompt,
+        messageCount: messages.length,
+        messages: messages.map((m) => ({
+          role: m.role,
+          contentType: typeof m.content,
+          contentLength: typeof m.content === 'string' ? m.content.length : (m.content as unknown[]).length,
+          contentPreview: typeof m.content === 'string' ? m.content.slice(0, 80) : `[${(m.content as unknown[]).length} blocks]`,
+        })),
+      });
+
       const stream = this.client.messages.stream(
         {
           model: request.model,
@@ -101,7 +114,14 @@ export class AnthropicProvider implements AIProvider {
         latency: Date.now() - startTime,
       };
     } catch (error: unknown) {
-      if ((error as Error).name === 'AbortError') {
+      const err = error as { name?: string; status?: number; message?: string; error?: { message?: string; type?: string } };
+      console.error('[Anthropic] Chat error:', {
+        name: err.name,
+        status: err.status,
+        message: err.message,
+        errorBody: err.error,
+      });
+      if (err.name === 'AbortError') {
         yield { type: 'done' };
         return {
           content: fullContent,
@@ -111,7 +131,7 @@ export class AnthropicProvider implements AIProvider {
           latency: Date.now() - startTime,
         };
       }
-      yield { type: 'error', error: (error as Error).message };
+      yield { type: 'error', error: err.message || 'Unknown error' };
       return {
         content: fullContent,
         model: request.model,
@@ -137,6 +157,14 @@ export class AnthropicProvider implements AIProvider {
       if (msg.role === 'user' && msg.images && msg.images.length > 0) {
         const content: Anthropic.ContentBlockParam[] = [];
         for (const img of msg.images) {
+          if (!img.data || typeof img.data !== 'string') {
+            console.error('[Anthropic] Invalid image data in message:', {
+              mimeType: img.mimeType,
+              dataType: typeof img.data,
+              dataIsNull: img.data === null,
+            });
+            continue; // Skip broken images instead of sending null
+          }
           content.push({
             type: 'image',
             source: {
@@ -169,6 +197,14 @@ export class AnthropicProvider implements AIProvider {
         if (!alreadyHasImages) {
           const content: Anthropic.ContentBlockParam[] = [];
           for (const img of request.images) {
+            if (!img.data || typeof img.data !== 'string') {
+              console.error('[Anthropic] Invalid request-level image data:', {
+                mimeType: img.mimeType,
+                dataType: typeof img.data,
+                dataIsNull: img.data === null,
+              });
+              continue;
+            }
             content.push({
               type: 'image',
               source: {

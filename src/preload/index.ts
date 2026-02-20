@@ -14,6 +14,11 @@ const VALID_CHANNELS = [
   'update:progress',
   'update:downloaded',
   'update:error',
+  // Phase 4
+  'audio:chunk',
+  'companion:message',
+  'companion:device-connected',
+  'companion:device-disconnected',
 ];
 
 const ghostAPI = {
@@ -35,6 +40,9 @@ const ghostAPI = {
       ipcRenderer.invoke('overlay:set-size', { width, height }),
     getBounds: (): Promise<{ x: number; y: number; width: number; height: number }> =>
       ipcRenderer.invoke('overlay:get-bounds'),
+    // Phase 4
+    setPassthrough: (enabled: boolean, forward?: boolean): Promise<void> =>
+      ipcRenderer.invoke('overlay:set-passthrough', { enabled, forward }),
   },
 
   // ══════════════════════════════════════
@@ -47,6 +55,14 @@ const ghostAPI = {
       ipcRenderer.invoke('screenshot:capture-region'),
     getMonitors: () =>
       ipcRenderer.invoke('screenshot:capture-monitors'),
+    // Phase 4 — silent capture (no overlay hide/show, for background OCR)
+    captureSilent: (monitorId?: string) =>
+      ipcRenderer.invoke('screenshot:capture-silent', monitorId ? { monitorId } : undefined),
+    // Phase 4 — inline snipping
+    captureForSnip: () =>
+      ipcRenderer.invoke('screenshot:capture-for-snip'),
+    cropRegion: (req: unknown) =>
+      ipcRenderer.invoke('screenshot:crop-region', req),
   },
 
   // ══════════════════════════════════════
@@ -161,6 +177,74 @@ const ghostAPI = {
       ipcRenderer.invoke('update:download'),
     install: () =>
       ipcRenderer.invoke('update:install'),
+  },
+
+  // ══════════════════════════════════════
+  //  PHASE 4: AUDIO CAPTURE
+  // ══════════════════════════════════════
+  audio: {
+    startSystemCapture: (source: string, chunkIntervalMs: number) =>
+      ipcRenderer.invoke('audio:start-system-capture', { source, chunkIntervalMs }),
+    stopSystemCapture: () =>
+      ipcRenderer.invoke('audio:stop-system-capture'),
+    captureStatus: () =>
+      ipcRenderer.invoke('audio:capture-status'),
+  },
+
+  // ══════════════════════════════════════
+  //  PHASE 4: COMPANION
+  // ══════════════════════════════════════
+  companion: {
+    start: (port: number) =>
+      ipcRenderer.invoke('companion:start', { port }),
+    stop: () =>
+      ipcRenderer.invoke('companion:stop'),
+    status: () =>
+      ipcRenderer.invoke('companion:status'),
+    devices: () =>
+      ipcRenderer.invoke('companion:devices'),
+  },
+
+  // ══════════════════════════════════════
+  //  PHASE 4: TEMPLATES
+  // ══════════════════════════════════════
+  template: {
+    list: () =>
+      ipcRenderer.invoke('template:list'),
+    save: (template: unknown) =>
+      ipcRenderer.invoke('template:save', { template }),
+    delete: (id: string) =>
+      ipcRenderer.invoke('template:delete', { id }),
+  },
+
+  // ══════════════════════════════════════
+  //  PHASE 4: EXPORT
+  // ══════════════════════════════════════
+  export: {
+    conversation: (id: string, format: string) =>
+      ipcRenderer.invoke('export:conversation', { id, format }),
+    saveDialog: (defaultName: string, format: string) =>
+      ipcRenderer.invoke('export:save-dialog', { defaultName, format }),
+  },
+
+  // ══════════════════════════════════════
+  //  PHASE 4: MEMORY
+  // ══════════════════════════════════════
+  memory: {
+    search: (query: string, limit?: number) =>
+      ipcRenderer.invoke('memory:search', { query, limit }),
+    add: (content: string, tags?: string[]) =>
+      ipcRenderer.invoke('memory:add', { content, tags }),
+    delete: (id: string) =>
+      ipcRenderer.invoke('memory:delete', { id }),
+    list: (page: number, limit?: number) =>
+      ipcRenderer.invoke('memory:list', { page, limit }),
+    clearAll: () =>
+      ipcRenderer.invoke('memory:clear-all'),
+    stats: () =>
+      ipcRenderer.invoke('memory:stats'),
+    extract: (conversationId: string) =>
+      ipcRenderer.invoke('memory:extract', { conversationId }),
   },
 
   // ══════════════════════════════════════

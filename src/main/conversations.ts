@@ -7,15 +7,18 @@ import type { Conversation, ConversationMeta } from '@shared/types';
 //  CONSTANTS
 // ══════════════════════════════════════
 
-const CONVERSATIONS_DIR = path.join(app.getPath('userData'), 'conversations');
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function getConversationsDir(): string {
+  return path.join(app.getPath('userData'), 'conversations');
+}
 
 // ══════════════════════════════════════
 //  DIRECTORY SETUP
 // ══════════════════════════════════════
 
 export async function ensureConversationsDir(): Promise<void> {
-  await fs.mkdir(CONVERSATIONS_DIR, { recursive: true });
+  await fs.mkdir(getConversationsDir(), { recursive: true });
 }
 
 // ══════════════════════════════════════
@@ -27,7 +30,7 @@ function isValidId(id: string): boolean {
 }
 
 function conversationPath(id: string): string {
-  return path.join(CONVERSATIONS_DIR, `${id}.json`);
+  return path.join(getConversationsDir(), `${id}.json`);
 }
 
 function generateTitle(firstUserMessage: string): string {
@@ -111,7 +114,7 @@ export async function listConversations(): Promise<ConversationMeta[]> {
 
   let files: string[];
   try {
-    files = await fs.readdir(CONVERSATIONS_DIR);
+    files = await fs.readdir(getConversationsDir());
   } catch {
     return [];
   }
@@ -121,7 +124,7 @@ export async function listConversations(): Promise<ConversationMeta[]> {
 
   for (const file of jsonFiles) {
     try {
-      const filePath = path.join(CONVERSATIONS_DIR, file);
+      const filePath = path.join(getConversationsDir(), file);
       const data = await fs.readFile(filePath, 'utf-8');
       const conversation = JSON.parse(data) as Conversation;
       metas.push(buildMeta(conversation));
@@ -168,7 +171,7 @@ export async function searchConversations(query: string): Promise<ConversationMe
 
   let files: string[];
   try {
-    files = await fs.readdir(CONVERSATIONS_DIR);
+    files = await fs.readdir(getConversationsDir());
   } catch {
     return [];
   }
@@ -178,7 +181,7 @@ export async function searchConversations(query: string): Promise<ConversationMe
 
   for (const file of jsonFiles) {
     try {
-      const filePath = path.join(CONVERSATIONS_DIR, file);
+      const filePath = path.join(getConversationsDir(), file);
       const data = await fs.readFile(filePath, 'utf-8');
       const conversation = JSON.parse(data) as Conversation;
 
@@ -260,7 +263,7 @@ export async function deleteAllConversations(): Promise<number> {
 
   let files: string[];
   try {
-    files = await fs.readdir(CONVERSATIONS_DIR);
+    files = await fs.readdir(getConversationsDir());
   } catch {
     return 0;
   }
@@ -270,7 +273,7 @@ export async function deleteAllConversations(): Promise<number> {
 
   for (const file of jsonFiles) {
     try {
-      await fs.unlink(path.join(CONVERSATIONS_DIR, file));
+      await fs.unlink(path.join(getConversationsDir(), file));
       deleted++;
     } catch {
       continue;

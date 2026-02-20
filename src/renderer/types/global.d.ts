@@ -8,6 +8,14 @@ import type {
   ConversationMeta,
   Mode,
   CustomMode,
+  RegionCropRequest,
+  AudioCaptureSource,
+  CompanionDevice,
+  PromptTemplate,
+  ExportFormat,
+  MemoryFact,
+  MemorySearchResult,
+  MemoryStats,
 } from '@shared/types';
 
 declare global {
@@ -21,11 +29,19 @@ declare global {
         setPosition(x: number, y: number): Promise<void>;
         setSize(width: number, height: number): Promise<void>;
         getBounds(): Promise<{ x: number; y: number; width: number; height: number }>;
+        /** Phase 4: Click-through passthrough mode */
+        setPassthrough(enabled: boolean, forward?: boolean): Promise<void>;
       };
       screenshot: {
         captureFull(monitorId?: string): Promise<ScreenshotResult>;
         captureRegion(): Promise<ScreenshotResult | null>;
         getMonitors(): Promise<{ monitors: MonitorInfo[] }>;
+        /** Phase 4: Silent capture — no overlay hide/show (for background OCR) */
+        captureSilent(monitorId?: string): Promise<ScreenshotResult>;
+        /** Phase 4: Capture full screen for inline snipping (leaves overlay visible) */
+        captureForSnip(): Promise<ScreenshotResult>;
+        /** Phase 4: Crop the snip screenshot to the user-selected region */
+        cropRegion(req: RegionCropRequest): Promise<ScreenshotResult>;
       };
       monitors: {
         getAll(): Promise<{ monitors: MonitorInfo[] }>;
@@ -75,6 +91,46 @@ declare global {
         check(): Promise<void>;
         download(): Promise<void>;
         install(): Promise<void>;
+      };
+      /** Phase 4: System audio capture */
+      audio: {
+        startSystemCapture(
+          source: AudioCaptureSource,
+          chunkIntervalMs: number
+        ): Promise<{ success: boolean; method: 'native' | 'powershell' | 'unavailable' }>;
+        stopSystemCapture(): Promise<void>;
+        captureStatus(): Promise<{ active: boolean; method: string }>;
+      };
+      /** Phase 4: Companion device server */
+      companion: {
+        start(port: number): Promise<{ success: boolean; url: string; qrDataUrl: string }>;
+        stop(): Promise<void>;
+        status(): Promise<{ running: boolean; connectedDevices: CompanionDevice[]; port: number }>;
+        devices(): Promise<CompanionDevice[]>;
+      };
+      /** Phase 4: Prompt templates */
+      template: {
+        list(): Promise<{ builtIn: PromptTemplate[]; custom: PromptTemplate[] }>;
+        save(template: PromptTemplate): Promise<{ success: boolean }>;
+        delete(id: string): Promise<{ success: boolean }>;
+      };
+      /** Phase 4: Conversation export */
+      export: {
+        conversation(id: string, format: ExportFormat): Promise<{ success: boolean; path?: string }>;
+        saveDialog(
+          defaultName: string,
+          format: ExportFormat
+        ): Promise<{ path: string | null }>;
+      };
+      /** Phase 4: Local memory (RAG) */
+      memory: {
+        search(query: string, limit?: number): Promise<MemorySearchResult[]>;
+        add(content: string, tags?: string[]): Promise<{ id: string }>;
+        delete(id: string): Promise<{ success: boolean }>;
+        list(page: number, limit?: number): Promise<{ facts: MemoryFact[]; total: number }>;
+        clearAll(): Promise<{ count: number }>;
+        stats(): Promise<MemoryStats>;
+        extract(conversationId: string): Promise<{ extracted: number }>;
       };
       on(channel: string, callback: (...args: unknown[]) => void): () => void;
       off(channel: string, callback: (...args: unknown[]) => void): void;

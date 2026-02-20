@@ -16,6 +16,7 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
         },
+        external: ['electron-audio-loopback'],
       },
     },
     resolve: {

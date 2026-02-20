@@ -85,6 +85,20 @@ export function useAI(): UseAIReturn {
         stream: true,
       };
 
+      console.log('[useAI] Request:', {
+        model: request.model,
+        messageCount: request.messages.length,
+        messages: request.messages.map((m) => ({
+          role: m.role,
+          contentLength: m.content?.length ?? 0,
+          contentPreview: m.content?.slice(0, 100),
+          hasImages: !!(m.images && m.images.length > 0),
+        })),
+        hasSystemPrompt: !!request.systemPrompt,
+        systemPromptPreview: request.systemPrompt?.slice(0, 80),
+        hasRequestImages: !!(request.images && request.images.length > 0),
+      });
+
       const generator = provider.chat(request);
       let result = await generator.next();
 

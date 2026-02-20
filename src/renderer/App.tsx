@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { MotionConfig, AnimatePresence, useReducedMotion } from 'framer-motion';
 import HeaderBar from './components/HeaderBar';
 import ChatPanel from './components/ChatPanel';
 import InputArea from './components/InputArea';
@@ -9,6 +10,11 @@ import ConversationHistory from './components/ConversationHistory';
 import CustomModeEditor from './components/CustomModeEditor';
 import OnboardingFlow from './components/OnboardingFlow';
 import UpdateNotification from './components/UpdateNotification';
+import InlineRegionSelector from './components/InlineRegionSelector';
+import MeetingPanel from './components/MeetingPanel';
+import MemoryPanel from './components/MemoryPanel';
+import TemplateLibrary from './components/TemplateLibrary';
+import CodeDetectionCard from './components/CodeDetectionCard';
 import { ToastProvider, useToast } from './components/Toast';
 import { useConversation } from './hooks/useConversation';
 import { useConversationHistory } from './hooks/useConversationHistory';
@@ -16,7 +22,12 @@ import { useAI } from './hooks/useAI';
 import { useScreenshot } from './hooks/useScreenshot';
 import { useSettings } from './hooks/useSettings';
 import { useHotkeys } from './hooks/useHotkeys';
+import { useClickThrough } from './hooks/useClickThrough';
 import { useAudioTranscription } from './hooks/useAudioTranscription';
+import { useLiveTranscription } from './hooks/useLiveTranscription';
+import { useMeetingAssistant } from './hooks/useMeetingAssistant';
+import { useCodeDetection } from './hooks/useCodeDetection';
+import { useMemory } from './hooks/useMemory';
 import { useTokenCost } from './hooks/useTokenCost';
 import { useInternalKeyboard } from './hooks/useInternalKeyboard';
 import { useWindowSize } from './hooks/useWindowSize';
@@ -53,7 +64,7 @@ function ClipboardListener({ onAnalyze }: { onAnalyze: (text: string) => void })
   return null;
 }
 
-export default function App(): JSX.Element {
+function AppInner(): JSX.Element {
   const { settings, isLoading: settingsLoading, updateSetting } = useSettings();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
 
@@ -98,7 +109,17 @@ export default function App(): JSX.Element {
     deleteAllConversations,
   } = useConversationHistory();
   const { isStreaming, error, lastUsage, sendMessage, stopGeneration } = useAI();
-  const { pendingScreenshots, captureFull, captureRegion, clearScreenshot, clearAllScreenshots } = useScreenshot();
+  const {
+    pendingScreenshots,
+    snipScreenshot,
+    captureFull,
+    captureRegion,
+    confirmRegion,
+    cancelSnip,
+    clearScreenshot,
+    clearAllScreenshots,
+  } = useScreenshot();
+  const { isPassthrough, togglePassthrough } = useClickThrough();
   const { registerCallback } = useHotkeys();
   const { lastRequest: costLastRequest, conversation: costConversation, session: costSession, recordUsage, resetConversation: resetCostConversation } = useTokenCost();
 
@@ -122,6 +143,45 @@ export default function App(): JSX.Element {
     }
   }, [isListening, startListening, stopListening, settings.audio?.engine, settings.audio?.language]);
 
+  // Phase 4: system audio / live transcription
+  const {
+    isActive: isSystemAudioActive,
+    liveTranscript,
+    captureMethod,
+    start: startSystemAudio,
+    stop: stopSystemAudio,
+    clear: clearLiveTranscript,
+  } = useLiveTranscription();
+
+  // Phase 4: meeting assistant — question detection
+  const { detectedQuestions, dismissQuestion, clearAll: clearQuestions } = useMeetingAssistant({
+    liveTranscript,
+    silenceThresholdMs: settings.meeting?.silenceThresholdMs ?? 3000,
+    autoSuggestEnabled: settings.meeting?.autoSuggestEnabled ?? false,
+  });
+
+  // Phase 4: code detection
+  const { lastDetection: codeDetection, dismiss: dismissCodeDetection } = useCodeDetection({
+    enabled: settings.privacy?.codeDetectionEnabled ?? false,
+    intervalMs: settings.privacy?.codeDetectionIntervalMs ?? 30000,
+  });
+
+  const [meetingPanelOpen, setMeetingPanelOpen] = useState(false);
+
+  // Auto-open meeting panel when in meeting mode with system audio enabled
+  useEffect(() => {
+    if (settings.activeMode === 'meeting' && settings.meeting?.enableSystemAudio) {
+      setMeetingPanelOpen(true);
+    }
+  }, [settings.activeMode, settings.meeting?.enableSystemAudio]);
+
+  const handleUseQuestion = useCallback(
+    (questionText: string) => {
+      setInjectedInputText(questionText);
+    },
+    []
+  );
+
   // Responsive layout
   const { mode: layoutMode } = useWindowSize();
   const compact = layoutMode === 'compact';
@@ -137,14 +197,21 @@ export default function App(): JSX.Element {
       refreshHistory();
       setHistoryOpen(true);
     },
+    openTemplateLibrary: () => setTemplateLibraryOpen((prev) => !prev),
   });
+
+  // Phase 4: memory (RAG)
+  const { buildContextPrefix, autoExtractFromMessage } = useMemory(settings.memory?.enabled ?? false);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [modeEditorOpen, setModeEditorOpen] = useState(false);
+  const [memoryPanelOpen, setMemoryPanelOpen] = useState(false);
+  const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [editingMode, setEditingMode] = useState<CustomMode | undefined>(undefined);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [availableProviders, setAvailableProviders] = useState<Set<ProviderID>>(new Set());
+  const [injectedInputText, setInjectedInputText] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Apply font size from settings on mount/change
@@ -282,8 +349,10 @@ export default function App(): JSX.Element {
 
   const handleSend = useCallback(
     async (text: string) => {
-      // Build images array from pending screenshots
-      const images = pendingScreenshots.length > 0 ? pendingScreenshots : undefined;
+      // Build images array from pending screenshots (clone to prevent mutation by clearAll)
+      const images = pendingScreenshots.length > 0
+        ? pendingScreenshots.map((img) => ({ ...img }))
+        : undefined;
 
       // Meeting mode auto-context: prepend transcript for AI but show original text in chat
       let aiText = text;
@@ -295,9 +364,22 @@ export default function App(): JSX.Element {
         aiText = `[Current meeting transcript:\n${transcript.trim()}]\n\n${text}`;
       }
 
+      // Phase 4: memory context injection
+      if (settings.memory?.enabled) {
+        const memPrefix = await buildContextPrefix(text, settings.memory.maxContextFacts ?? 5);
+        if (memPrefix) {
+          aiText = memPrefix + aiText;
+        }
+      }
+
       // Add user message to conversation (shows original text)
       addUserMessage(text, images);
       clearAllScreenshots();
+
+      // Phase 4: Auto-extract facts from user message (non-blocking)
+      if (settings.memory?.enabled && settings.memory?.autoExtract) {
+        autoExtractFromMessage(text).catch(() => {});
+      }
 
       // Add empty assistant message to fill with streaming content
       const assistantMsg = addAssistantMessage();
@@ -344,7 +426,12 @@ export default function App(): JSX.Element {
       settings.activeModel,
       settings.customModes,
       settings.audio?.autoIncludeTranscript,
+      settings.memory?.enabled,
+      settings.memory?.autoExtract,
+      settings.memory?.maxContextFacts,
       transcript,
+      buildContextPrefix,
+      autoExtractFromMessage,
       sendMessage,
       appendToMessage,
       updateMessage,
@@ -407,6 +494,8 @@ export default function App(): JSX.Element {
         onCreateMode={handleCreateMode}
         onEditMode={handleEditMode}
         onClose={handleClose}
+        isPassthrough={isPassthrough}
+        onTogglePassthrough={togglePassthrough}
       />
 
       <ChatPanel
@@ -436,7 +525,24 @@ export default function App(): JSX.Element {
         micAvailable={micAvailable}
         micError={micError}
         onToggleMic={handleToggleMic}
+        injectedText={injectedInputText}
+        onInjectedTextConsumed={() => setInjectedInputText(null)}
       />
+
+      {/* Phase 4: Code detection notification */}
+      <AnimatePresence>
+        {codeDetection && (
+          <CodeDetectionCard
+            detection={codeDetection}
+            activeMode={settings.activeMode}
+            onDismiss={dismissCodeDetection}
+            onSwitchToCoding={() => {
+              updateSetting('activeMode', 'coding');
+              dismissCodeDetection();
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <StatusBar
         isStreaming={isStreaming}
@@ -449,6 +555,40 @@ export default function App(): JSX.Element {
           session: costSession,
         }}
       />
+
+      {/* Phase 4: Meeting panel — absolute overlay on the right side */}
+      <MeetingPanel
+        isOpen={meetingPanelOpen}
+        isSystemAudioActive={isSystemAudioActive}
+        liveTranscript={liveTranscript}
+        detectedQuestions={detectedQuestions}
+        captureMethod={captureMethod}
+        onClose={() => setMeetingPanelOpen(false)}
+        onStartCapture={() => startSystemAudio(settings.meeting?.audioSource ?? 'system')}
+        onStopCapture={stopSystemAudio}
+        onClearTranscript={clearLiveTranscript}
+        onDismissQuestion={dismissQuestion}
+        onUseQuestion={handleUseQuestion}
+      />
+
+      {/* Phase 4: Memory panel */}
+      <MemoryPanel
+        isOpen={memoryPanelOpen}
+        onClose={() => setMemoryPanelOpen(false)}
+      />
+
+      {/* Phase 4: Template library */}
+      <AnimatePresence>
+        {templateLibraryOpen && (
+          <TemplateLibrary
+            isOpen={templateLibraryOpen}
+            onClose={() => setTemplateLibraryOpen(false)}
+            onApply={(prompt) => {
+              setInjectedInputText(prompt);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       <Settings
         isOpen={settingsOpen}
@@ -483,7 +623,27 @@ export default function App(): JSX.Element {
           setEditingMode(undefined);
         }}
       />
+
+      {/* Phase 4: Inline region selector — rendered over all chat content */}
+      <AnimatePresence>
+        {snipScreenshot && (
+          <InlineRegionSelector
+            screenshot={snipScreenshot}
+            onSelect={confirmRegion}
+            onCancel={cancelSnip}
+          />
+        )}
+      </AnimatePresence>
     </div>
     </ToastProvider>
+  );
+}
+
+export default function App(): JSX.Element {
+  const prefersReduced = useReducedMotion();
+  return (
+    <MotionConfig reducedMotion={prefersReduced ? 'always' : 'never'}>
+      <AppInner />
+    </MotionConfig>
   );
 }

@@ -8,15 +8,11 @@ files:
   - "!out/types-*"
   - package.json
   - node_modules/**/*
-extraResources:
-  - from: assets/icons/tray-icon.png
-    to: assets/icons/tray-icon.png
 win:
   target:
     - target: nsis
       arch:
         - x64
-  icon: assets/icons/icon.ico
 nsis:
   oneClick: false
   perMachine: false

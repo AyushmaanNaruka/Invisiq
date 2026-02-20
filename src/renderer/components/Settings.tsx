@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, Eye, EyeOff, Check, AlertCircle, Loader2, Trash2, Server } from 'lucide-react';
+import {
+  X, Eye, EyeOff, Check, CircleAlert, LoaderCircle, Trash2, Server,
+  Key, Keyboard, Monitor, Shield, Mic, Brain, Smartphone, FileText,
+} from 'lucide-react';
 import { providerManager } from '../services/ai-providers/provider-manager';
 import SettingsHotkeys from './SettingsHotkeys';
 import SettingsDisplay from './SettingsDisplay';
 import SettingsPrivacy from './SettingsPrivacy';
 import SettingsAudio from './SettingsAudio';
+import SettingsMemory from './SettingsMemory';
+import SettingsCompanion from './SettingsCompanion';
 import { DEFAULT_HOTKEYS } from '@shared/constants';
 import type { ProviderID, AppSettings, HotkeyAction } from '@shared/types';
 
@@ -30,7 +35,7 @@ const PROVIDERS: { id: ProviderID; name: string; placeholder: string; isServerUr
   { id: 'ollama', name: 'Ollama (Local)', placeholder: 'http://localhost:11434', isServerUrl: true },
 ];
 
-type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio';
+type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio' | 'memory' | 'companion' | 'templates';
 
 export default function Settings({ isOpen, onClose, settings, onUpdateSetting, compact = false }: SettingsProps): JSX.Element | null {
   const [activeTab, setActiveTab] = useState<TabId>('api-keys');
@@ -142,12 +147,15 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
 
   if (!isOpen) return null;
 
-  const tabs: { id: TabId; label: string }[] = [
-    { id: 'api-keys', label: 'API Keys' },
-    { id: 'hotkeys', label: 'Hotkeys' },
-    { id: 'display', label: 'Display' },
-    { id: 'privacy', label: 'Privacy' },
-    { id: 'audio', label: 'Audio' },
+  const NAV_ITEMS: { id: TabId; icon: JSX.Element; label: string }[] = [
+    { id: 'api-keys', icon: <Key size={16} strokeWidth={1.75} />, label: 'API Keys' },
+    { id: 'hotkeys', icon: <Keyboard size={16} strokeWidth={1.75} />, label: 'Hotkeys' },
+    { id: 'display', icon: <Monitor size={16} strokeWidth={1.75} />, label: 'Display' },
+    { id: 'privacy', icon: <Shield size={16} strokeWidth={1.75} />, label: 'Privacy' },
+    { id: 'audio', icon: <Mic size={16} strokeWidth={1.75} />, label: 'Audio' },
+    { id: 'memory', icon: <Brain size={16} strokeWidth={1.75} />, label: 'Memory' },
+    { id: 'companion', icon: <Smartphone size={16} strokeWidth={1.75} />, label: 'Companion' },
+    { id: 'templates', icon: <FileText size={16} strokeWidth={1.75} />, label: 'Templates' },
   ];
 
   return (
@@ -157,39 +165,51 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
 
       {/* Settings panel */}
       <div
-        className={`${compact ? 'w-full' : 'w-[320px]'} h-full bg-bg-overlay border-l border-border-subtle flex flex-col`}
+        className={`${compact ? 'w-full' : 'w-[360px]'} h-full bg-bg-overlay border-l border-border-subtle flex flex-col`}
         style={{ animation: 'slideInRight 250ms ease-out' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
-          <span className="text-text-primary text-md font-semibold">Settings</span>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle shrink-0">
+          <span className="text-text-primary text-sm font-semibold">Settings</span>
           <button
             onClick={onClose}
             className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
           >
-            <X size={16} />
+            <X size={15} strokeWidth={1.75} />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-border-subtle">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-2 py-2 text-xs font-medium transition-colors ${
-                activeTab === tab.id
-                  ? 'text-accent-primary border-b-2 border-accent-primary'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* Body: icon sidebar + content */}
+        <div className="flex flex-1 min-h-0">
+          {/* Left icon sidebar */}
+          <div className="w-12 border-r border-border-subtle flex flex-col py-2 gap-1 shrink-0">
+            {NAV_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                title={item.label}
+                className={`mx-1 p-2 rounded-md flex items-center justify-center transition-colors ${
+                  activeTab === item.id
+                    ? 'bg-accent-primary/10 text-accent-primary'
+                    : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
+                }`}
+              >
+                {item.icon}
+              </button>
+            ))}
+          </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+          {/* Right content area */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Section label */}
+            <div className="px-4 py-2 border-b border-border-subtle shrink-0">
+              <span className="text-xs font-medium text-text-primary">
+                {NAV_ITEMS.find((n) => n.id === activeTab)?.label}
+              </span>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4">
           {activeTab === 'api-keys' && (
             <div className="space-y-5">
               {PROVIDERS.map(({ id, name, placeholder, isServerUrl }) => {
@@ -208,7 +228,7 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                       )}
                       {keyState.status === 'invalid' && (
                         <span className="flex items-center gap-1 text-status-error text-xs">
-                          <AlertCircle size={12} /> {isServerUrl ? 'Unreachable' : 'Invalid'}
+                          <CircleAlert size={12} /> {isServerUrl ? 'Unreachable' : 'Invalid'}
                         </span>
                       )}
                     </div>
@@ -250,7 +270,7 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                       >
                         {keyState.status === 'testing' ? (
                           <>
-                            <Loader2 size={12} className="animate-spin" /> Testing...
+                            <LoaderCircle size={12} className="animate-spin" /> Testing...
                           </>
                         ) : (
                           isServerUrl ? 'Test Connection' : 'Test Key'
@@ -315,9 +335,39 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
           {activeTab === 'audio' && (
             <SettingsAudio
               settings={settings.audio}
+              meetingSettings={settings.meeting}
               onUpdate={onUpdateSetting}
             />
           )}
+
+          {activeTab === 'memory' && (
+            <SettingsMemory
+              settings={settings.memory}
+              onUpdate={onUpdateSetting}
+            />
+          )}
+
+          {activeTab === 'companion' && (
+            <SettingsCompanion
+              enabled={settings.companion?.enabled ?? false}
+              port={settings.companion?.port ?? 3847}
+              onUpdate={onUpdateSetting}
+            />
+          )}
+
+          {activeTab === 'templates' && (
+            <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
+              <FileText size={28} strokeWidth={1.25} className="text-text-placeholder" />
+              <div>
+                <p className="text-xs font-medium text-text-primary">Template Library</p>
+                <p className="text-[10px] text-text-placeholder mt-1">
+                  Open with Ctrl+T or from the chat input menu
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+          </div>
         </div>
       </div>
 

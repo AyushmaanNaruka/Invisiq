@@ -270,7 +270,9 @@ All IPC channels follow this pattern: `{domain}:{action}`
 
 ```
 overlay:toggle        overlay:hide          overlay:show
+overlay:set-passthrough
 screenshot:capture-full   screenshot:capture-region
+screenshot:capture-for-snip   screenshot:crop-region
 store:get             store:set             store:set-api-key
 hotkeys:register-all  hotkeys:update        hotkeys:triggered
 clipboard:copy        clipboard:smart-paste
@@ -282,6 +284,12 @@ modes:list            modes:save            modes:delete
 app:get-info          app:quit              app:open-data-folder
 monitors:get-all      monitors:move-overlay
 update:check          update:download       update:install
+audio:start-system-capture   audio:stop-system-capture   audio:capture-status
+companion:start  companion:stop  companion:status  companion:devices
+template:list  template:save  template:delete
+export:conversation  export:save-dialog
+memory:search  memory:add  memory:delete  memory:list
+memory:clear-all  memory:stats  memory:extract
 ```
 
 Renderer event channels (main → renderer):
@@ -291,6 +299,8 @@ screenshot:captured   app:error             clipboard:changed
 monitors:changed
 update:checking       update:available      update:not-available
 update:progress       update:downloaded     update:error
+audio:chunk
+companion:message  companion:device-connected  companion:device-disconnected
 ```
 
 Full IPC contract is in `docs/GhostAI-API-Contract.md` Section 2.
@@ -684,7 +694,50 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 - [x] Testing documentation (stealth matrix, benchmarks, checklists)
 - [x] CHANGELOG.md, updated CLAUDE.md
 
-### Phase 4 — Future Enhancements
+### Phase 4 — Invisible Intelligence Platform (COMPLETE)
+
+**Sprint 13:** Enterprise Design System Overhaul
+- [x] New deep-navy command-center color palette (RGB triplet CSS vars, full Tailwind opacity compat)
+- [x] framer-motion v11: `AnimatePresence`, `MotionConfig`, `fadeInUp`/`slideInRight`/`scaleIn` variants
+- [x] UI primitives: `GhostButton`, `GhostInput`, `GhostCard`, `GhostTooltip`, `GhostBadge`, `GhostDivider`
+- [x] All animations respect `prefers-reduced-motion`; `MotionConfig` wraps App root
+
+**Sprint 14:** Click-Through Overlay + Invisible Snipping
+- [x] `useClickThrough` hook → `setIgnoreMouseEvents(true, { forward: true })` passthrough toggle
+- [x] Click-through toggle button in HeaderBar (MousePointer/MousePointerOff icons)
+- [x] `InlineRegionSelector` — canvas-based in-overlay snipping (no external window)
+- [x] `screenshot:capture-for-snip` + `screenshot:crop-region` IPC via `NativeImage.crop()`
+- [x] Old `screenshot:capture-region` IPC preserved for backward compatibility
+
+**Sprint 15:** Live Meeting Assistant + Auto Code Detection
+- [x] `audio-capture.ts` — tries `electron-audio-loopback`, falls back to PowerShell WASAPI loopback
+- [x] `audio:start-system-capture` / `audio:stop-system-capture` / `audio:capture-status` IPC
+- [x] `useLiveTranscription` hook — `audio:chunk` events → 5s Whisper chunk pipeline
+- [x] `useMeetingAssistant` hook — interrogative heuristics + debounced AI auto-suggest
+- [x] `useCodeDetection` hook — 30s periodic OCR via tesseract.js, 8-platform classifier
+- [x] `MeetingPanel` — slide-in with live transcript + detected questions + suggestions
+- [x] `CodeDetectionCard` — dismissible platform notification with "Switch to Coding mode" CTA
+- [x] SettingsAudio expanded: system audio source, meeting mode controls
+
+**Sprint 16:** Companion Mode + Templates + Export
+- [x] `companion-server.ts` — HTTP + WebSocket (`ws`) server on `127.0.0.1:3847`, sequential port scan
+- [x] One-time QR pairing token → persistent device ID; QR rendered via `qrcode` npm package
+- [x] `SettingsCompanion` — start/stop server, QR display, connected devices list, auto-start toggle
+- [x] `template-store.ts` — CRUD for `PromptTemplate` in electron-store
+- [x] 20 built-in templates across 8 categories (coding, writing, analysis, meeting, exam, research, debugging, custom)
+- [x] `TemplateLibrary` modal — searchable/filterable grid + `VariableDialog` for `{{variable}}` substitution
+- [x] Ctrl+T global shortcut to open template library
+- [x] `export-service.ts` — JSON/MD/TXT/PDF export; PDF via hidden `BrowserWindow` + `printToPDF()`
+
+**Sprint 17:** Memory (RAG) + Settings Reorganization + Polish
+- [x] `memory.ts` — TF-IDF `MemoryStore` from scratch (~200 lines), max 500 facts, atomic JSON writes
+- [x] `useMemory` hook + `buildContextPrefix()` — injects relevant facts into AI prompts
+- [x] `SettingsMemory` — enable/auto-extract toggles, context/limit sliders, stats, clear-all
+- [x] `MemoryPanel` — searchable slide-in browser with add/delete, pagination
+- [x] Settings restructured to 8-section left icon sidebar (api-keys, hotkeys, display, privacy, audio, memory, companion, templates)
+- [x] Phase 4 IPC channels documented; CLAUDE.md updated
+
+### Phase 5 — Future Enhancements
 - Plugin system
 - Voice-to-voice conversation mode
 - Multi-window support
@@ -766,5 +819,5 @@ npm install @types/uuid --save-dev
 
 ---
 
-*Last updated: February 19, 2026 (Phase 3 fully complete — all Sprint 9-12 features shipped)*
+*Last updated: February 19, 2026 (Phase 4 fully complete — all Sprint 13-17 features shipped)*
 *This file should be updated whenever major architecture decisions change.*

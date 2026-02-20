@@ -142,3 +142,10 @@ export function setOverlaySize(width: number, height: number): void {
 export function moveToMonitor(monitorId: string): boolean {
   return moveToMonitorImpl(monitorId);
 }
+
+// ── Phase 4: Click-through passthrough ──────────────────────────
+export function setPassthrough(enabled: boolean, forward: boolean = true): void {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.setIgnoreMouseEvents(enabled, { forward });
+  }
+}
