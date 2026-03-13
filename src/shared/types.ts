@@ -280,6 +280,31 @@ export interface MemoryStats {
 }
 
 // ══════════════════════════════════════
+//  PHASE 5: RESILIENCE
+// ══════════════════════════════════════
+
+export type ResilienceAgentState = 'stopped' | 'starting' | 'running' | 'error';
+
+export interface ResilienceStatus {
+  agentState: ResilienceAgentState;
+  pipeConnected: boolean;
+  helperPid: number | null;
+  lastError: string | null;
+  uptime: number;
+}
+
+export interface ResilienceCommand {
+  type: 'start_overlay' | 'hide_overlay' | 'get_status' | 'shutdown' | 'ping';
+  payload?: Record<string, unknown>;
+}
+
+export interface ResilienceResponse {
+  type: 'status' | 'ack' | 'error' | 'pong';
+  payload?: Record<string, unknown>;
+  error?: string;
+}
+
+// ══════════════════════════════════════
 //  APPLICATION SETTINGS
 // ══════════════════════════════════════
 
@@ -367,6 +392,14 @@ export interface AppSettings {
     maxContextFacts: number;
     factRetentionDays: number;
     totalFactsLimit: number;
+  };
+
+  // Phase 5: Resilience
+  resilience: {
+    enabled: boolean;
+    autoStart: boolean;
+    helperPath: string;
+    pipeName: string;
   };
 
   isFirstLaunch: boolean;

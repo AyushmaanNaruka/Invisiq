@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   X, Eye, EyeOff, Check, CircleAlert, LoaderCircle, Trash2, Server,
-  Key, Keyboard, Monitor, Shield, Mic, Brain, Smartphone, FileText,
+  Key, Keyboard, Monitor, Shield, Mic, Brain, Smartphone, FileText, Cpu,
 } from 'lucide-react';
 import { providerManager } from '../services/ai-providers/provider-manager';
 import SettingsHotkeys from './SettingsHotkeys';
@@ -10,6 +10,7 @@ import SettingsPrivacy from './SettingsPrivacy';
 import SettingsAudio from './SettingsAudio';
 import SettingsMemory from './SettingsMemory';
 import SettingsCompanion from './SettingsCompanion';
+import SettingsResilience from './SettingsResilience';
 import { DEFAULT_HOTKEYS } from '@shared/constants';
 import type { ProviderID, AppSettings, HotkeyAction } from '@shared/types';
 
@@ -35,7 +36,7 @@ const PROVIDERS: { id: ProviderID; name: string; placeholder: string; isServerUr
   { id: 'ollama', name: 'Ollama (Local)', placeholder: 'http://localhost:11434', isServerUrl: true },
 ];
 
-type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio' | 'memory' | 'companion' | 'templates';
+type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio' | 'memory' | 'companion' | 'templates' | 'resilience';
 
 export default function Settings({ isOpen, onClose, settings, onUpdateSetting, compact = false }: SettingsProps): JSX.Element | null {
   const [activeTab, setActiveTab] = useState<TabId>('api-keys');
@@ -156,6 +157,7 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
     { id: 'memory', icon: <Brain size={16} strokeWidth={1.75} />, label: 'Memory' },
     { id: 'companion', icon: <Smartphone size={16} strokeWidth={1.75} />, label: 'Companion' },
     { id: 'templates', icon: <FileText size={16} strokeWidth={1.75} />, label: 'Templates' },
+    { id: 'resilience', icon: <Cpu size={16} strokeWidth={1.75} />, label: 'Resilience' },
   ];
 
   return (
@@ -365,6 +367,13 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                 </p>
               </div>
             </div>
+          )}
+
+          {activeTab === 'resilience' && (
+            <SettingsResilience
+              settings={settings.resilience ?? { enabled: false, autoStart: false, helperPath: '', pipeName: 'GhostAI' }}
+              onUpdate={onUpdateSetting}
+            />
           )}
         </div>
           </div>

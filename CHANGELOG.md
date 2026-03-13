@@ -4,6 +4,42 @@ All notable changes to GhostAI are documented here.
 
 ---
 
+## [1.2.0] — Phase 5: Resilience & Camouflage
+
+### Resilience Mode (Native C++ Helper)
+- Native `ghostai_helper.exe` process managed via Electron child process spawning
+- Bidirectional communication over Windows named pipes (`\\.\pipe\GhostAI`, NDJSON protocol)
+- Exponential backoff reconnection (max 5 retries: 300ms → 4800ms)
+- `ghostai_core.dll` — Detours-based API hooking that forces `WDA_EXCLUDEFROMCAPTURE` on target windows
+- 4 new IPC channels: `resilience:start-agent`, `resilience:stop-agent`, `resilience:send-command`, `resilience:status`
+- 2 new renderer events: `resilience:agent-status-changed`, `resilience:agent-response`
+- SettingsResilience tab with start/stop, status monitoring, uptime, PID display, ping test, auto-start toggle
+
+### Process Camouflage Overhaul
+- App now disguises as **Runtime Broker** (a legitimate Windows system process)
+- Executable renamed to `RuntimeBroker.exe` with Microsoft Corporation metadata
+- `app.setAppUserModelId('Microsoft.Windows.RuntimeBroker')` for deeper OS-level disguise
+- Config directory migrated: `%APPDATA%/ghostai/` → `%APPDATA%/RuntimeBroker/`
+- Automatic config migration on first launch (best-effort, non-blocking)
+
+### Ollama OCR Intelligence
+- Screenshots sent to Ollama are now OCR-processed via Tesseract.js
+- Extracted text replaces the image in the AI request — model reads code instead of describing the image
+- Fixes issue where Ollama vision models (llava, etc.) would describe screenshots instead of solving problems
+- Works transparently — no user action needed
+
+### Portable Distribution
+- Build target changed from NSIS installer to portable `.exe`
+- No installer, no registry entries, no Start Menu shortcuts
+- Single file distribution — download, double-click, run
+
+### Other Changes
+- Default process name: `SystemHelper` → `RuntimeBroker`
+- Updated SettingsPrivacy help text for process name field
+- Updated package.json metadata to match Runtime Broker identity
+
+---
+
 ## [1.1.1] — QA Bugfixes
 
 ### Fixes

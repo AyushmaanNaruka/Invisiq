@@ -393,6 +393,7 @@ function AppInner(): JSX.Element {
       await sendMessage(aiText, [...getContextMessages(), { id: '', role: 'user', content: aiText, images, timestamp: '' }], {
         model: settings.activeModel,
         systemPrompt: currentMode?.systemPrompt,
+        images,
         onToken: (token) => {
           appendToMessage(assistantMsg.id, token);
         },

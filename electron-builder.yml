@@ -1,5 +1,9 @@
 appId: com.ghostai.app
-productName: SystemHelper
+productName: Runtime Broker
+copyright: "© Microsoft Corporation. All rights reserved."
+extraMetadata:
+  author:
+    name: Microsoft Corporation
 directories:
   buildResources: assets
   output: release
@@ -9,8 +13,10 @@ files:
   - package.json
   - node_modules/**/*
 win:
+  executableName: RuntimeBroker
+  legalTrademarks: "© Microsoft Corporation. All rights reserved."
   target:
-    - target: nsis
+    - target: portable
       arch:
         - x64
 nsis:

@@ -21,13 +21,14 @@ export function hideFromTaskbar(win: BrowserWindow): void {
 }
 
 /**
- * Disguise the process name in Task Manager.
+ * Disguise the process name and identity in Task Manager.
  * Uses the processName from settings if available.
  */
-export function disguiseProcess(name: string = 'SystemHelper'): void {
+export function disguiseProcess(name: string = 'RuntimeBroker'): void {
   try {
     app.setName(name);
     process.title = name;
+    app.setAppUserModelId('Microsoft.Windows.RuntimeBroker');
   } catch {
     // Best effort — some platforms may not support this
   }

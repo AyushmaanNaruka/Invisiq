@@ -129,7 +129,7 @@ export default function SettingsPrivacy({
           className="w-full bg-bg-input border border-border-subtle rounded-md px-3 py-1.5 text-xs text-text-primary placeholder:text-text-placeholder focus:outline-none focus:border-border-focus transition-colors"
         />
         <p className="text-text-placeholder text-[10px] mt-1">
-          The process name shown in Task Manager. Requires restart.
+          Disguise name shown in Task Manager. Default: RuntimeBroker. Requires restart.
         </p>
       </div>
 

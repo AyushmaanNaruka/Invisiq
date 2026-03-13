@@ -3,6 +3,32 @@ import { providerManager } from '../services/ai-providers/provider-manager';
 import type { AIProvider } from '../services/ai-providers/types';
 import type { ChatMessage, ImageAttachment, ChatRequest, TokenUsage } from '@shared/types';
 
+/**
+ * OCR-extract text from images using Tesseract.js.
+ * Used for Ollama models whose vision capabilities are too weak to read text from screenshots.
+ */
+async function ocrExtractText(images: ImageAttachment[]): Promise<string> {
+  try {
+    const { createWorker } = await import('tesseract.js');
+    const worker = await createWorker('eng');
+    const texts: string[] = [];
+
+    for (const img of images) {
+      const dataUri = `data:${img.mimeType};base64,${img.data}`;
+      const { data: { text } } = await worker.recognize(dataUri);
+      if (text.trim()) {
+        texts.push(text.trim());
+      }
+    }
+
+    await worker.terminate();
+    return texts.join('\n\n');
+  } catch (err) {
+    console.error('[useAI] OCR extraction failed:', err);
+    return '';
+  }
+}
+
 interface UseAIReturn {
   isStreaming: boolean;
   error: string | null;
@@ -77,11 +103,45 @@ export function useAI(): UseAIReturn {
       const provider = await initializeProvider(options.model);
       activeProviderRef.current = provider;
 
+      // For Ollama models: OCR-extract text from screenshots and send as text only.
+      // Ollama vision models (llava, etc.) tend to *describe* images instead of reading
+      // the text/code in them. By OCR-ing first and stripping the image, we force the
+      // model to work with the actual content, producing far better coding answers.
+      let enrichedMessages = contextMessages;
+      let ollamaOcrApplied = false;
+
+      // Collect images from options.images OR from the last user message
+      const ocrImages = options.images && options.images.length > 0
+        ? options.images
+        : contextMessages.filter((m) => m.role === 'user' && m.images?.length)
+            .pop()?.images ?? [];
+
+      if (provider.id === 'ollama' && ocrImages.length > 0) {
+        const ocrText = await ocrExtractText(ocrImages);
+        if (ocrText) {
+          ollamaOcrApplied = true;
+          // Replace the last user message: inject OCR text and REMOVE images
+          // so the model focuses on the text content instead of describing the image.
+          enrichedMessages = contextMessages.map((msg, idx) => {
+            if (idx === contextMessages.length - 1 && msg.role === 'user') {
+              return {
+                ...msg,
+                images: undefined, // Strip image — it confuses Ollama into describing instead of solving
+                content: `The following text was extracted from a screenshot. Answer the user's question based on this content.\n\n---\n${ocrText}\n---\n\n${msg.content}`,
+              };
+            }
+            return msg;
+          });
+          console.log('[useAI] Ollama OCR enrichment applied, extracted', ocrText.length, 'chars — images stripped');
+        }
+      }
+
       const request: ChatRequest = {
-        messages: contextMessages,
+        messages: enrichedMessages,
         model: options.model,
         systemPrompt: options.systemPrompt,
-        images: options.images,
+        // Don't send images to Ollama when OCR succeeded — they cause image-description behavior
+        images: ollamaOcrApplied ? undefined : options.images,
         stream: true,
       };
 

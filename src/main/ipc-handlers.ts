@@ -39,9 +39,10 @@ import {
   deleteAllConversations,
 } from './conversations';
 import { BUILT_IN_MODES } from '@shared/constants';
-import type { HotkeyAction, ProviderID, Conversation, CustomMode, RegionCropRequest, AudioCaptureSource, PromptTemplate, ExportFormat } from '@shared/types';
+import type { HotkeyAction, ProviderID, Conversation, CustomMode, RegionCropRequest, AudioCaptureSource, PromptTemplate, ExportFormat, ResilienceCommand } from '@shared/types';
 import { getOverlayWindow } from './overlay';
 import { startSystemCapture, stopSystemCapture, getCaptureStatus } from './audio-capture';
+import { startAgent, stopAgent, sendCommand, getStatus as getResilienceStatus } from './resilience-controller';
 
 const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'ollama'];
 
@@ -789,6 +790,32 @@ export function registerIPCHandlers(): void {
       const extracted = await store.extractFromConversation(conversationId);
       return { extracted };
     } catch { return { extracted: 0 }; }
+  });
+
+  // ══════════════════════════════════════
+  //  PHASE 5: RESILIENCE
+  // ══════════════════════════════════════
+
+  ipcMain.handle('resilience:start-agent', async (_event, args: unknown) => {
+    const { helperPath, pipeName } = (args as { helperPath?: string; pipeName?: string }) || {};
+    return startAgent(helperPath || '', pipeName || 'GhostAI');
+  });
+
+  ipcMain.handle('resilience:stop-agent', async () => {
+    await stopAgent();
+    return { success: true };
+  });
+
+  ipcMain.handle('resilience:send-command', (_event, args: unknown) => {
+    const { command } = (args as { command: ResilienceCommand }) || {};
+    if (!command || typeof command.type !== 'string') {
+      return { success: false, error: 'Command must have a type string' };
+    }
+    return sendCommand(command);
+  });
+
+  ipcMain.handle('resilience:status', () => {
+    return getResilienceStatus();
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

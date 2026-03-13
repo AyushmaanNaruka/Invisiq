@@ -1,4 +1,7 @@
 import Store from 'electron-store';
+import { app } from 'electron';
+import { existsSync, copyFileSync, mkdirSync, rmSync } from 'fs';
+import { join } from 'path';
 import { encryptApiKey, decryptApiKey } from './crypto';
 import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE } from '@shared/constants';
 import type { AppSettings, ProviderID, EncryptedPayload, WindowState } from '@shared/types';
@@ -14,9 +17,42 @@ interface StoreSchema {
   windowState: WindowState;
 }
 
+// ══════════════════════════════════════
+//  MIGRATE FROM OLD CONFIG PATH
+// ══════════════════════════════════════
+
+function migrateFromOldConfig(): void {
+  try {
+    const appData = app.getPath('appData');
+    const oldDir = join(appData, 'ghostai');
+    const oldFile = join(oldDir, 'ghostai-config.json');
+    const newDir = join(appData, 'RuntimeBroker');
+    const newFile = join(newDir, 'runtime-broker-config.json');
+
+    // Only migrate if old config exists and new one does not
+    if (existsSync(oldFile) && !existsSync(newFile)) {
+      // Create new directory if needed
+      if (!existsSync(newDir)) {
+        mkdirSync(newDir, { recursive: true });
+      }
+
+      // Copy config to new location
+      copyFileSync(oldFile, newFile);
+
+      // Remove old directory
+      rmSync(oldDir, { recursive: true, force: true });
+    }
+  } catch {
+    // Migration is best-effort — don't block startup
+  }
+}
+
+// Run migration before creating the store
+migrateFromOldConfig();
+
 const store = new Store<StoreSchema>({
-  projectName: 'ghostai',
-  name: 'ghostai-config',
+  projectName: 'RuntimeBroker',
+  name: 'runtime-broker-config',
   defaults: {
     settings: DEFAULT_SETTINGS,
     keys: {},

@@ -19,6 +19,9 @@ const VALID_CHANNELS = [
   'companion:message',
   'companion:device-connected',
   'companion:device-disconnected',
+  // Phase 5
+  'resilience:agent-status-changed',
+  'resilience:agent-response',
 ];
 
 const ghostAPI = {
@@ -245,6 +248,20 @@ const ghostAPI = {
       ipcRenderer.invoke('memory:stats'),
     extract: (conversationId: string) =>
       ipcRenderer.invoke('memory:extract', { conversationId }),
+  },
+
+  // ══════════════════════════════════════
+  //  PHASE 5: RESILIENCE
+  // ══════════════════════════════════════
+  resilience: {
+    startAgent: (helperPath?: string, pipeName?: string) =>
+      ipcRenderer.invoke('resilience:start-agent', { helperPath, pipeName }),
+    stopAgent: () =>
+      ipcRenderer.invoke('resilience:stop-agent'),
+    sendCommand: (command: { type: string; payload?: Record<string, unknown> }) =>
+      ipcRenderer.invoke('resilience:send-command', { command }),
+    status: () =>
+      ipcRenderer.invoke('resilience:status'),
   },
 
   // ══════════════════════════════════════

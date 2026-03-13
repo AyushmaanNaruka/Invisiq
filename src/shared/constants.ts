@@ -144,7 +144,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     clearScreenshotsAfterSend: true,
     persistChatHistory: true,
     logApiRequests: false,
-    processName: 'SystemHelper',
+    processName: 'RuntimeBroker',
     showTrayIcon: false,
     // Phase 4
     clickThroughEnabled: false,
@@ -192,6 +192,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
     maxContextFacts: 5,
     factRetentionDays: 0,
     totalFactsLimit: 500,
+  },
+
+  // Phase 5: Resilience
+  resilience: {
+    enabled: false,
+    autoStart: false,
+    helperPath: '',
+    pipeName: 'GhostAI',
   },
 
   isFirstLaunch: true,
@@ -329,4 +337,7 @@ export const VALID_RENDERER_CHANNELS = [
   'companion:message',
   'companion:device-connected',
   'companion:device-disconnected',
+  // Phase 5
+  'resilience:agent-status-changed',
+  'resilience:agent-response',
 ] as const;

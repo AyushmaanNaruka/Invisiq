@@ -11,6 +11,7 @@ import { initMonitorManager } from './monitors';
 import { initializeAutoUpdater } from './updater';
 import { createTray } from './tray';
 import { initMemoryStore } from './memory';
+import { cleanupResilience, startAgent as startResilienceAgent } from './resilience-controller';
 import { AI_API_DOMAINS } from '@shared/constants';
 
 // ══════════════════════════════════════
@@ -90,7 +91,7 @@ function setupCORSBypass(): void {
 
 app.whenReady().then(async () => {
   // Disguise process name (critical — do first)
-  const processName = getNestedSetting('privacy.processName') as string || 'SystemHelper';
+  const processName = getNestedSetting('privacy.processName') as string || 'RuntimeBroker';
   disguiseProcess(processName);
 
   // Setup CORS bypass before loading any renderer content
@@ -136,6 +137,17 @@ app.whenReady().then(async () => {
 
     // Initialize memory store (async, non-blocking)
     initMemoryStore().catch((err) => console.error('[Memory] Init failed:', err));
+
+    // Auto-start resilience agent if enabled
+    const resilienceSettings = getNestedSetting('resilience') as
+      | { autoStart?: boolean; helperPath?: string; pipeName?: string }
+      | undefined;
+    if (resilienceSettings?.autoStart) {
+      startResilienceAgent(
+        resilienceSettings.helperPath || '',
+        resilienceSettings.pipeName || 'GhostAI',
+      ).catch((err) => console.error('[Resilience] Auto-start failed:', err));
+    }
   });
 });
 
@@ -151,6 +163,8 @@ app.on('will-quit', () => {
   unregisterAllHotkeys();
   // Stop clipboard monitor
   stopClipboardMonitor();
+  // Clean up resilience helper
+  cleanupResilience();
 });
 
 app.on('activate', () => {

@@ -16,6 +16,8 @@ import type {
   MemoryFact,
   MemorySearchResult,
   MemoryStats,
+  ResilienceCommand,
+  ResilienceStatus,
 } from '@shared/types';
 
 declare global {
@@ -131,6 +133,13 @@ declare global {
         clearAll(): Promise<{ count: number }>;
         stats(): Promise<MemoryStats>;
         extract(conversationId: string): Promise<{ extracted: number }>;
+      };
+      /** Phase 5: Resilience helper agent */
+      resilience: {
+        startAgent(helperPath?: string, pipeName?: string): Promise<{ success: boolean; error?: string }>;
+        stopAgent(): Promise<{ success: boolean }>;
+        sendCommand(command: ResilienceCommand): Promise<{ success: boolean; error?: string }>;
+        status(): Promise<ResilienceStatus>;
       };
       on(channel: string, callback: (...args: unknown[]) => void): () => void;
       off(channel: string, callback: (...args: unknown[]) => void): void;
