@@ -1,9 +1,28 @@
 import { desktopCapturer, screen } from 'electron';
-import { getOverlayWindow, showOverlay, hideOverlay } from './overlay';
+import { getOverlayWindow, showOverlay, hideOverlay, isStealthFocusEnabled } from './overlay';
 import { getMonitorForOverlay } from './monitors';
 import type { ScreenshotResult } from '@shared/types';
 
 const CAPTURE_DELAY_MS = 100;
+
+/**
+ * In stealth mode, move overlay off-screen before capture instead of hide/show.
+ * setPosition() does NOT fire WM_SHOWWINDOW or any window events that proctoring hooks.
+ * Returns a restore function to move it back.
+ */
+function stealthHideForCapture(): (() => void) | null {
+  const win = getOverlayWindow();
+  if (!win || win.isDestroyed()) return null;
+
+  const [origX, origY] = win.getPosition();
+  // Move way off-screen (no window events, no focus change)
+  win.setPosition(-99999, -99999);
+  return () => {
+    if (!win.isDestroyed()) {
+      win.setPosition(origX, origY);
+    }
+  };
+}
 const MAX_WIDTH = 1920;
 
 function sleep(ms: number): Promise<void> {
@@ -41,10 +60,15 @@ function findSourceForDisplay(
 export async function captureFullScreen(monitorId?: string): Promise<ScreenshotResult> {
   const overlayWindow = getOverlayWindow();
   const wasVisible = overlayWindow?.isVisible() ?? false;
+  const stealth = isStealthFocusEnabled();
+  let restorePosition: (() => void) | null = null;
 
   try {
-    // Hide overlay before capture
-    if (wasVisible) {
+    if (stealth) {
+      // STEALTH: Move off-screen instead of hide/show — no window events fired
+      restorePosition = stealthHideForCapture();
+      await sleep(CAPTURE_DELAY_MS);
+    } else if (wasVisible) {
       hideOverlay();
       await sleep(CAPTURE_DELAY_MS);
     }
@@ -87,8 +111,9 @@ export async function captureFullScreen(monitorId?: string): Promise<ScreenshotR
       timestamp: Date.now(),
     };
   } finally {
-    // Always restore overlay visibility
-    if (wasVisible) {
+    if (stealth && restorePosition) {
+      restorePosition();
+    } else if (wasVisible) {
       showOverlay();
     }
   }
@@ -145,9 +170,14 @@ export async function captureSilent(monitorId?: string): Promise<ScreenshotResul
 export async function captureForSnip(): Promise<ScreenshotResult> {
   const overlayWindow = getOverlayWindow();
   const wasVisible = overlayWindow?.isVisible() ?? false;
+  const stealth = isStealthFocusEnabled();
+  let restorePosition: (() => void) | null = null;
 
   try {
-    if (wasVisible) {
+    if (stealth) {
+      restorePosition = stealthHideForCapture();
+      await sleep(CAPTURE_DELAY_MS);
+    } else if (wasVisible) {
       hideOverlay();
       await sleep(CAPTURE_DELAY_MS);
     }
@@ -174,8 +204,9 @@ export async function captureForSnip(): Promise<ScreenshotResult> {
       timestamp: Date.now(),
     };
   } finally {
-    // Always restore overlay so the renderer can show the InlineRegionSelector on top
-    if (wasVisible) {
+    if (stealth && restorePosition) {
+      restorePosition();
+    } else if (wasVisible) {
       showOverlay();
     }
   }
@@ -195,9 +226,14 @@ export async function captureRegion(
   const overlayWindow = getOverlayWindow();
   const wasVisible = overlayWindow?.isVisible() ?? false;
 
+  const stealth = isStealthFocusEnabled();
+  let restorePosition: (() => void) | null = null;
+
   try {
-    // Hide overlay before capture
-    if (wasVisible) {
+    if (stealth) {
+      restorePosition = stealthHideForCapture();
+      await sleep(CAPTURE_DELAY_MS);
+    } else if (wasVisible) {
       hideOverlay();
       await sleep(CAPTURE_DELAY_MS);
     }
@@ -241,7 +277,9 @@ export async function captureRegion(
       timestamp: Date.now(),
     };
   } finally {
-    if (wasVisible) {
+    if (stealth && restorePosition) {
+      restorePosition();
+    } else if (wasVisible) {
       showOverlay();
     }
   }

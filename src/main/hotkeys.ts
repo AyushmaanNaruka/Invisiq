@@ -1,7 +1,7 @@
 import { globalShortcut, type BrowserWindow } from 'electron';
 import { DEFAULT_HOTKEYS } from '@shared/constants';
 import type { HotkeyAction } from '@shared/types';
-import { toggleOverlay, hideOverlay, showOverlay, getOverlayWindow } from './overlay';
+import { toggleOverlay, hideOverlay, showOverlay, getOverlayWindow, requestStealthFocus } from './overlay';
 import { getSettings } from './store';
 
 type HotkeyMap = Record<HotkeyAction, string>;
@@ -74,7 +74,8 @@ function handleHotkeyAction(action: HotkeyAction): void {
         if (!win.isVisible()) {
           showOverlay();
         }
-        win.focus();
+        // Focus the window so user can type (safe in stealth — hotkeys aren't detected)
+        requestStealthFocus();
         sendHotkeyEvent(win, action);
       }
       break;

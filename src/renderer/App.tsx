@@ -120,6 +120,7 @@ function AppInner(): JSX.Element {
     clearAllScreenshots,
   } = useScreenshot();
   const { isPassthrough, togglePassthrough } = useClickThrough();
+  const [isStealthFocus, setIsStealthFocus] = useState(false);
   const { registerCallback } = useHotkeys();
   const { lastRequest: costLastRequest, conversation: costConversation, session: costSession, recordUsage, resetConversation: resetCostConversation } = useTokenCost();
 
@@ -142,6 +143,17 @@ function AppInner(): JSX.Element {
       startListening(settings.audio?.engine || 'browser', settings.audio?.language || 'en-US');
     }
   }, [isListening, startListening, stopListening, settings.audio?.engine, settings.audio?.language]);
+
+  // Stealth focus toggle (anti-detection for exams)
+  const handleToggleStealthFocus = useCallback(async () => {
+    const newState = !isStealthFocus;
+    try {
+      await window.ghostAPI.overlay.setStealthFocus(newState);
+      setIsStealthFocus(newState);
+    } catch (err) {
+      console.error('[StealthFocus] toggle failed:', err);
+    }
+  }, [isStealthFocus]);
 
   // Phase 4: system audio / live transcription
   const {
@@ -405,6 +417,10 @@ function AppInner(): JSX.Element {
           });
           recordUsage(usage);
           setStreamingMessageId(null);
+          // In stealth focus mode, release focus back to the test window after AI responds
+          if (isStealthFocus) {
+            window.ghostAPI.overlay.releaseFocus().catch(() => {});
+          }
         },
         onError: (errMsg) => {
           if (!assistantMsg.content) {
@@ -438,8 +454,27 @@ function AppInner(): JSX.Element {
       updateMessage,
       addErrorMessage,
       recordUsage,
+      isStealthFocus,
     ]
   );
+
+  // ── Stealth mode: clipboard-based input (zero focus) ────────
+  useEffect(() => {
+    if (!isStealthFocus) return;
+
+    const unsubscribe = window.ghostAPI.on('overlay:clipboard-input-requested', async () => {
+      try {
+        const { text } = await window.ghostAPI.clipboard.read();
+        if (text && text.trim()) {
+          handleSend(text.trim());
+        }
+      } catch (err) {
+        console.error('[StealthInput] clipboard read failed:', err);
+      }
+    });
+
+    return unsubscribe;
+  }, [isStealthFocus, handleSend]);
 
   const handleOpacityChange = useCallback(
     async (opacity: number) => {
@@ -497,6 +532,8 @@ function AppInner(): JSX.Element {
         onClose={handleClose}
         isPassthrough={isPassthrough}
         onTogglePassthrough={togglePassthrough}
+        isStealthFocus={isStealthFocus}
+        onToggleStealthFocus={handleToggleStealthFocus}
       />
 
       <ChatPanel

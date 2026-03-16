@@ -22,6 +22,8 @@ const VALID_CHANNELS = [
   // Phase 5
   'resilience:agent-status-changed',
   'resilience:agent-response',
+  'overlay:stealth-focus-changed',
+  'overlay:clipboard-input-requested',
 ];
 
 const ghostAPI = {
@@ -46,6 +48,15 @@ const ghostAPI = {
     // Phase 4
     setPassthrough: (enabled: boolean, forward?: boolean): Promise<void> =>
       ipcRenderer.invoke('overlay:set-passthrough', { enabled, forward }),
+    // Phase 5 — Stealth focus (anti-detection for exams)
+    setStealthFocus: (enabled: boolean): Promise<{ enabled: boolean }> =>
+      ipcRenderer.invoke('overlay:set-stealth-focus', { enabled }),
+    getStealthFocusStatus: (): Promise<{ enabled: boolean }> =>
+      ipcRenderer.invoke('overlay:stealth-focus-status'),
+    requestFocus: (timeoutMs?: number): Promise<void> =>
+      ipcRenderer.invoke('overlay:request-focus', { timeoutMs }),
+    releaseFocus: (): Promise<void> =>
+      ipcRenderer.invoke('overlay:release-focus'),
   },
 
   // ══════════════════════════════════════

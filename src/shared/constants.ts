@@ -14,6 +14,8 @@ export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
   'hide-overlay': 'Escape',
   'paste-response': 'CommandOrControl+Shift+V',
   'toggle-passthrough': 'CommandOrControl+Shift+P',
+  'next-model': 'CommandOrControl+Alt+]',
+  'prev-model': 'CommandOrControl+Alt+[',
 };
 
 // ══════════════════════════════════════

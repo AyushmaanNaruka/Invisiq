@@ -9,3 +9,4 @@ Thumbs.db
 
 # Claude Code
 .claude/
+build/

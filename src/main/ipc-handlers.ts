@@ -9,6 +9,10 @@ import {
   setOverlaySize,
   getOverlayBounds,
   setPassthrough,
+  setStealthFocusMode,
+  isStealthFocusEnabled,
+  requestStealthFocus,
+  releaseFocus,
 } from './overlay';
 import {
   getSettings,
@@ -553,6 +557,27 @@ export function registerIPCHandlers(): void {
   ipcMain.handle('overlay:set-passthrough', (_event, args: unknown) => {
     const { enabled, forward = true } = (args as { enabled: boolean; forward?: boolean }) || {};
     setPassthrough(Boolean(enabled), Boolean(forward));
+  });
+
+  // ── Stealth Focus (Anti-Detection) ──────────────────────────
+
+  ipcMain.handle('overlay:set-stealth-focus', (_event, args: unknown) => {
+    const { enabled } = (args as { enabled: boolean }) || {};
+    setStealthFocusMode(Boolean(enabled));
+    return { enabled: isStealthFocusEnabled() };
+  });
+
+  ipcMain.handle('overlay:stealth-focus-status', () => {
+    return { enabled: isStealthFocusEnabled() };
+  });
+
+  ipcMain.handle('overlay:request-focus', (_event, args?: unknown) => {
+    const { timeoutMs } = (args as { timeoutMs?: number }) || {};
+    requestStealthFocus(timeoutMs);
+  });
+
+  ipcMain.handle('overlay:release-focus', () => {
+    releaseFocus();
   });
 
   ipcMain.handle('screenshot:capture-for-snip', async () => {

@@ -13,7 +13,9 @@ export type HotkeyAction =
   | 'new-conversation'
   | 'hide-overlay'
   | 'paste-response'
-  | 'toggle-passthrough';
+  | 'toggle-passthrough'
+  | 'next-model'
+  | 'prev-model';
 
 export interface ModelConfig {
   id: string;

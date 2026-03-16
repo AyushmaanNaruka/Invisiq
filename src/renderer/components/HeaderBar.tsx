@@ -1,4 +1,4 @@
-import { GripVertical, Settings, X, Clock, Plus, MousePointer, MousePointerBan } from 'lucide-react';
+import { GripVertical, Settings, X, Clock, Plus, MousePointer, MousePointerBan, Shield } from 'lucide-react';
 import ModeSelector from './ModeSelector';
 import ModelSelector from './ModelSelector';
 import OpacityControl from './OpacityControl';
@@ -23,6 +23,8 @@ interface HeaderBarProps {
   onClose: () => void;
   isPassthrough?: boolean;
   onTogglePassthrough?: () => void;
+  isStealthFocus?: boolean;
+  onToggleStealthFocus?: () => void;
 }
 
 export default function HeaderBar({
@@ -43,6 +45,8 @@ export default function HeaderBar({
   onClose,
   isPassthrough = false,
   onTogglePassthrough,
+  isStealthFocus = false,
+  onToggleStealthFocus,
 }: HeaderBarProps): JSX.Element {
   return (
     <div
@@ -105,6 +109,24 @@ export default function HeaderBar({
       {/* Right controls */}
       <div className="flex items-center gap-0.5 no-drag">
         {!compact && <OpacityControl opacity={opacity} onOpacityChange={onOpacityChange} />}
+
+        {onToggleStealthFocus && (
+          <GhostTooltip
+            content={isStealthFocus ? 'Exam stealth ON — no focus stealing' : 'Exam stealth mode (anti-detection)'}
+            placement="bottom"
+          >
+            <button
+              onClick={onToggleStealthFocus}
+              className={`p-1 rounded transition-colors ${
+                isStealthFocus
+                  ? 'text-green-400 bg-green-400/10 hover:bg-green-400/20'
+                  : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
+              }`}
+            >
+              <Shield size={14} strokeWidth={1.75} />
+            </button>
+          </GhostTooltip>
+        )}
 
         {onTogglePassthrough && (
           <GhostTooltip
