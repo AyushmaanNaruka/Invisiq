@@ -91,6 +91,7 @@ ghostai/
 │   │   ├── screenshot.ts             # desktopCapturer, full + region capture
 │   │   ├── region-selector.ts        # Temporary full-screen selection window
 │   │   ├── stealth.ts                # Process disguise, stealth watchdog, alt-tab hiding
+│   │   ├── invisible-input.ts        # Global WH_KEYBOARD_LL hook (uiohook-napi) — stealth typing
 │   │   ├── store.ts                  # electron-store with AES-256 encryption
 │   │   ├── ipc-handlers.ts           # All ipcMain.handle() registrations
 │   │   ├── conversations.ts          # Filesystem-based conversation CRUD (Phase 2)
@@ -204,6 +205,35 @@ overlayWindow.setContentProtection(true);
 
 **Never remove or conditionally disable this.** Without it, the app is visible to screen capture. Every BrowserWindow we create (overlay, region selector, etc.) MUST have this set.
 
+#### The Second Detection Vector — Foreground Window
+
+`setContentProtection(true)` defeats *visual* capture (Snipping Tool, OBS, Zoom share). It does NOT defeat **foreground-window monitoring**. Proctoring tools like Mettl Secure Browser (`MsbWindowCef`) hook `SetWinEventHook(EVENT_SYSTEM_FOREGROUND)` and/or poll `GetForegroundWindow()`. Anything that activates the GhostAI HWND — including a single mouse click on the overlay — fires `WM_ACTIVATE`/`EVENT_SYSTEM_FOREGROUND` and triggers their "Navigated Away" alert.
+
+The fix is in `src/main/overlay.ts → setStealthFocusMode(true)`:
+
+```typescript
+overlayWindow.setFocusable(false); // → applies WS_EX_NOACTIVATE on the HWND
+```
+
+A `WS_EX_NOACTIVATE` window cannot become the foreground window — even when clicked. **Do not remove or revert this** while stealth mode is on. The trade-off is that the window can no longer receive `WM_KEYDOWN` (Windows routes keys to the foreground thread), so free-form typing is delivered through the InvisibleInput global keyboard hook described below.
+
+### 1b. Invisible Input — typing without activation
+
+`src/main/invisible-input.ts` installs an opt-in `WH_KEYBOARD_LL` hook via `uiohook-napi` and forwards keystrokes to the renderer as IPC events:
+
+- `invisible-input:char { char }` — printable character
+- `invisible-input:backspace` / `invisible-input:delete` / `invisible-input:enter`
+- `invisible-input:status { armed }` — state sync
+
+The renderer hook `useInvisibleInput` mutates the textarea state via React setters — it **never** calls `.focus()` on the window. This lets the user "type" into GhostAI while the exam stays foreground.
+
+**Constraints (document changes here when revisited):**
+- `uiohook-napi` 1.5.5 does NOT support per-event suppression on Windows → captured keys also reach the foreground app's active control. Users are told (via toast + button tooltip) to click an inert region of the exam before arming.
+- The hook stays inert until the user explicitly arms it (button in `InputArea` or `Ctrl+Shift+I` global hotkey) — no perf cost, no AV signature when idle.
+- Some AV / proctor tools may flag global keyboard hooks. Default = OFF. Disclose in `SettingsPrivacy` when adding new UI surfaces.
+
+When adding new control keys (e.g. arrow-key cursor support), extend `onKeyDown` in `invisible-input.ts` and add the corresponding IPC channel to `VALID_CHANNELS` in `src/preload/index.ts`.
+
 ### 2. Electron Security Model
 
 ```
@@ -290,6 +320,7 @@ template:list  template:save  template:delete
 export:conversation  export:save-dialog
 memory:search  memory:add  memory:delete  memory:list
 memory:clear-all  memory:stats  memory:extract
+invisible-input:arm  invisible-input:disarm  invisible-input:toggle  invisible-input:status
 ```
 
 Renderer event channels (main → renderer):
@@ -301,6 +332,8 @@ update:checking       update:available      update:not-available
 update:progress       update:downloaded     update:error
 audio:chunk
 companion:message  companion:device-connected  companion:device-disconnected
+invisible-input:status  invisible-input:char  invisible-input:enter
+invisible-input:backspace  invisible-input:delete
 ```
 
 Full IPC contract is in `docs/GhostAI-API-Contract.md` Section 2.
@@ -458,6 +491,7 @@ Ctrl+Shift+A  →  Focus text input
 Ctrl+Shift+C  →  Copy last AI response
 Ctrl+Shift+V  →  Paste last AI response to active app
 Ctrl+Shift+N  →  New conversation
+Ctrl+Shift+I  →  Arm/disarm Invisible Input (stealth typing via global hook)
 Escape        →  Hide overlay immediately
 ```
 

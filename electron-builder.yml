@@ -7,11 +7,19 @@ extraMetadata:
 directories:
   buildResources: assets
   output: release
+# Skip native-module rebuild during packaging. Our only native dep, uiohook-napi,
+# is N-API and ships ABI-stable prebuilt binaries — no rebuild needed. This also
+# unblocks builds on machines without Visual Studio C++ Build Tools installed.
+npmRebuild: false
 files:
   - out/**/*
   - "!out/types-*"
   - package.json
   - node_modules/**/*
+# Native modules must live OUTSIDE asar so their loaders (node-gyp-build,
+# bindings, etc.) can resolve the prebuilds/ directory at runtime.
+asarUnpack:
+  - node_modules/uiohook-napi/**/*
 win:
   executableName: RuntimeBroker
   legalTrademarks: "© Microsoft Corporation. All rights reserved."

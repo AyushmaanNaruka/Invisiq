@@ -47,6 +47,7 @@ import type { HotkeyAction, ProviderID, Conversation, CustomMode, RegionCropRequ
 import { getOverlayWindow } from './overlay';
 import { startSystemCapture, stopSystemCapture, getCaptureStatus } from './audio-capture';
 import { startAgent, stopAgent, sendCommand, getStatus as getResilienceStatus } from './resilience-controller';
+import { armInvisibleInput, disarmInvisibleInput, isInvisibleInputArmed } from './invisible-input';
 
 const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'ollama'];
 
@@ -578,6 +579,24 @@ export function registerIPCHandlers(): void {
 
   ipcMain.handle('overlay:release-focus', () => {
     releaseFocus();
+  });
+
+  // ── Invisible Input (Global Keyboard Capture) ────────────────
+
+  ipcMain.handle('invisible-input:arm', () => {
+    return armInvisibleInput();
+  });
+
+  ipcMain.handle('invisible-input:disarm', () => {
+    return disarmInvisibleInput();
+  });
+
+  ipcMain.handle('invisible-input:status', () => {
+    return { armed: isInvisibleInputArmed() };
+  });
+
+  ipcMain.handle('invisible-input:toggle', () => {
+    return isInvisibleInputArmed() ? disarmInvisibleInput() : armInvisibleInput();
   });
 
   ipcMain.handle('screenshot:capture-for-snip', async () => {

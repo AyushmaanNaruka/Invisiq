@@ -139,6 +139,13 @@ declare global {
         stats(): Promise<MemoryStats>;
         extract(conversationId: string): Promise<{ extracted: number }>;
       };
+      /** Invisible Input — global keyboard capture for stealth mode */
+      invisibleInput: {
+        arm(): Promise<{ armed: boolean; error?: string }>;
+        disarm(): Promise<{ armed: boolean }>;
+        toggle(): Promise<{ armed: boolean; error?: string }>;
+        status(): Promise<{ armed: boolean }>;
+      };
       /** Phase 5: Resilience helper agent */
       resilience: {
         startAgent(helperPath?: string, pipeName?: string): Promise<{ success: boolean; error?: string }>;

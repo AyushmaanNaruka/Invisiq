@@ -2,6 +2,7 @@ import { globalShortcut, type BrowserWindow } from 'electron';
 import { DEFAULT_HOTKEYS } from '@shared/constants';
 import type { HotkeyAction } from '@shared/types';
 import { toggleOverlay, hideOverlay, showOverlay, getOverlayWindow, requestStealthFocus } from './overlay';
+import { armInvisibleInput, disarmInvisibleInput, isInvisibleInputArmed } from './invisible-input';
 import { getSettings } from './store';
 
 type HotkeyMap = Record<HotkeyAction, string>;
@@ -86,6 +87,16 @@ function handleHotkeyAction(action: HotkeyAction): void {
     case 'toggle-passthrough':
       if (win && !win.isDestroyed()) {
         sendHotkeyEvent(win, action);
+      }
+      break;
+
+    case 'toggle-invisible-input':
+      // Toggle global keyboard capture for stealth-mode typing.
+      // Handled entirely in main so it works even before renderer is ready.
+      if (isInvisibleInputArmed()) {
+        disarmInvisibleInput();
+      } else {
+        armInvisibleInput();
       }
       break;
   }

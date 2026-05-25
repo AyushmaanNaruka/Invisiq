@@ -179,10 +179,16 @@ export function setStealthFocusMode(enabled: boolean): void {
   if (!overlayWindow || overlayWindow.isDestroyed()) return;
 
   if (enabled) {
-    // Keep window focusable so user can type when they click or use focus hotkey.
-    // Anti-detection relies on opacity-based visibility (no show/hide events),
-    // NOT on disabling focus. Hotkeys don't trigger proctoring detection.
-    overlayWindow.setFocusable(true);
+    // ANTI-DETECTION: Make the window non-focusable.
+    // On Windows, Electron maps setFocusable(false) to WS_EX_NOACTIVATE on the HWND,
+    // so clicks on the overlay no longer call SetForegroundWindow / fire
+    // EVENT_SYSTEM_FOREGROUND. The exam window stays foreground, defeating
+    // foreground-change detection used by Mettl Secure Browser and similar proctors.
+    //
+    // Trade-off: a non-activating window can't receive WM_KEYDOWN. Free-form typing
+    // is handled via the InvisibleInput global keyboard hook (src/main/invisible-input.ts);
+    // clicks for buttons / scrolling still work because they don't require focus.
+    overlayWindow.setFocusable(false);
 
     // 'screen-saver' is the highest z-order — sits above fullscreen exam apps and proctoring overlays
     overlayWindow.setAlwaysOnTop(true, 'screen-saver');
@@ -198,7 +204,7 @@ export function setStealthFocusMode(enabled: boolean): void {
       overlayWindow.showInactive(); // One-time show at opacity 0 — invisible
     }
 
-    console.log('[Overlay] Stealth focus ENABLED — screen-saver z-level, opacity-driven visibility');
+    console.log('[Overlay] Stealth focus ENABLED — non-focusable HWND (WS_EX_NOACTIVATE), opacity-driven visibility');
   } else {
     overlayWindow.setFocusable(true);
     if (focusReturnTimer) {
@@ -223,23 +229,25 @@ export function isStealthFocusEnabled(): boolean {
 }
 
 /**
- * Request focus for input. In stealth mode, this does NOT focus the window
- * because any focus change triggers proctoring detection.
- * Instead, it sends a signal to the renderer to use clipboard-based input.
+ * Request focus for input.
+ *
+ * In stealth mode: NEVER calls focus(); the window is non-focusable
+ * (WS_EX_NOACTIVATE) so clicks won't activate it either. Free-form typing
+ * is delivered via the InvisibleInput global keyboard hook, not by giving
+ * the window keyboard focus. We just bring it visually to front.
+ *
+ * In normal mode: focus the overlay so the user can type into the textarea.
  */
 export function requestStealthFocus(_timeoutMs: number = 30000): void {
   if (!overlayWindow || overlayWindow.isDestroyed()) return;
 
   if (stealthFocusEnabled) {
-    // STEALTH MODE: NEVER call focus() — it triggers blur on the exam window
-    // which proctoring tools detect. Just bring to front via moveTop + opacity.
-    // User can click the input to type (clicking is not detected).
     if (!stealthVisible) {
       showOverlay();
     } else {
       overlayWindow.moveTop();
     }
-    console.log('[Overlay] Stealth: moveTop only (no focus — user clicks to type)');
+    console.log('[Overlay] Stealth: moveTop only (no focus — InvisibleInput delivers keys)');
     return;
   }
 

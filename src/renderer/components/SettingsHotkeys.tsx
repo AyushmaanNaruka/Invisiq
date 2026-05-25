@@ -19,6 +19,9 @@ const HOTKEY_LABELS: Record<HotkeyAction, string> = {
   'hide-overlay': 'Hide Overlay',
   'paste-response': 'Paste Last Response',
   'toggle-passthrough': 'Toggle Click-Through',
+  'next-model': 'Next Model',
+  'prev-model': 'Previous Model',
+  'toggle-invisible-input': 'Invisible Input (Stealth Typing)',
 };
 
 const INTERNAL_SHORTCUTS: { label: string; shortcut: string }[] = [

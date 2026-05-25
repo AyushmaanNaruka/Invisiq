@@ -12,6 +12,7 @@ import { initializeAutoUpdater } from './updater';
 import { createTray } from './tray';
 import { initMemoryStore } from './memory';
 import { cleanupResilience, startAgent as startResilienceAgent } from './resilience-controller';
+import { initInvisibleInput, cleanupInvisibleInput } from './invisible-input';
 import { AI_API_DOMAINS } from '@shared/constants';
 
 // ══════════════════════════════════════
@@ -109,6 +110,9 @@ app.whenReady().then(async () => {
   // Apply full stealth measures (critical — before window shows)
   applyFullStealth(overlayWindow);
 
+  // Initialize invisible-input module (hook stays inert until armed)
+  initInvisibleInput(overlayWindow);
+
   // Load the renderer
   if (process.env['ELECTRON_RENDERER_URL']) {
     overlayWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
@@ -165,6 +169,8 @@ app.on('will-quit', () => {
   stopClipboardMonitor();
   // Clean up resilience helper
   cleanupResilience();
+  // Stop invisible-input keyboard hook
+  cleanupInvisibleInput();
 });
 
 app.on('activate', () => {

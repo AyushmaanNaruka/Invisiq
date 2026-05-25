@@ -15,7 +15,8 @@ export type HotkeyAction =
   | 'paste-response'
   | 'toggle-passthrough'
   | 'next-model'
-  | 'prev-model';
+  | 'prev-model'
+  | 'toggle-invisible-input';
 
 export interface ModelConfig {
   id: string;

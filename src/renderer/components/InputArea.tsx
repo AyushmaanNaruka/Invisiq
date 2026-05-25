@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback, useEffect, type RefObject } from 'react';
-import { Camera, Send, Square, X, Mic, MicOff } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect, useMemo, type RefObject } from 'react';
+import { Camera, Send, Square, X, Mic, MicOff, Keyboard } from 'lucide-react';
 import { useToast } from './Toast';
+import { useInvisibleInput } from '../hooks/useInvisibleInput';
 import type { ImageAttachment } from '@shared/types';
 
 const MAX_SCREENSHOTS = 3;
@@ -108,6 +109,40 @@ export default function InputArea({
     [handleSend]
   );
 
+  // ── Invisible Input (global keyboard capture for stealth mode) ────
+  // Routes keystrokes from the WH_KEYBOARD_LL hook into the textarea
+  // without ever calling .focus() on the window — so the overlay never
+  // becomes the foreground window.
+  const handleSendRef = useRef(handleSend);
+  useEffect(() => {
+    handleSendRef.current = handleSend;
+  }, [handleSend]);
+
+  const invisibleHandlers = useMemo(
+    () => ({
+      onChar: (char: string) => setText((prev) => prev + char),
+      onBackspace: () => setText((prev) => prev.slice(0, -1)),
+      onDelete: () => setText((prev) => prev), // No cursor position tracked; no-op
+      onEnter: () => handleSendRef.current(),
+    }),
+    []
+  );
+  const invisible = useInvisibleInput(invisibleHandlers);
+
+  const onToggleInvisible = useCallback(async () => {
+    const result = await invisible.toggle();
+    if (result.error) {
+      showToast('error', `Invisible Input: ${result.error}`);
+    } else if (result.armed) {
+      showToast(
+        'info',
+        'Invisible Input armed — keys are captured. Click an inert area of the exam first to prevent leaks. Press Esc to disarm.'
+      );
+    } else {
+      showToast('info', 'Invisible Input disarmed.');
+    }
+  }, [invisible, showToast]);
+
   const hasScreenshots = pendingScreenshots.length > 0;
   const atMaxScreenshots = pendingScreenshots.length >= MAX_SCREENSHOTS;
 
@@ -165,6 +200,24 @@ export default function InputArea({
             {isListening ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
         )}
+
+        {/* Invisible Input toggle (stealth-mode typing) */}
+        <button
+          onClick={onToggleInvisible}
+          className={`p-1.5 rounded transition-colors shrink-0 mb-0.5 ${
+            invisible.armed
+              ? 'bg-accent-primary/20 text-accent-primary'
+              : 'hover:bg-bg-hover text-text-secondary hover:text-text-primary'
+          }`}
+          style={invisible.armed ? { animation: 'micPulse 1.5s ease-in-out infinite' } : undefined}
+          title={
+            invisible.armed
+              ? 'Invisible Input armed — Esc to disarm'
+              : 'Arm Invisible Input (Ctrl+Shift+I) — type without focus'
+          }
+        >
+          <Keyboard size={16} />
+        </button>
 
         {/* Text input */}
         <textarea

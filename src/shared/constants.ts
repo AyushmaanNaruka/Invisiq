@@ -16,6 +16,7 @@ export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
   'toggle-passthrough': 'CommandOrControl+Shift+P',
   'next-model': 'CommandOrControl+Alt+]',
   'prev-model': 'CommandOrControl+Alt+[',
+  'toggle-invisible-input': 'CommandOrControl+Shift+I',
 };
 
 // ══════════════════════════════════════

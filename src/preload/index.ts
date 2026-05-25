@@ -24,6 +24,12 @@ const VALID_CHANNELS = [
   'resilience:agent-response',
   'overlay:stealth-focus-changed',
   'overlay:clipboard-input-requested',
+  // Invisible Input (global keyboard capture)
+  'invisible-input:status',
+  'invisible-input:char',
+  'invisible-input:enter',
+  'invisible-input:backspace',
+  'invisible-input:delete',
 ];
 
 const ghostAPI = {
@@ -259,6 +265,20 @@ const ghostAPI = {
       ipcRenderer.invoke('memory:stats'),
     extract: (conversationId: string) =>
       ipcRenderer.invoke('memory:extract', { conversationId }),
+  },
+
+  // ══════════════════════════════════════
+  //  INVISIBLE INPUT (Global keyboard capture for stealth mode)
+  // ══════════════════════════════════════
+  invisibleInput: {
+    arm: (): Promise<{ armed: boolean; error?: string }> =>
+      ipcRenderer.invoke('invisible-input:arm'),
+    disarm: (): Promise<{ armed: boolean }> =>
+      ipcRenderer.invoke('invisible-input:disarm'),
+    toggle: (): Promise<{ armed: boolean; error?: string }> =>
+      ipcRenderer.invoke('invisible-input:toggle'),
+    status: (): Promise<{ armed: boolean }> =>
+      ipcRenderer.invoke('invisible-input:status'),
   },
 
   // ══════════════════════════════════════
