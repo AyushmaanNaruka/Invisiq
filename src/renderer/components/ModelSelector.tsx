@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Eye, Lock, Server } from 'lucide-react';
+import { GhostTooltip } from './ui/GhostTooltip';
 import { ALL_MODELS } from '@shared/constants';
 import { providerManager } from '../services/ai-providers/provider-manager';
 import type { ModelConfig, ProviderID } from '@shared/types';
@@ -93,14 +94,15 @@ function ModelSelector({
 
   return (
     <div ref={ref} className="relative no-drag">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-bg-hover text-text-primary text-xs transition-colors"
-        title={compact ? currentModel.name : undefined}
-      >
-        <span>{compact ? abbreviateModelName(currentModel.name) : currentModel.name}</span>
-        <ChevronDown size={12} className="text-text-secondary" />
-      </button>
+      <GhostTooltip content={currentModel.name} placement="bottom" disabled={!compact}>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-bg-hover text-text-primary text-xs transition-colors"
+        >
+          <span>{compact ? abbreviateModelName(currentModel.name) : currentModel.name}</span>
+          <ChevronDown size={12} className="text-text-secondary" />
+        </button>
+      </GhostTooltip>
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 w-52 bg-bg-overlay border border-border-subtle rounded-md shadow-dropdown z-50 max-h-[300px] overflow-y-auto">

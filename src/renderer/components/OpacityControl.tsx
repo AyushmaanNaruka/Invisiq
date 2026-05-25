@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Circle } from 'lucide-react';
+import { GhostTooltip } from './ui/GhostTooltip';
 
 interface OpacityControlProps {
   opacity: number;
@@ -11,14 +12,15 @@ export default function OpacityControl({ opacity, onOpacityChange }: OpacityCont
 
   return (
     <div className="relative no-drag" onMouseLeave={() => setShowSlider(false)}>
-      <button
-        onClick={() => setShowSlider(!showSlider)}
-        onMouseEnter={() => setShowSlider(true)}
-        className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
-        title={`Opacity: ${Math.round(opacity * 100)}%`}
-      >
-        <Circle size={14} />
-      </button>
+      <GhostTooltip content={`Opacity: ${Math.round(opacity * 100)}%`} placement="bottom" disabled={showSlider}>
+        <button
+          onClick={() => setShowSlider(!showSlider)}
+          onMouseEnter={() => setShowSlider(true)}
+          className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
+        >
+          <Circle size={14} />
+        </button>
+      </GhostTooltip>
 
       {showSlider && (
         <div className="absolute top-full right-0 pt-1 z-50 w-36">

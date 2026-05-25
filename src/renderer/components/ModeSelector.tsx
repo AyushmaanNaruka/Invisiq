@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Plus, Pencil } from 'lucide-react';
+import { GhostTooltip } from './ui/GhostTooltip';
 import { BUILT_IN_MODES } from '@shared/constants';
 import type { Mode, CustomMode } from '@shared/types';
 
@@ -38,15 +39,16 @@ function ModeSelector({
 
   return (
     <div ref={ref} className="relative no-drag">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-bg-hover text-text-primary text-xs transition-colors"
-        title={compact ? currentMode.name : undefined}
-      >
-        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: currentMode.color }} />
-        {!compact && <span>{currentMode.name}</span>}
-        <ChevronDown size={12} className="text-text-secondary" />
-      </button>
+      <GhostTooltip content={currentMode.name} placement="bottom" disabled={!compact}>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-bg-hover text-text-primary text-xs transition-colors"
+        >
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: currentMode.color }} />
+          {!compact && <span>{currentMode.name}</span>}
+          <ChevronDown size={12} className="text-text-secondary" />
+        </button>
+      </GhostTooltip>
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-1 w-44 bg-bg-overlay border border-border-subtle rounded-md shadow-dropdown z-50">
@@ -88,17 +90,18 @@ function ModeSelector({
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: mode.color }} />
                     {mode.name}
                   </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditMode(mode);
-                      setIsOpen(false);
-                    }}
-                    className="p-1.5 mr-1 rounded opacity-0 group-hover:opacity-100 hover:bg-bg-input text-text-secondary hover:text-text-primary transition-all"
-                    title="Edit mode"
-                  >
-                    <Pencil size={10} />
-                  </button>
+                  <GhostTooltip content="Edit mode" placement="top">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditMode(mode);
+                        setIsOpen(false);
+                      }}
+                      className="p-1.5 mr-1 rounded opacity-0 group-hover:opacity-100 hover:bg-bg-input text-text-secondary hover:text-text-primary transition-all"
+                    >
+                      <Pencil size={10} />
+                    </button>
+                  </GhostTooltip>
                 </div>
               ))}
             </>

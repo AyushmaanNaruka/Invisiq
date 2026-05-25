@@ -107,6 +107,9 @@ export function showOverlay(): void {
     } else {
       overlayWindow.setAlwaysOnTop(true);
       overlayWindow.show();
+      // Re-enforce skipTaskbar — setAlwaysOnTop / show() can drop WS_EX_TOOLWINDOW
+      // and re-add WS_EX_APPWINDOW on Windows, putting the icon back in the taskbar.
+      overlayWindow.setSkipTaskbar(true);
       console.log('[Overlay] showOverlay — visible, alwaysOnTop restored');
     }
 
@@ -207,6 +210,10 @@ export function setStealthFocusMode(enabled: boolean): void {
     console.log('[Overlay] Stealth focus ENABLED — non-focusable HWND (WS_EX_NOACTIVATE), opacity-driven visibility');
   } else {
     overlayWindow.setFocusable(true);
+    // Re-enforce skipTaskbar — setFocusable(true) can re-add WS_EX_APPWINDOW
+    // and bring the icon back to the taskbar. GhostAI is always meant to stay
+    // hidden from the taskbar regardless of stealth mode.
+    overlayWindow.setSkipTaskbar(true);
     if (focusReturnTimer) {
       clearTimeout(focusReturnTimer);
       focusReturnTimer = null;

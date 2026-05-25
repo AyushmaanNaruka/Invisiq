@@ -11,6 +11,7 @@ import SettingsAudio from './SettingsAudio';
 import SettingsMemory from './SettingsMemory';
 import SettingsCompanion from './SettingsCompanion';
 import SettingsResilience from './SettingsResilience';
+import { GhostTooltip } from './ui/GhostTooltip';
 import { DEFAULT_HOTKEYS } from '@shared/constants';
 import type { ProviderID, AppSettings, HotkeyAction } from '@shared/types';
 
@@ -186,18 +187,18 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
           {/* Left icon sidebar */}
           <div className="w-12 border-r border-border-subtle flex flex-col py-2 gap-1 shrink-0">
             {NAV_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                title={item.label}
-                className={`mx-1 p-2 rounded-md flex items-center justify-center transition-colors ${
-                  activeTab === item.id
-                    ? 'bg-accent-primary/10 text-accent-primary'
-                    : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
-                }`}
-              >
-                {item.icon}
-              </button>
+              <GhostTooltip key={item.id} content={item.label} placement="bottom">
+                <button
+                  onClick={() => setActiveTab(item.id)}
+                  className={`mx-1 p-2 rounded-md flex items-center justify-center transition-colors ${
+                    activeTab === item.id
+                      ? 'bg-accent-primary/10 text-accent-primary'
+                      : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
+                  }`}
+                >
+                  {item.icon}
+                </button>
+              </GhostTooltip>
             ))}
           </div>
 
@@ -279,13 +280,14 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                         )}
                       </button>
                       {keyState.value.trim() && !isServerUrl && (
-                        <button
-                          onClick={() => handleRemoveKey(id)}
-                          className="p-1 rounded text-text-secondary hover:text-status-error hover:bg-bg-hover transition-colors"
-                          title="Remove API key"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <GhostTooltip content="Remove API key" placement="top">
+                          <button
+                            onClick={() => handleRemoveKey(id)}
+                            className="p-1 rounded text-text-secondary hover:text-status-error hover:bg-bg-hover transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </GhostTooltip>
                       )}
                     </div>
                   </div>

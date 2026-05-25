@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { X, Search, Trash2, Download, MessageSquare, LoaderCircle } from 'lucide-react';
+import { GhostTooltip } from './ui/GhostTooltip';
 import type { ConversationMeta } from '@shared/types';
 
 // ══════════════════════════════════════
@@ -191,26 +192,28 @@ export default function ConversationHistory({
               {/* Hover action buttons */}
               {hoveredId === conv.id && (
                 <div className="absolute right-2 top-2 flex items-center gap-0.5">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onExportConversation(conv.id);
-                    }}
-                    className="p-1 rounded hover:bg-bg-input text-text-secondary hover:text-text-primary transition-colors"
-                    title="Export as Markdown"
-                  >
-                    <Download size={12} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteConversation(conv.id);
-                    }}
-                    className="p-1 rounded hover:bg-bg-input text-text-secondary hover:text-status-error transition-colors"
-                    title="Delete"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                  <GhostTooltip content="Export as Markdown" placement="bottom">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onExportConversation(conv.id);
+                      }}
+                      className="p-1 rounded hover:bg-bg-input text-text-secondary hover:text-text-primary transition-colors"
+                    >
+                      <Download size={12} />
+                    </button>
+                  </GhostTooltip>
+                  <GhostTooltip content="Delete" placement="bottom">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteConversation(conv.id);
+                      }}
+                      className="p-1 rounded hover:bg-bg-input text-text-secondary hover:text-status-error transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </GhostTooltip>
                 </div>
               )}
             </div>

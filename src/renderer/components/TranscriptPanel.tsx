@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, Mic, X } from 'lucide-react';
+import { GhostTooltip } from './ui/GhostTooltip';
 
 interface TranscriptPanelProps {
   isListening: boolean;
@@ -63,21 +64,23 @@ export default function TranscriptPanel({
         </div>
         <div className="flex items-center gap-1">
           {transcript && (
-            <button
-              onClick={onClear}
-              className="p-0.5 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
-              title="Clear transcript"
-            >
-              <X size={10} />
-            </button>
+            <GhostTooltip content="Clear transcript" placement="bottom">
+              <button
+                onClick={onClear}
+                className="p-0.5 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
+              >
+                <X size={10} />
+              </button>
+            </GhostTooltip>
           )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-0.5 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
-            title={collapsed ? 'Expand' : 'Collapse'}
-          >
-            {collapsed ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-          </button>
+          <GhostTooltip content={collapsed ? 'Expand' : 'Collapse'} placement="bottom">
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="p-0.5 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
+            >
+              {collapsed ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+            </button>
+          </GhostTooltip>
         </div>
       </div>
 

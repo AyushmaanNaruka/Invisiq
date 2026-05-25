@@ -6,6 +6,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Smartphone, Wifi, WifiOff, QrCode, X, RefreshCw } from 'lucide-react';
+import { GhostTooltip } from './ui/GhostTooltip';
 import type { CompanionDevice } from '@shared/types';
 
 interface SettingsCompanionProps {
@@ -101,13 +102,14 @@ export default function SettingsCompanion({
           />
           <span className="text-xs text-text-secondary">Port</span>
           <div className="flex-1" />
-          <button
-            onClick={refreshStatus}
-            className="p-1.5 rounded text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
-            title="Refresh status"
-          >
-            <RefreshCw size={13} strokeWidth={1.75} />
-          </button>
+          <GhostTooltip content="Refresh status" placement="top">
+            <button
+              onClick={refreshStatus}
+              className="p-1.5 rounded text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+            >
+              <RefreshCw size={13} strokeWidth={1.75} />
+            </button>
+          </GhostTooltip>
         </div>
 
         <button

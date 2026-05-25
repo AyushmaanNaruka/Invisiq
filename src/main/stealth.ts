@@ -79,6 +79,10 @@ export function startStealthWatchdog(win: BrowserWindow, intervalMs: number = 20
       return;
     }
     win.setContentProtection(true);
+    // Re-enforce skipTaskbar — Windows can re-add WS_EX_APPWINDOW after
+    // setAlwaysOnTop / setFocusable / monitor changes, putting the icon
+    // back in the taskbar even though we set skipTaskbar at creation.
+    win.setSkipTaskbar(true);
   }, intervalMs);
 }
 

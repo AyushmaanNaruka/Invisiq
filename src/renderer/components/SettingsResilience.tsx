@@ -6,6 +6,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Shield, Play, Square, RefreshCw, AlertTriangle, Check } from 'lucide-react';
+import { GhostTooltip } from './ui/GhostTooltip';
 import type { ResilienceStatus, AppSettings } from '@shared/types';
 
 interface SettingsResilienceProps {
@@ -110,13 +111,14 @@ export default function SettingsResilience({
       <div className="p-3 bg-surface-elevated rounded-lg border border-border-subtle">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-text-primary">Agent Status</span>
-          <button
-            onClick={refreshStatus}
-            className="p-1 rounded text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
-            title="Refresh status"
-          >
-            <RefreshCw size={11} strokeWidth={1.75} />
-          </button>
+          <GhostTooltip content="Refresh status" placement="top">
+            <button
+              onClick={refreshStatus}
+              className="p-1 rounded text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+            >
+              <RefreshCw size={11} strokeWidth={1.75} />
+            </button>
+          </GhostTooltip>
         </div>
         <div className="flex items-center gap-2">
           <div

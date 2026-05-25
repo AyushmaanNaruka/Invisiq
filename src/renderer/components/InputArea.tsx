@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo, type RefObject } from 'react';
 import { Camera, Send, Square, X, Mic, MicOff, Keyboard } from 'lucide-react';
 import { useToast } from './Toast';
+import { GhostTooltip } from './ui/GhostTooltip';
 import { useInvisibleInput } from '../hooks/useInvisibleInput';
 import type { ImageAttachment } from '@shared/types';
 
@@ -175,49 +176,58 @@ export default function InputArea({
       {/* Input row */}
       <div className="flex items-end gap-2">
         {/* Screenshot button */}
-        <button
-          onClick={onCaptureScreen}
-          disabled={isStreaming || atMaxScreenshots}
-          className="p-1.5 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors shrink-0 mb-0.5"
-          title={atMaxScreenshots ? `Max ${MAX_SCREENSHOTS} screenshots` : 'Capture screen (Ctrl+Alt+S)'}
+        <GhostTooltip
+          content={atMaxScreenshots ? `Max ${MAX_SCREENSHOTS} screenshots` : 'Capture screen (Ctrl+Alt+S)'}
+          placement="top"
         >
-          <Camera size={16} />
-        </button>
+          <button
+            onClick={onCaptureScreen}
+            disabled={isStreaming || atMaxScreenshots}
+            className="p-1.5 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors shrink-0 mb-0.5"
+          >
+            <Camera size={16} />
+          </button>
+        </GhostTooltip>
 
         {/* Mic button */}
         {micAvailable && (
-          <button
-            onClick={onToggleMic}
-            disabled={isStreaming}
-            className={`p-1.5 rounded transition-colors shrink-0 mb-0.5 ${
-              isListening
-                ? 'bg-status-error/20 text-status-error'
-                : 'hover:bg-bg-hover text-text-secondary hover:text-text-primary disabled:opacity-50'
-            }`}
-            style={isListening ? { animation: 'micPulse 1.5s ease-in-out infinite' } : undefined}
-            title={isListening ? 'Stop listening' : 'Start voice input'}
-          >
-            {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-          </button>
+          <GhostTooltip content={isListening ? 'Stop listening' : 'Start voice input'} placement="top">
+            <button
+              onClick={onToggleMic}
+              disabled={isStreaming}
+              className={`p-1.5 rounded transition-colors shrink-0 mb-0.5 ${
+                isListening
+                  ? 'bg-status-error/20 text-status-error'
+                  : 'hover:bg-bg-hover text-text-secondary hover:text-text-primary disabled:opacity-50'
+              }`}
+              style={isListening ? { animation: 'micPulse 1.5s ease-in-out infinite' } : undefined}
+            >
+              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+          </GhostTooltip>
         )}
 
         {/* Invisible Input toggle (stealth-mode typing) */}
-        <button
-          onClick={onToggleInvisible}
-          className={`p-1.5 rounded transition-colors shrink-0 mb-0.5 ${
-            invisible.armed
-              ? 'bg-accent-primary/20 text-accent-primary'
-              : 'hover:bg-bg-hover text-text-secondary hover:text-text-primary'
-          }`}
-          style={invisible.armed ? { animation: 'micPulse 1.5s ease-in-out infinite' } : undefined}
-          title={
+        <GhostTooltip
+          content={
             invisible.armed
               ? 'Invisible Input armed — Esc to disarm'
               : 'Arm Invisible Input (Ctrl+Shift+I) — type without focus'
           }
+          placement="top"
         >
-          <Keyboard size={16} />
-        </button>
+          <button
+            onClick={onToggleInvisible}
+            className={`p-1.5 rounded transition-colors shrink-0 mb-0.5 ${
+              invisible.armed
+                ? 'bg-accent-primary/20 text-accent-primary'
+                : 'hover:bg-bg-hover text-text-secondary hover:text-text-primary'
+            }`}
+            style={invisible.armed ? { animation: 'micPulse 1.5s ease-in-out infinite' } : undefined}
+          >
+            <Keyboard size={16} />
+          </button>
+        </GhostTooltip>
 
         {/* Text input */}
         <textarea
@@ -233,22 +243,24 @@ export default function InputArea({
 
         {/* Send / Stop button */}
         {isStreaming ? (
-          <button
-            onClick={onStop}
-            className="p-1.5 rounded bg-status-error hover:bg-status-error/80 text-white transition-colors shrink-0 mb-0.5"
-            title="Stop generation"
-          >
-            <Square size={16} />
-          </button>
+          <GhostTooltip content="Stop generation" placement="top">
+            <button
+              onClick={onStop}
+              className="p-1.5 rounded bg-status-error hover:bg-status-error/80 text-white transition-colors shrink-0 mb-0.5"
+            >
+              <Square size={16} />
+            </button>
+          </GhostTooltip>
         ) : (
-          <button
-            onClick={handleSend}
-            disabled={!text.trim() && !hasScreenshots}
-            className="p-1.5 rounded bg-accent-primary hover:bg-accent-primary/80 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 mb-0.5"
-            title="Send (Enter)"
-          >
-            <Send size={16} />
-          </button>
+          <GhostTooltip content="Send (Enter)" placement="top">
+            <button
+              onClick={handleSend}
+              disabled={!text.trim() && !hasScreenshots}
+              className="p-1.5 rounded bg-accent-primary hover:bg-accent-primary/80 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0 mb-0.5"
+            >
+              <Send size={16} />
+            </button>
+          </GhostTooltip>
         )}
       </div>
     </div>
