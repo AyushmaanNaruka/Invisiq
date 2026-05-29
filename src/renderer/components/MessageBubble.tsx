@@ -13,6 +13,35 @@ interface MessageBubbleProps {
   isStreaming?: boolean;
 }
 
+type ContentSegment = { type: 'think' | 'answer'; text: string };
+
+/**
+ * Split assistant content into reasoning (<think>…</think>) and answer segments.
+ * Reasoning models stream <think> blocks live; we render them dimmed. An unclosed
+ * <think> (mid-stream) means everything after it is still-arriving reasoning.
+ */
+function parseThinkSegments(content: string): ContentSegment[] {
+  const segments: ContentSegment[] = [];
+  let remaining = content;
+  while (remaining.length > 0) {
+    const openIdx = remaining.indexOf('<think>');
+    if (openIdx === -1) {
+      segments.push({ type: 'answer', text: remaining });
+      break;
+    }
+    if (openIdx > 0) segments.push({ type: 'answer', text: remaining.slice(0, openIdx) });
+    remaining = remaining.slice(openIdx + '<think>'.length);
+    const closeIdx = remaining.indexOf('</think>');
+    if (closeIdx === -1) {
+      segments.push({ type: 'think', text: remaining });
+      break;
+    }
+    segments.push({ type: 'think', text: remaining.slice(0, closeIdx) });
+    remaining = remaining.slice(closeIdx + '</think>'.length);
+  }
+  return segments.filter((s) => s.text.trim().length > 0);
+}
+
 export default function MessageBubble({ message, isStreaming }: MessageBubbleProps): JSX.Element {
   const [copied, setCopied] = useState(false);
   const [pasting, setPasting] = useState(false);
@@ -106,6 +135,9 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
     []
   );
 
+  // Split reasoning (<think>) from answer. Memoized so streaming tokens don't thrash.
+  const segments = useMemo(() => parseThinkSegments(message.content), [message.content]);
+
   // Error messages
   if (message.role === 'error') {
     return (
@@ -166,9 +198,22 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
     >
       <div className="max-w-[95%]">
         <div className="px-3 py-2 rounded-lg bg-bubble-ai border border-border-subtle/50 text-text-primary text-sm">
-          <ReactMarkdown components={mdComponents}>
-            {message.content}
-          </ReactMarkdown>
+          {segments.map((seg, i) =>
+            seg.type === 'think' ? (
+              <div
+                key={`think-${i}`}
+                className="mb-2 px-2 py-1.5 rounded border-l-2 border-accent-primary/40 bg-bg-input/40 text-text-secondary text-xs italic max-h-40 overflow-y-auto whitespace-pre-wrap"
+              >
+                <span className="not-italic font-medium text-accent-primary/80">💭 Reasoning</span>
+                {'\n'}
+                {seg.text.trim()}
+              </div>
+            ) : (
+              <ReactMarkdown key={`ans-${i}`} components={mdComponents}>
+                {seg.text}
+              </ReactMarkdown>
+            )
+          )}
 
           {/* Streaming cursor */}
           {isStreaming && <span className="streaming-cursor" />}

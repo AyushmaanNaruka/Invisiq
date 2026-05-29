@@ -409,11 +409,14 @@ function AppInner(): JSX.Element {
         onToken: (token) => {
           appendToMessage(assistantMsg.id, token);
         },
-        onDone: (usage, latency) => {
+        onDone: (usage, latency, finalContent) => {
           updateMessage(assistantMsg.id, {
             usage,
             latencyMs: latency,
             model: settings.activeModel,
+            // Replace the streamed content (which included live <think> reasoning)
+            // with the answer-only text, so stored history stays clean and small.
+            ...(finalContent ? { content: finalContent } : {}),
           });
           recordUsage(usage);
           setStreamingMessageId(null);

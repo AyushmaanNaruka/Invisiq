@@ -2,6 +2,24 @@ import type { AIProvider, ChatRequest, ChatResponse, StreamChunk, ModelConfig, V
 
 const DEFAULT_OLLAMA_URL = 'http://localhost:11434';
 
+// Tuned conservatively for ~6GB VRAM after OS/Electron/browser overhead.
+// 7B Q4 model is ~4.7GB; KV cache for 4k ctx adds ~230MB → fits even with
+// Brave/Chrome running. Larger ctx caused observed spill-to-CPU on this hardware.
+const DEFAULT_NUM_CTX = 4096;
+
+// Reasoning models (DeepSeek-R1, QwQ) burn 4-8k tokens inside <think> before
+// emitting the answer. 6144 got fully consumed by thinking → no answer ever
+// emerged. 16384 leaves room for a full reasoning pass + the code answer.
+// (On ~6GB VRAM at ~37 tok/s this caps a hard problem at ~6-7 min worst case.)
+const DEFAULT_NUM_PREDICT = 16384;
+
+// Hold the model in VRAM between turns so follow-up queries skip the
+// 8-15s cold-load on small-VRAM machines.
+const KEEP_ALIVE = '30m';
+
+// Code tasks need deterministic sampling. 0.7 (Ollama's default) wanders.
+const DEFAULT_TEMPERATURE = 0.2;
+
 interface OllamaTagsResponse {
   models: Array<{
     name: string;
@@ -16,7 +34,9 @@ interface OllamaTagsResponse {
 
 interface OllamaChatChunk {
   model: string;
-  message: { role: string; content: string };
+  // Reasoning models (DeepSeek-R1, QwQ) return chain-of-thought in `thinking`,
+  // separate from the final answer in `content`. Older models only use `content`.
+  message: { role: string; content: string; thinking?: string };
   done: boolean;
   total_duration?: number;
   prompt_eval_count?: number;
@@ -96,9 +116,11 @@ export class OllamaProvider implements AIProvider {
           model: request.model,
           messages,
           stream: true,
+          keep_alive: KEEP_ALIVE,
           options: {
-            num_predict: request.maxTokens || 4096,
-            temperature: request.temperature ?? 0.7,
+            num_ctx: DEFAULT_NUM_CTX,
+            num_predict: request.maxTokens || DEFAULT_NUM_PREDICT,
+            temperature: request.temperature ?? DEFAULT_TEMPERATURE,
           },
         }),
         signal: this.abortController.signal,
@@ -121,6 +143,49 @@ export class OllamaProvider implements AIProvider {
 
       const decoder = new TextDecoder();
       let buffer = '';
+      // Reasoning models stream `thinking` before `content`. We wrap thinking in
+      // <think>...</think> markers so the renderer can show it live (dimmed) and
+      // strip it from the stored answer. fullContent holds ONLY the final answer.
+      let thinkingOpen = false;
+
+      // Yields stream chunks for one parsed Ollama message. Defined as a closure
+      // returning an array (generators can't yield from nested fns) — small payloads.
+      const processChunk = (chunk: OllamaChatChunk): StreamChunk[] => {
+        const out: StreamChunk[] = [];
+        const thinking = chunk.message?.thinking;
+        const content = chunk.message?.content;
+
+        if (thinking) {
+          if (!thinkingOpen) {
+            out.push({ type: 'text', text: '<think>' });
+            thinkingOpen = true;
+          }
+          out.push({ type: 'text', text: thinking });
+        }
+        if (content) {
+          if (thinkingOpen) {
+            out.push({ type: 'text', text: '</think>' });
+            thinkingOpen = false;
+          }
+          fullContent += content;
+          out.push({ type: 'text', text: content });
+        }
+        if (chunk.done) {
+          // If the stream ended while still inside a thinking block (budget exhausted
+          // before any answer), close the tag so the renderer doesn't hang open.
+          if (thinkingOpen) {
+            out.push({ type: 'text', text: '</think>' });
+            thinkingOpen = false;
+          }
+          usage = {
+            inputTokens: chunk.prompt_eval_count || 0,
+            outputTokens: chunk.eval_count || 0,
+            totalTokens: (chunk.prompt_eval_count || 0) + (chunk.eval_count || 0),
+            estimatedCostUSD: 0, // Local — always free
+          };
+        }
+        return out;
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -134,18 +199,7 @@ export class OllamaProvider implements AIProvider {
           if (!line.trim()) continue;
           try {
             const chunk = JSON.parse(line) as OllamaChatChunk;
-            if (chunk.message?.content) {
-              fullContent += chunk.message.content;
-              yield { type: 'text', text: chunk.message.content };
-            }
-            if (chunk.done) {
-              usage = {
-                inputTokens: chunk.prompt_eval_count || 0,
-                outputTokens: chunk.eval_count || 0,
-                totalTokens: (chunk.prompt_eval_count || 0) + (chunk.eval_count || 0),
-                estimatedCostUSD: 0, // Local — always free
-              };
-            }
+            for (const c of processChunk(chunk)) yield c;
           } catch {
             // Skip unparseable lines
           }
@@ -156,18 +210,7 @@ export class OllamaProvider implements AIProvider {
       if (buffer.trim()) {
         try {
           const chunk = JSON.parse(buffer) as OllamaChatChunk;
-          if (chunk.message?.content) {
-            fullContent += chunk.message.content;
-            yield { type: 'text', text: chunk.message.content };
-          }
-          if (chunk.done) {
-            usage = {
-              inputTokens: chunk.prompt_eval_count || 0,
-              outputTokens: chunk.eval_count || 0,
-              totalTokens: (chunk.prompt_eval_count || 0) + (chunk.eval_count || 0),
-              estimatedCostUSD: 0,
-            };
-          }
+          for (const c of processChunk(chunk)) yield c;
         } catch {
           // ignore
         }
