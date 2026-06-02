@@ -57,7 +57,15 @@ export function createOverlayWindow(): BrowserWindow {
   // Show window only after content is ready to paint
   overlayWindow.once('ready-to-show', () => {
     if (overlayWindow && !overlayWindow.isDestroyed()) {
+      // CRITICAL — re-apply WDA_EXCLUDEFROMCAPTURE both before and after the
+      // first ShowWindow call. Windows DWM does not always commit the affinity
+      // for the first composition cycle if it was only set on a hidden HWND,
+      // which causes the overlay to flash briefly in screen-share captures
+      // (Google Meet / Zoom / OBS) until the watchdog re-applies it. Setting
+      // it twice around show() eliminates that leak.
+      overlayWindow.setContentProtection(true);
       overlayWindow.show();
+      overlayWindow.setContentProtection(true);
     }
   });
 
@@ -105,6 +113,10 @@ export function showOverlay(): void {
       overlayWindow.setOpacity(userOpacity);
       console.log('[Overlay] showOverlay — stealth: moveTop + opacity restored to', userOpacity);
     } else {
+      // Re-apply content protection BEFORE show() — Windows DWM may briefly
+      // composite the overlay into screen-share captures on the first frame
+      // after ShowWindow if the affinity isn't set on the visible HWND.
+      overlayWindow.setContentProtection(true);
       overlayWindow.setAlwaysOnTop(true);
       overlayWindow.show();
       // Re-enforce skipTaskbar — setAlwaysOnTop / show() can drop WS_EX_TOOLWINDOW

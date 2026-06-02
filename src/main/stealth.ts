@@ -67,13 +67,18 @@ export function applyFullStealth(win: BrowserWindow): void {
 /**
  * Periodically re-apply content protection in case it was
  * dropped (e.g., after window state change).
+ *
+ * Runs a 200ms tight burst for the first 10 seconds — this defends the
+ * first-show race where DWM can briefly composite the overlay into screen-
+ * share captures before honoring WDA_EXCLUDEFROMCAPTURE. After the burst,
+ * backs off to the steady-state interval (default 2s).
  */
 let watchdogInterval: ReturnType<typeof setInterval> | null = null;
 
 export function startStealthWatchdog(win: BrowserWindow, intervalMs: number = 2000): void {
   stopStealthWatchdog();
 
-  watchdogInterval = setInterval(() => {
+  const tick = (): void => {
     if (win.isDestroyed()) {
       stopStealthWatchdog();
       return;
@@ -83,7 +88,20 @@ export function startStealthWatchdog(win: BrowserWindow, intervalMs: number = 20
     // setAlwaysOnTop / setFocusable / monitor changes, putting the icon
     // back in the taskbar even though we set skipTaskbar at creation.
     win.setSkipTaskbar(true);
-  }, intervalMs);
+  };
+
+  const tightMs = 200;
+  const burstDurationMs = 10000;
+  let elapsed = 0;
+
+  watchdogInterval = setInterval(() => {
+    tick();
+    elapsed += tightMs;
+    if (elapsed >= burstDurationMs) {
+      stopStealthWatchdog();
+      watchdogInterval = setInterval(tick, intervalMs);
+    }
+  }, tightMs);
 }
 
 export function stopStealthWatchdog(): void {

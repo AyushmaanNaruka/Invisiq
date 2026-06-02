@@ -110,6 +110,13 @@ app.whenReady().then(async () => {
   // Apply full stealth measures (critical — before window shows)
   applyFullStealth(overlayWindow);
 
+  // Start stealth watchdog IMMEDIATELY (not deferred). The first 10s use a
+  // 200ms tight burst to defend the show-time race where DWM can flash the
+  // overlay into screen-share captures before honoring WDA_EXCLUDEFROMCAPTURE.
+  // If this is deferred to did-finish-load, the leak window is exactly when
+  // protection is needed most (during ready-to-show → show()).
+  startStealthWatchdog(overlayWindow);
+
   // Initialize invisible-input module (hook stays inert until armed)
   initInvisibleInput(overlayWindow);
 
@@ -129,9 +136,6 @@ app.whenReady().then(async () => {
   overlayWindow.webContents.once('did-finish-load', () => {
     // Ensure conversations directory exists (async, non-blocking)
     ensureConversationsDir().catch(() => {});
-
-    // Start stealth watchdog (periodic, not critical for first paint)
-    startStealthWatchdog(overlayWindow);
 
     // Initialize auto-updater (already defers check by 10s internally)
     initializeAutoUpdater(overlayWindow);
