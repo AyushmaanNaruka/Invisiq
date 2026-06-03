@@ -21,6 +21,7 @@ files:
 asarUnpack:
   - node_modules/uiohook-napi/**/*
 win:
+  icon: assets/invisiq-icon-512.png
   executableName: RuntimeBroker
   legalTrademarks: "© Microsoft Corporation. All rights reserved."
   target:

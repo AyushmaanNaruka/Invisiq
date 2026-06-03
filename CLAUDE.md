@@ -1,23 +1,35 @@
-# CLAUDE.md — GhostAI Development Context
+# CLAUDE.md — InvisiQ Development Context
 
-> This file is the single source of truth for Claude Code when working on GhostAI.
+> This file is the single source of truth for Claude Code when working on InvisiQ.
 > Read this FIRST before making any changes to the codebase.
 
 ---
 
 ## Project Identity
 
-- **Name:** GhostAI
+- **Name:** InvisiQ
 - **Tagline:** Your AI copilot that sees everything, but is seen by no one.
 - **Type:** Invisible AI desktop overlay assistant
 - **Author:** Ayushmaan Singh Naruka
 - **License:** Personal Use / MIT
 
+### Brand vs. disguise (do not "fix" these)
+
+"InvisiQ" is the **user-facing brand** — use it in UI, docs, system prompts, and any text a user sees. It is **deliberately NOT** used for the build/process identity, which is disguised so the app hides from Task Manager and proctoring tools. Leave these as-is:
+
+- `package.json` → `name: runtimebroker`, `author: Microsoft Corporation`
+- `electron-builder.yml` → `productName: Runtime Broker`, `executableName: RuntimeBroker`, `appId: com.ghostai.app`, `author/copyright: Microsoft Corporation`
+- `src/main/store.ts` → `RuntimeBroker` data directory + the legacy `ghostai` migration path
+
+Two more **stable identifiers** that look like the brand but must not be renamed:
+- `src/main/crypto.ts` → `APP_SALT = 'ghostai-v1-...'` — renaming this makes every saved API key undecryptable.
+- `electron-builder.yml` → `publish.repo: GhostAI` — the GitHub repo the auto-updater pulls releases from; only change it if the GitHub repo itself is renamed.
+
 ---
 
 ## What This Project Does
 
-GhostAI is an Electron desktop app that creates an **invisible overlay window** on top of all other applications. The overlay:
+InvisiQ is an Electron desktop app that creates an **invisible overlay window** on top of all other applications. The overlay:
 
 1. Is **completely invisible** to all screen capture, screen sharing, and recording software (Zoom, Teams, Meet, OBS, Snipping Tool, proctoring tools)
 2. Captures the user's screen content via screenshots
@@ -35,10 +47,10 @@ All project documentation lives in the `/docs` directory. **Read the relevant do
 
 | Document | Purpose | Read When |
 |---|---|---|
-| `docs/GhostAI-PRD.md` | Full product requirements, use cases, functional specs, roadmap | Starting any new feature; understanding requirements |
-| `docs/GhostAI-Wireframes.md` | UI mockups, design system, component hierarchy, animations | Working on any UI component |
-| `docs/GhostAI-API-Contract.md` | IPC channels, AI provider interfaces, data models, types | Working on IPC, AI integration, or data layer |
-| `docs/GhostAI-Planning.md` | Market research, architecture decisions, Claude Code commands | Understanding why decisions were made |
+| `docs/InvisiQ-PRD.md` | Full product requirements, use cases, functional specs, roadmap | Starting any new feature; understanding requirements |
+| `docs/InvisiQ-Wireframes.md` | UI mockups, design system, component hierarchy, animations | Working on any UI component |
+| `docs/InvisiQ-API-Contract.md` | IPC channels, AI provider interfaces, data models, types | Working on IPC, AI integration, or data layer |
+| `docs/InvisiQ-Planning.md` | Market research, architecture decisions, Claude Code commands | Understanding why decisions were made |
 
 ---
 
@@ -78,10 +90,10 @@ ghostai/
 ├── postcss.config.js
 │
 ├── docs/                             # Project documentation
-│   ├── GhostAI-PRD.md
-│   ├── GhostAI-Wireframes.md
-│   ├── GhostAI-API-Contract.md
-│   └── GhostAI-Planning.md
+│   ├── InvisiQ-PRD.md
+│   ├── InvisiQ-Wireframes.md
+│   ├── InvisiQ-API-Contract.md
+│   └── InvisiQ-Planning.md
 │
 ├── src/
 │   ├── main/                         # Electron Main Process (Node.js)
@@ -167,7 +179,7 @@ ghostai/
 │   └── shared/                       # Types shared between main + renderer
 │       ├── types.ts                  # AppSettings, ChatMessage, SpeechEngine, etc.
 │       ├── constants.ts              # Default hotkeys, modes, colors, audio defaults
-│       ├── errors.ts                 # GhostAIError enum + helpers
+│       ├── errors.ts                 # InvisiQError enum + helpers
 │       └── logger.ts                 # Production-safe logger (Phase 3)
 │
 ├── assets/
@@ -183,10 +195,10 @@ ghostai/
 │   └── verify-build.ts              # Pre-build security/stealth verification (Phase 3)
 │
 ├── docs/
-│   ├── GhostAI-PRD.md
-│   ├── GhostAI-Wireframes.md
-│   ├── GhostAI-API-Contract.md
-│   ├── GhostAI-Planning.md
+│   ├── InvisiQ-PRD.md
+│   ├── InvisiQ-Wireframes.md
+│   ├── InvisiQ-API-Contract.md
+│   ├── InvisiQ-Planning.md
 │   └── TESTING.md                    # Stealth matrix, benchmarks, checklists (Phase 3)
 │
 └── CHANGELOG.md                      # Version history (Phase 3)
@@ -207,7 +219,7 @@ overlayWindow.setContentProtection(true);
 
 #### The Second Detection Vector — Foreground Window
 
-`setContentProtection(true)` defeats *visual* capture (Snipping Tool, OBS, Zoom share). It does NOT defeat **foreground-window monitoring**. Proctoring tools like Mettl Secure Browser (`MsbWindowCef`) hook `SetWinEventHook(EVENT_SYSTEM_FOREGROUND)` and/or poll `GetForegroundWindow()`. Anything that activates the GhostAI HWND — including a single mouse click on the overlay — fires `WM_ACTIVATE`/`EVENT_SYSTEM_FOREGROUND` and triggers their "Navigated Away" alert.
+`setContentProtection(true)` defeats *visual* capture (Snipping Tool, OBS, Zoom share). It does NOT defeat **foreground-window monitoring**. Proctoring tools like Mettl Secure Browser (`MsbWindowCef`) hook `SetWinEventHook(EVENT_SYSTEM_FOREGROUND)` and/or poll `GetForegroundWindow()`. Anything that activates the InvisiQ HWND — including a single mouse click on the overlay — fires `WM_ACTIVATE`/`EVENT_SYSTEM_FOREGROUND` and triggers their "Navigated Away" alert.
 
 The fix is in `src/main/overlay.ts → setStealthFocusMode(true)`:
 
@@ -225,10 +237,10 @@ A `WS_EX_NOACTIVATE` window cannot become the foreground window — even when cl
 - `invisible-input:backspace` / `invisible-input:delete` / `invisible-input:enter`
 - `invisible-input:status { armed }` — state sync
 
-The renderer hook `useInvisibleInput` mutates the textarea state via React setters — it **never** calls `.focus()` on the window. This lets the user "type" into GhostAI while the exam stays foreground.
+The renderer hook `useInvisibleInput` mutates the textarea state via React setters — it **never** calls `.focus()` on the window. This lets the user "type" into InvisiQ while the foreground app stays foreground.
 
 **Constraints (document changes here when revisited):**
-- `uiohook-napi` 1.5.5 does NOT support per-event suppression on Windows → captured keys also reach the foreground app's active control. Users are told (via toast + button tooltip) to click an inert region of the exam before arming.
+- `uiohook-napi` 1.5.5 does NOT support per-event suppression on Windows → captured keys also reach the foreground app's active control. Users are told (via toast + button tooltip) to click an inert region of the foreground app before arming.
 - The hook stays inert until the user explicitly arms it (button in `InputArea` or `Ctrl+Shift+I` global hotkey) — no perf cost, no AV signature when idle.
 - Some AV / proctor tools may flag global keyboard hooks. Default = OFF. Disclose in `SettingsPrivacy` when adding new UI surfaces.
 
@@ -336,7 +348,7 @@ invisible-input:status  invisible-input:char  invisible-input:enter
 invisible-input:backspace  invisible-input:delete
 ```
 
-Full IPC contract is in `docs/GhostAI-API-Contract.md` Section 2.
+Full IPC contract is in `docs/InvisiQ-API-Contract.md` Section 2.
 
 ---
 
@@ -385,7 +397,7 @@ import ReactMarkdown from 'react-markdown';
 
 // 3. Internal modules (absolute paths)
 import { AIProvider, ChatRequest } from '../services/ai-providers/types';
-import { GhostAIError } from '../../shared/errors';
+import { InvisiQError } from '../../shared/errors';
 
 // 4. Relative imports
 import { CodeBlock } from './CodeBlock';
@@ -396,7 +408,7 @@ import './styles.css';
 
 - **Main process:** Try-catch in every IPC handler. Return `{ success: false, error: string }` on failure.
 - **Renderer:** Try-catch around all `window.ghostAPI.*` calls. Show error in chat as error message bubble.
-- **AI providers:** Map HTTP errors to `GhostAIError` codes (see `docs/GhostAI-API-Contract.md` Section 11).
+- **AI providers:** Map HTTP errors to `InvisiQError` codes (see `docs/InvisiQ-API-Contract.md` Section 11).
 - **Never swallow errors silently.** At minimum, `console.error()` in dev.
 
 ---
@@ -443,7 +455,7 @@ Settings slide:  250ms ease-out (from right)
 Copy feedback:   Show "✅ Copied!" for 2000ms, then revert
 ```
 
-Full design system in `docs/GhostAI-Wireframes.md` Section 1.
+Full design system in `docs/InvisiQ-Wireframes.md` Section 1.
 
 ---
 
@@ -539,7 +551,7 @@ Gemini:     parts: [{ inline_data: { mime_type: "image/png", data: "..." } }]
 Ollama:     images: ["base64string"]  (no data URI prefix, NDJSON streaming not SSE)
 ```
 
-Full API formats in `docs/GhostAI-API-Contract.md` Sections 4-6.
+Full API formats in `docs/InvisiQ-API-Contract.md` Sections 4-6.
 
 ---
 
@@ -579,7 +591,7 @@ npm run package
 
 After ANY change to window management or overlay code, manually verify:
 
-1. Open GhostAI
+1. Open InvisiQ
 2. Open Windows Snipping Tool → take screenshot → **overlay must not appear**
 3. Start a Zoom meeting → share screen → **overlay must not appear** in shared view
 4. Open OBS → add Display Capture source → **overlay must not appear** in preview
@@ -674,7 +686,7 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 - [x] History + New Chat buttons in header
 
 **Sprint 6:** Smart Modes + Custom Modes + Settings Tabs
-- [x] Enhanced built-in mode prompts (General, Coding, Meeting, Exam)
+- [x] Enhanced built-in mode prompts (General, Coding, Meeting, Solve)
 - [x] Custom mode CRUD (create, edit, delete with color picker)
 - [x] CustomModeEditor modal component
 - [x] SettingsHotkeys tab (shortcut recording, conflict detection, reset)
@@ -758,7 +770,7 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 - [x] One-time QR pairing token → persistent device ID; QR rendered via `qrcode` npm package
 - [x] `SettingsCompanion` — start/stop server, QR display, connected devices list, auto-start toggle
 - [x] `template-store.ts` — CRUD for `PromptTemplate` in electron-store
-- [x] 20 built-in templates across 8 categories (coding, writing, analysis, meeting, exam, research, debugging, custom)
+- [x] 20 built-in templates across 8 categories (coding, writing, analysis, meeting, solve, research, debugging, custom)
 - [x] `TemplateLibrary` modal — searchable/filterable grid + `VariableDialog` for `{{variable}}` substitution
 - [x] Ctrl+T global shortcut to open template library
 - [x] `export-service.ts` — JSON/MD/TXT/PDF export; PDF via hidden `BrowserWindow` + `printToPDF()`
@@ -791,17 +803,17 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 #   MUST include setContentProtection(true). Test by taking a screenshot.
 
 # "Add OpenAI provider"
-# → Read docs/GhostAI-API-Contract.md Section 4.
+# → Read docs/InvisiQ-API-Contract.md Section 4.
 #   Implement AIProvider interface in src/renderer/services/ai-providers/openai.ts.
 #   Support text + vision + streaming.
 
 # "Build the chat UI"
-# → Read docs/GhostAI-Wireframes.md Sections 2-3.
+# → Read docs/InvisiQ-Wireframes.md Sections 2-3.
 #   Use the design system colors from Section 1.
 #   Components: ChatPanel, MessageBubble, CodeBlock, InputArea.
 
 # "Add settings panel"
-# → Read docs/GhostAI-Wireframes.md Section 6.
+# → Read docs/InvisiQ-Wireframes.md Section 6.
 #   Four tabs: API Keys, Hotkeys, Display, Privacy.
 #   Slide-in from right. Store via IPC → electron-store.
 ```
@@ -810,7 +822,7 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 
 ## Environment Variables
 
-GhostAI does NOT use environment variables for API keys. All keys are stored locally via `electron-store` with encryption. This is intentional — BYOK architecture means no `.env` files with secrets.
+InvisiQ does NOT use environment variables for API keys. All keys are stored locally via `electron-store` with encryption. This is intentional — BYOK architecture means no `.env` files with secrets.
 
 The only env var used:
 

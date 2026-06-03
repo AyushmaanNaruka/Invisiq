@@ -1,7 +1,7 @@
 /**
  * companion-server.ts — Phase 4 / Sprint 16
  *
- * HTTP + WebSocket companion server for GhostAI mobile/web companion app.
+ * HTTP + WebSocket companion server for InvisiQ mobile/web companion app.
  * Binds to 127.0.0.1 by default (LAN opt-in required).
  * One-time UUID pairing token → persistent device ID.
  */
@@ -56,7 +56,7 @@ function createHTTPHandler() {
       res.writeHead(200);
       res.end(JSON.stringify({
         status: 'ok',
-        app: 'GhostAI',
+        app: 'InvisiQ',
         version: '2.0.0',
         pairing: pendingPairingToken ? 'required' : 'not-required',
       }));

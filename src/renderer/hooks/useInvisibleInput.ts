@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
  *   - a callback that fires with each received character / control event,
  *     letting the consumer drive textarea state without ever calling .focus()
  *
- * Used by InputArea so the user can "type" into GhostAI while Stealth Focus
+ * Used by InputArea so the user can "type" into InvisiQ while Stealth Focus
  * keeps the window non-focusable (WS_EX_NOACTIVATE) — preventing proctoring
  * tools from seeing a foreground-window change.
  */

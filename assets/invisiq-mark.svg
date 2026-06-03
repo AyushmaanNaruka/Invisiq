@@ -1,0 +1,9 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="InvisiQ">
+  <rect width="64" height="64" rx="15" fill="#0c0c12"></rect>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14.5" stroke="#ffffff" stroke-opacity="0.10"></rect>
+  <g transform="translate(8 7) scale(2)">
+    <path d="M4 11a8 8 0 0 1 16 0v9l-2.5-1.5L15 20l-3-1.5L9 20l-2.5-1.5L4 20z" fill="#2ee5c5"></path>
+    <circle cx="9.5" cy="11" r="1.5" fill="#0c0c12"></circle>
+    <circle cx="14.5" cy="11" r="1.5" fill="#0c0c12"></circle>
+  </g>
+</svg>

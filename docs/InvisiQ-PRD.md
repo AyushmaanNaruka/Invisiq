@@ -1,4 +1,4 @@
-# GhostAI — Product Requirements Document
+# InvisiQ — Product Requirements Document
 
 > **Your AI copilot that sees everything, but is seen by no one.**
 
@@ -37,7 +37,7 @@
 
 ### 1.1 Product Vision
 
-GhostAI is a personal desktop application that provides real-time AI assistance through an **invisible overlay window**. The application captures screen content, understands context through AI vision models, and delivers answers — all while remaining **completely invisible** to screen sharing software, video call platforms, screen recording tools, and proctoring systems.
+InvisiQ is a personal desktop application that provides real-time AI assistance through an **invisible overlay window**. The application captures screen content, understands context through AI vision models, and delivers answers — all while remaining **completely invisible** to screen sharing software, video call platforms, screen recording tools, and proctoring systems.
 
 The tool is designed as a personal productivity and learning assistant, built by the developer for their own use, leveraging **bring-your-own-key (BYOK)** architecture to connect to leading AI providers including OpenAI, Anthropic Claude, and Google Gemini.
 
@@ -53,7 +53,7 @@ Existing commercial tools that address this are:
 
 ### 1.3 Solution Overview
 
-GhostAI solves this by providing a lightweight, privacy-first, self-hosted desktop overlay that:
+InvisiQ solves this by providing a lightweight, privacy-first, self-hosted desktop overlay that:
 
 - Remains **invisible to ALL** screen capture, sharing, and recording software
 - **Captures and understands** screen content using AI vision models
@@ -81,7 +81,7 @@ GhostAI solves this by providing a lightweight, privacy-first, self-hosted deskt
 
 | Field | Value |
 |---|---|
-| **Product Name** | GhostAI |
+| **Product Name** | InvisiQ |
 | **Tagline** | Your AI copilot that sees everything, but is seen by no one. |
 | **Type** | Desktop Application (Native Overlay) |
 | **License** | Personal Use / Open Source (MIT) |
@@ -112,7 +112,7 @@ The application follows Electron's multi-process architecture with clear separat
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         GhostAI Desktop                         │
+│                         InvisiQ Desktop                         │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌──────────────────────┐     ┌──────────────────────────────┐ │
@@ -163,19 +163,19 @@ The application follows Electron's multi-process architecture with clear separat
 
 > **Scenario:** User is taking a timed coding assessment on a platform like Mercer Mettl, HackerRank, or CodeSignal. The browser is in lockdown mode — tab switching is blocked, copy-paste may be monitored, and proctoring may be active.
 
-**Actors:** User (test-taker), Assessment Platform (locked browser), GhostAI (invisible overlay)
+**Actors:** User (test-taker), Assessment Platform (locked browser), InvisiQ (invisible overlay)
 
-**Preconditions:** GhostAI is running with content protection enabled. User has a valid AI API key configured.
+**Preconditions:** InvisiQ is running with content protection enabled. User has a valid AI API key configured.
 
 **Flow:**
 1. User opens the coding assessment in the lockdown browser
-2. User presses `Ctrl+Shift+G` — GhostAI overlay appears (invisible to proctoring)
+2. User presses `Ctrl+Shift+G` — InvisiQ overlay appears (invisible to proctoring)
 3. User presses `Ctrl+Shift+S` — captures the coding question (screenshot)
-4. GhostAI sends the screenshot to the configured AI vision model
+4. InvisiQ sends the screenshot to the configured AI vision model
 5. AI analyzes the problem, provides solution code with explanation
 6. User reads the solution in the overlay, clicks "Copy Code"
 7. User types/pastes the solution into the assessment editor
-8. User presses `Escape` to hide GhostAI and continues the exam
+8. User presses `Escape` to hide InvisiQ and continues the assessment
 
 **Why It Works:** Browser-based lockdown environments run inside a sandboxed browser process. They **cannot** detect native desktop applications running outside the browser. The overlay window uses `WDA_EXCLUDEFROMCAPTURE`, making it invisible to any screen monitoring the browser might perform.
 
@@ -185,12 +185,12 @@ The application follows Electron's multi-process architecture with clear separat
 
 > **Scenario:** User is in a Zoom, Google Meet, or Microsoft Teams meeting. They need to quickly look up information, get talking points, or understand a document being shared — without other participants knowing.
 
-**Actors:** User (meeting participant), Video Platform (Zoom/Meet/Teams), GhostAI
+**Actors:** User (meeting participant), Video Platform (Zoom/Meet/Teams), InvisiQ
 
-**Preconditions:** GhostAI overlay is running. Meeting is active with screen sharing potentially enabled.
+**Preconditions:** InvisiQ overlay is running. Meeting is active with screen sharing potentially enabled.
 
 **Flow:**
-1. During the meeting, user presses `Ctrl+Shift+G` to reveal GhostAI
+1. During the meeting, user presses `Ctrl+Shift+G` to reveal InvisiQ
 2. User types a question or captures the current screen content
 3. AI provides context-aware response (summary, talking points, data analysis)
 4. User references the AI response to contribute meaningfully to the discussion
@@ -209,9 +209,9 @@ The application follows Electron's multi-process architecture with clear separat
 2. User uses `Ctrl+Shift+R` to region-select the problem statement
 3. AI analyzes the problem and suggests approach + pseudocode
 4. User **types the solution themselves** (to appear natural and avoid copy-paste detection)
-5. For follow-up questions, user types into GhostAI for instant guidance
+5. For follow-up questions, user types into InvisiQ for instant guidance
 
-> ⚠️ **Key Insight:** In live interviews, it is critical to TYPE the solution rather than paste it. Sudden large pastes look unnatural. GhostAI provides the approach and logic; the user translates it into code at a natural pace.
+> ⚠️ **Key Insight:** In live interviews, it is critical to TYPE the solution rather than paste it. Sudden large pastes look unnatural. InvisiQ provides the approach and logic; the user translates it into code at a natural pace.
 
 ---
 
@@ -233,7 +233,7 @@ The application follows Electron's multi-process architecture with clear separat
 
 **Flow:**
 1. User encounters a complex concept in study material
-2. Captures the relevant diagram, equation, or text with GhostAI
+2. Captures the relevant diagram, equation, or text with InvisiQ
 3. Asks AI to explain step-by-step, provide examples, or solve the problem
 4. Saves the conversation for later review (chat history)
 
@@ -284,7 +284,7 @@ The overlay provides contextual suggestions without being visible to the client 
 |---|---|---|---|
 | FR-3.1 | Full-screen capture via `desktopCapturer` | P0 | Captures entire primary display as PNG/base64 |
 | FR-3.2 | Region selection mode (rubber-band) | P0 | User drags to select rectangular region; only that region is captured |
-| FR-3.3 | Overlay hidden during capture | P0 | GhostAI window briefly hides before capture, restores after |
+| FR-3.3 | Overlay hidden during capture | P0 | InvisiQ window briefly hides before capture, restores after |
 | FR-3.4 | Screenshot sent as base64 to AI vision API | P0 | Image properly encoded and included in API request |
 | FR-3.5 | OCR text extraction fallback (Tesseract.js) | P1 | If no vision API key, extract text via OCR and send as text prompt |
 | FR-3.6 | Screenshot preview in chat before sending | P1 | Thumbnail of captured image shown in chat input area |
@@ -329,7 +329,7 @@ The overlay provides contextual suggestions without being visible to the client 
 |---|---|---|---|
 | FR-6.1 | Coding Interview Mode | P1 | System prompt optimized for DSA, algorithms, code solutions with complexity analysis |
 | FR-6.2 | Meeting Assistant Mode | P1 | System prompt for summarization, talking points, response suggestions |
-| FR-6.3 | Exam Mode | P1 | System prompt for concise, direct answers with step-by-step explanation |
+| FR-6.3 | Solve Mode | P1 | System prompt for concise, direct answers with step-by-step explanation |
 | FR-6.4 | General Mode (default) | P0 | Standard helpful assistant prompt, no specialized context |
 | FR-6.5 | Custom prompt template editor | P2 | User can create and save their own prompt templates |
 | FR-6.6 | Mode selector in overlay header | P1 | Dropdown to switch mode; changes system prompt for next message |
@@ -411,7 +411,7 @@ The overlay provides contextual suggestions without being visible to the client 
 
 ### 6.1 The Invisibility Engine
 
-The core technical innovation of GhostAI is its invisible overlay, powered by the Windows Desktop Window Manager (DWM) compositor architecture.
+The core technical innovation of InvisiQ is its invisible overlay, powered by the Windows Desktop Window Manager (DWM) compositor architecture.
 
 #### 6.1.1 How Windows Screen Capture Works
 
@@ -427,7 +427,7 @@ Windows 10 version 2004 introduced the `WDA_EXCLUDEFROMCAPTURE` flag for the `Se
 │                                     │
 │  Window A ──┐                       │
 │  Window B ──┤                       │
-│  GhostAI ───┤                       │
+│  InvisiQ ───┤                       │
 │             ▼                       │
 │  ┌─────────────────────┐            │
 │  │    Compositor        │            │
@@ -437,7 +437,7 @@ Windows 10 version 2004 introduced the `WDA_EXCLUDEFROMCAPTURE` flag for the `Se
 │   🖥 Monitor  🎥 Capture            │
 │   Output      Output               │
 │                                     │
-│   Shows ALL   Excludes GhostAI     │
+│   Shows ALL   Excludes InvisiQ     │
 │   windows     (WDA_EXCLUDEFROM     │
 │               CAPTURE)              │
 └─────────────────────────────────────┘
@@ -492,7 +492,7 @@ overlayWindow.setContentProtection(true);
 | macOS 15+ (Sequoia) | ScreenCaptureKit ignores `sharingType` flag | High | Use extreme low opacity; focus on Windows |
 | Some Windows 11 builds | `WDA_EXCLUDEFROMCAPTURE` may fail on certain apps | Medium | Native C++ addon as fallback; test per-build |
 | Linux / Wayland | No standard capture exclusion API | Medium | X11 may work; Wayland is compositor-dependent |
-| Physical cameras | Cannot prevent photography of screen | Low | Use small overlay; position near exam content |
+| Physical cameras | Cannot prevent photography of screen | Low | Use small overlay; position near assessment content |
 | Enterprise DLP agents | Kernel-level agents may enumerate processes | Low | Process name disguise; avoid managed devices |
 
 ---
@@ -710,7 +710,7 @@ ghostai/
 │   │   │   ├── CodeBlock.tsx       # Syntax highlighted code + copy
 │   │   │   ├── ScreenCapture.tsx   # Region selector UI
 │   │   │   ├── Settings.tsx        # API keys & preferences
-│   │   │   ├── ModeSelector.tsx    # Interview/Meeting/Exam modes
+│   │   │   ├── ModeSelector.tsx    # Interview/Meeting/Solve modes
 │   │   │   ├── ModelSelector.tsx   # AI model dropdown
 │   │   │   ├── StatusBar.tsx       # Token count, connection status
 │   │   │   └── Controls.tsx        # Opacity, minimize, close
@@ -767,7 +767,7 @@ ghostai/
 | Feature | Duration | Description |
 |---|---|---|
 | Audio Transcription | 3–4 days | System audio capture, mic input, Web Speech API or Whisper integration, real-time transcript as AI context |
-| Smart Modes | 2–3 days | Coding Interview, Meeting, Exam, General modes with custom system prompts; mode selector in UI |
+| Smart Modes | 2–3 days | Coding Interview, Meeting, Solve, General modes with custom system prompts; mode selector in UI |
 | Chat Persistence | 2–3 days | SQLite or JSON file storage for conversations; conversation list, search, export |
 | Clipboard Integration | 1–2 days | Auto-detect clipboard changes; smart paste with natural typing simulation |
 
@@ -879,7 +879,7 @@ The most critical testing is verifying that the overlay remains invisible across
 | RAG Memory System | Vector database for past conversations; ask about previous discussions | P3 | 5–7 days |
 | Plugin System | Extensible architecture for custom integrations (Slack, Email, etc.) | P3 | 5–7 days |
 | Tauri Migration | Rewrite in Tauri/Rust for ~10MB size and 50% less RAM | P3 | 2–3 weeks |
-| Mobile Companion App | Phone-based interface to GhostAI running on desktop | P3 | 2–3 weeks |
+| Mobile Companion App | Phone-based interface to InvisiQ running on desktop | P3 | 2–3 weeks |
 | Multi-Language UI | Interface localization for non-English users | P3 | 2–3 days |
 | Automated Workflow Macros | Record and replay sequences of captures + AI queries | P3 | 3–5 days |
 | AR / Smart Glasses Integration | Future integration with Meta Ray-Ban or similar AR devices | P4 | Research phase |

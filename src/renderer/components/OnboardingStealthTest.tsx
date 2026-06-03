@@ -79,7 +79,7 @@ export default function OnboardingStealthTest({ onFinish, onBack }: OnboardingSt
               <span className="text-status-success text-sm font-semibold">Stealth Active</span>
             </div>
             <p className="text-text-secondary text-xs">
-              GhostAI is completely invisible to screen capture. You're all set!
+              InvisiQ is completely invisible to screen capture. You're all set!
             </p>
           </div>
         )}

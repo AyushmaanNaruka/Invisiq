@@ -842,7 +842,7 @@ export function registerIPCHandlers(): void {
 
   ipcMain.handle('resilience:start-agent', async (_event, args: unknown) => {
     const { helperPath, pipeName } = (args as { helperPath?: string; pipeName?: string }) || {};
-    return startAgent(helperPath || '', pipeName || 'GhostAI');
+    return startAgent(helperPath || '', pipeName || 'InvisiQ');
   });
 
   ipcMain.handle('resilience:stop-agent', async () => {

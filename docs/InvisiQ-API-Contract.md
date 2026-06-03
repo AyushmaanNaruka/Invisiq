@@ -1,4 +1,4 @@
-# GhostAI — API Contract & Interface Specification
+# InvisiQ — API Contract & Interface Specification
 
 > Complete specification of all internal IPC channels, AI provider interfaces, data models, and external API integrations.
 
@@ -9,7 +9,7 @@
 | **Version** | 1.0.0 |
 | **Date** | February 18, 2026 |
 | **Author** | Ayushmaan Singh Naruka |
-| **Related Documents** | GhostAI-PRD.md, GhostAI-Wireframes.md |
+| **Related Documents** | InvisiQ-PRD.md, InvisiQ-Wireframes.md |
 
 ---
 
@@ -1046,10 +1046,10 @@ Keep responses concise and actionable. Use bullet points for clarity.`,
     isBuiltIn: true,
   },
   {
-    id: 'exam',
-    name: 'Exam',
+    id: 'solve',
+    name: 'Solve',
     color: '#FDCB6E',
-    systemPrompt: `You are an exam assistant. Provide:
+    systemPrompt: `You are a problem-solving assistant. Provide:
 1. Direct, concise answers first
 2. Step-by-step explanation after the answer
 3. Key formulas or concepts used
@@ -1324,7 +1324,7 @@ declare global {
 ### 11.1 Error Code Registry
 
 ```typescript
-enum GhostAIError {
+enum InvisiQError {
   // ── Provider Errors (1xxx) ──
   PROVIDER_AUTH_FAILED      = 'E1001',  // Invalid API key
   PROVIDER_RATE_LIMITED     = 'E1002',  // Rate limit exceeded
@@ -1363,8 +1363,8 @@ enum GhostAIError {
 ### 11.2 Error Response Format
 
 ```typescript
-interface GhostAIErrorResponse {
-  code: GhostAIError;
+interface InvisiQErrorResponse {
+  code: InvisiQError;
   message: string;              // Human-readable message
   details?: string;             // Technical details
   retryable: boolean;           // Can user retry this action?
@@ -1387,7 +1387,7 @@ interface GhostAIErrorResponse {
 
 ```typescript
 // Unified error mapping
-function mapProviderError(provider: ProviderID, status: number, body: any): GhostAIErrorResponse {
+function mapProviderError(provider: ProviderID, status: number, body: any): InvisiQErrorResponse {
   // ── HTTP 401 ──
   if (status === 401) {
     return { code: 'E1001', message: 'Invalid API key.', retryable: false, action: 'add-key' };

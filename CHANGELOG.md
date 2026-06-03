@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to GhostAI are documented here.
+All notable changes to InvisiQ are documented here.
 
 ---
 
@@ -8,7 +8,7 @@ All notable changes to GhostAI are documented here.
 
 ### Resilience Mode (Native C++ Helper)
 - Native `ghostai_helper.exe` process managed via Electron child process spawning
-- Bidirectional communication over Windows named pipes (`\\.\pipe\GhostAI`, NDJSON protocol)
+- Bidirectional communication over Windows named pipes (`\\.\pipe\InvisiQ`, NDJSON protocol)
 - Exponential backoff reconnection (max 5 retries: 300ms → 4800ms)
 - `ghostai_core.dll` — Detours-based API hooking that forces `WDA_EXCLUDEFROMCAPTURE` on target windows
 - 4 new IPC channels: `resilience:start-agent`, `resilience:stop-agent`, `resilience:send-command`, `resilience:status`
@@ -129,7 +129,7 @@ All notable changes to GhostAI are documented here.
 - Auto-save with debounced 500ms, auto-title generation
 
 ### Smart Modes + Custom Modes (Sprint 6)
-- Enhanced built-in mode prompts (General, Coding, Meeting, Exam)
+- Enhanced built-in mode prompts (General, Coding, Meeting, Solve)
 - Custom mode CRUD with color picker
 - CustomModeEditor modal component
 - SettingsHotkeys tab with shortcut recording and conflict detection

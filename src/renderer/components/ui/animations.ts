@@ -1,4 +1,4 @@
-// Centralized Framer Motion animation variants for GhostAI
+// Centralized Framer Motion animation variants for InvisiQ
 // ALL state transitions should use these variants for consistency.
 // Import from here, never define inline variants in components.
 

@@ -5,7 +5,7 @@
 
 using json = nlohmann::json;
 
-#define PIPE_NAME TEXT("\\\\.\\pipe\\GhostAI")
+#define PIPE_NAME TEXT("\\\\.\\pipe\\InvisiQ")
 
 // Manual map DLL injection (simplified)
 bool InjectDLL(DWORD pid, const std::string &dllPath)

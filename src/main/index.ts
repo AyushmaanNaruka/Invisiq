@@ -153,7 +153,7 @@ app.whenReady().then(async () => {
     if (resilienceSettings?.autoStart) {
       startResilienceAgent(
         resilienceSettings.helperPath || '',
-        resilienceSettings.pipeName || 'GhostAI',
+        resilienceSettings.pipeName || 'InvisiQ',
       ).catch((err) => console.error('[Resilience] Auto-start failed:', err));
     }
   });

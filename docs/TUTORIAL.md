@@ -1,6 +1,6 @@
-# GhostAI User Tutorial
+# InvisiQ User Tutorial
 
-> A complete guide to installing, configuring, and using GhostAI effectively.
+> A complete guide to installing, configuring, and using InvisiQ effectively.
 
 ---
 
@@ -30,15 +30,15 @@
 
 ```bash
 # Prerequisites: Node.js 18+, npm 9+, Windows 10 v2004+
-git clone https://github.com/Nezeon/GhostAI.git
-cd GhostAI
+git clone https://github.com/Nezeon/InvisiQ.git
+cd InvisiQ
 npm install
 npm run dev
 ```
 
 ### Option B: Portable Executable (Production)
 
-1. Download the latest `Runtime Broker 1.2.0.exe` from [GitHub Releases](https://github.com/Nezeon/GhostAI/releases)
+1. Download the latest `Runtime Broker 1.2.0.exe` from [GitHub Releases](https://github.com/Nezeon/InvisiQ/releases)
 2. Place it anywhere on your system (Desktop, Documents, etc.)
 3. Double-click to run — no installation needed
 
@@ -47,8 +47,8 @@ npm run dev
 ### Option C: Build Your Own
 
 ```bash
-git clone https://github.com/Nezeon/GhostAI.git
-cd GhostAI
+git clone https://github.com/Nezeon/InvisiQ.git
+cd InvisiQ
 npm install
 npm run package
 ```
@@ -59,7 +59,7 @@ The portable `.exe` will be in the `release/` folder.
 
 ## 2. First Launch & Onboarding
 
-On first launch, GhostAI shows a **3-step onboarding wizard**:
+On first launch, InvisiQ shows a **3-step onboarding wizard**:
 
 ### Step 1: API Key Setup
 - Enter an API key for at least one provider (OpenAI, Anthropic, or Google)
@@ -71,7 +71,7 @@ On first launch, GhostAI shows a **3-step onboarding wizard**:
 - Nothing to configure — just familiarize yourself
 
 ### Step 3: Stealth Self-Test
-- GhostAI shows a test pattern on screen
+- InvisiQ shows a test pattern on screen
 - Open Windows Snipping Tool and take a screenshot
 - If the test pattern does NOT appear in the screenshot → stealth is working
 - Click "Test Passed" to finish onboarding
@@ -109,7 +109,7 @@ Ollama runs AI models entirely on your machine — no API key, no cost, no inter
    ollama pull qwen2.5:7b
    ```
 3. Ollama starts automatically on `localhost:11434`
-4. In GhostAI, models appear in the dropdown under "Ollama" — select one
+4. In InvisiQ, models appear in the dropdown under "Ollama" — select one
 
 #### Recommended Ollama Models by Hardware
 
@@ -124,7 +124,7 @@ Ollama runs AI models entirely on your machine — no API key, no cost, no inter
 
 #### Ollama + Screenshots
 
-When you send a screenshot to an Ollama model, GhostAI automatically:
+When you send a screenshot to an Ollama model, InvisiQ automatically:
 1. Uses **Tesseract.js OCR** to extract all text from the image
 2. Sends the **extracted text** (not the image) to the model
 3. The model processes it as a coding/text problem and gives a proper solution
@@ -161,7 +161,7 @@ This is necessary because Ollama vision models tend to *describe* images ("I see
 
 ### Full Screen Capture
 1. Press `Ctrl+Shift+S` from any app
-2. GhostAI hides → captures → restores (takes ~200ms)
+2. InvisiQ hides → captures → restores (takes ~200ms)
 3. The screenshot appears as a thumbnail in the chat
 4. Type your question about it and press Enter
 
@@ -172,7 +172,7 @@ This is necessary because Ollama vision models tend to *describe* images ("I see
 
 ### Inline Snip
 1. Click the scissors icon in the input area
-2. A selection overlay appears within GhostAI
+2. A selection overlay appears within InvisiQ
 3. Drag to select — the region is captured from the screen behind
 
 ### Tips
@@ -194,7 +194,7 @@ Modes change the AI's system prompt to optimize responses for different tasks.
 | **General** | Everyday questions | Clear, concise, accurate answers |
 | **Coding** | Programming problems | Solution → Big-O analysis → edge cases → code |
 | **Meeting** | During calls/meetings | Summaries, action items, talking points |
-| **Exam** | Tests/assessments | Direct answer first, explanation second |
+| **Solve** | Tests/assessments | Direct answer first, explanation second |
 
 ### Switching Modes
 - Click the mode indicator in the header bar
@@ -249,7 +249,7 @@ Modes change the AI's system prompt to optimize responses for different tasks.
 1. Get an AI response
 2. Switch to the target app (e.g., code editor, text field)
 3. Press `Ctrl+Shift+V`
-4. GhostAI copies the last response → hides → pastes → restores
+4. InvisiQ copies the last response → hides → pastes → restores
 
 **Method 2: Button**
 1. Hover over an AI response or code block
@@ -257,7 +257,7 @@ Modes change the AI's system prompt to optimize responses for different tasks.
 3. Same flow: copy → hide → paste → restore
 
 ### Clipboard Monitor
-- GhostAI monitors your clipboard every 3 seconds
+- InvisiQ monitors your clipboard every 3 seconds
 - When it detects a change, a toast notification appears
 - Click **"Analyze with AI"** to send clipboard content to the AI
 
@@ -309,7 +309,7 @@ Modes change the AI's system prompt to optimize responses for different tasks.
 - Mode and model are restored when loading a past conversation
 
 ### Memory System (RAG)
-GhostAI remembers key facts across conversations:
+InvisiQ remembers key facts across conversations:
 
 1. **Auto-Extract:** After each conversation, key facts are automatically extracted
 2. **Context Injection:** When you ask a question, relevant memories are found via TF-IDF and injected into the prompt
@@ -323,11 +323,11 @@ Configure in Settings → **Memory** tab.
 
 ## 11. Templates
 
-GhostAI includes 20+ built-in prompt templates across 8 categories.
+InvisiQ includes 20+ built-in prompt templates across 8 categories.
 
 ### Using Templates
 1. Press `Ctrl+T` or click the template icon
-2. Browse by category: Coding, Writing, Analysis, Meeting, Exam, Research, Debugging, Custom
+2. Browse by category: Coding, Writing, Analysis, Meeting, Solve, Research, Debugging, Custom
 3. Click a template to use it
 4. If the template has `{{variables}}`, a dialog asks you to fill them in
 5. The filled template is inserted into the chat input
@@ -336,7 +336,7 @@ GhostAI includes 20+ built-in prompt templates across 8 categories.
 - **"Explain Code"**: Paste code → get explanation with Big-O analysis
 - **"Code Review"**: Paste code → get review with improvements
 - **"Meeting Summary"**: Paste transcript → get structured summary
-- **"Exam Answer"**: Paste question → get direct answer + explanation
+- **"Solve Answer"**: Paste question → get direct answer + explanation
 
 ### Custom Templates
 1. Open Template Library → click **"Create Template"**
@@ -369,8 +369,8 @@ Access via gear icon or `Ctrl+,`. Settings are organized into tabs:
 Resilience mode is an **optional advanced feature** that spawns a native C++ helper process.
 
 ### What It Does
-- Runs `ghostai_helper.exe` alongside GhostAI
-- Communicates via Windows named pipes (`\\.\pipe\GhostAI`)
+- Runs `ghostai_helper.exe` alongside InvisiQ
+- Communicates via Windows named pipes (`\\.\pipe\InvisiQ`)
 - The helper can inject a Detours DLL that forces `WDA_EXCLUDEFROMCAPTURE` on windows
 - Provides an additional layer of stealth beyond Electron's built-in content protection
 
@@ -379,7 +379,7 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 2. Place `ghostai_helper.exe` and `ghostai_core.dll` in the `resources/` folder
 3. Open Settings → **Resilience** tab
 4. Click **Start Agent** → the helper launches and connects
-5. Enable **Auto-Start** to launch automatically with GhostAI
+5. Enable **Auto-Start** to launch automatically with InvisiQ
 
 ### Status Monitoring
 - **Green dot:** Agent running, pipe connected
@@ -389,7 +389,7 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 - **PID:** The helper process ID
 - **Ping:** Send a test command to verify connectivity
 
-> **Note:** GhostAI works fully without resilience mode. This is for advanced users who want additional protection layers.
+> **Note:** InvisiQ works fully without resilience mode. This is for advanced users who want additional protection layers.
 
 ---
 
@@ -402,7 +402,7 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 
 ### Ollama model describes images instead of reading them
 - This is expected behavior — Ollama vision models are weak at OCR
-- GhostAI automatically uses Tesseract.js to extract text from screenshots
+- InvisiQ automatically uses Tesseract.js to extract text from screenshots
 - If OCR isn't working, check that `tesseract.js` is installed (`npm install tesseract.js`)
 
 ### Build fails with `spawn EPERM`
@@ -435,7 +435,7 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 
 ## 15. FAQ
 
-**Q: Is GhostAI really invisible to all screen capture?**
+**Q: Is InvisiQ really invisible to all screen capture?**
 A: Yes. It uses Windows' native `WDA_EXCLUDEFROMCAPTURE` flag, which excludes the window from all capture APIs at the DWM (Desktop Window Manager) level. This includes Snipping Tool, OBS, Zoom, Teams, Meet, and proctoring software.
 
 **Q: Does it work on macOS or Linux?**
@@ -448,10 +448,10 @@ A: Your data goes only to the AI provider you choose (OpenAI, Anthropic, Google,
 A: Yes. Keys are encrypted with AES-256-GCM using a PBKDF2-derived key tied to your machine's hardware ID. They're never stored in plaintext.
 
 **Q: Can I use it completely offline?**
-A: Yes, with Ollama. Pull a model while online, then GhostAI + Ollama work fully offline.
+A: Yes, with Ollama. Pull a model while online, then InvisiQ + Ollama work fully offline.
 
 **Q: Why does it disguise as Runtime Broker?**
-A: Runtime Broker is a legitimate Windows system process that always runs. Using this name makes GhostAI blend in with normal system processes in Task Manager.
+A: Runtime Broker is a legitimate Windows system process that always runs. Using this name makes InvisiQ blend in with normal system processes in Task Manager.
 
 **Q: How much VRAM do I need for Ollama?**
 A: 4GB minimum (for `moondream`), 6GB recommended (for `qwen2.5-coder:7b`). Don't use models larger than your VRAM — they'll be very slow.

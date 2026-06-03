@@ -102,7 +102,7 @@ export default function SettingsResilience({
         <Shield size={14} className="text-accent-primary shrink-0 mt-0.5" />
         <p className="text-text-secondary text-[10px] leading-relaxed">
           Resilience Mode launches a native helper process that communicates
-          with GhostAI via a named pipe. The helper runs alongside the app
+          with InvisiQ via a named pipe. The helper runs alongside the app
           and handles low-level system tasks.
         </p>
       </div>
@@ -224,7 +224,7 @@ export default function SettingsResilience({
         <div>
           <span className="text-text-primary text-xs block">Auto-start on launch</span>
           <span className="text-text-placeholder text-[10px]">
-            Start the resilience agent automatically when GhostAI opens
+            Start the resilience agent automatically when InvisiQ opens
           </span>
         </div>
         <input

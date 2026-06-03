@@ -9,7 +9,7 @@ const SHORTCUTS = [
   {
     keys: 'Ctrl+Shift+G',
     label: 'Toggle Overlay',
-    description: 'Show or hide GhostAI instantly',
+    description: 'Show or hide InvisiQ instantly',
   },
   {
     keys: 'Ctrl+Alt+S',
@@ -55,7 +55,7 @@ export default function OnboardingHotkeys({ onContinue, onBack }: OnboardingHotk
           <h2 className="text-text-primary text-lg font-semibold">Keyboard Shortcuts</h2>
         </div>
         <p className="text-text-secondary text-xs mb-5">
-          Control GhostAI from any application. These work even when the overlay is hidden.
+          Control InvisiQ from any application. These work even when the overlay is hidden.
         </p>
 
         <div className="space-y-3">

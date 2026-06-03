@@ -30,7 +30,7 @@ function readFile(relativePath: string): string {
   return fs.readFileSync(fullPath, 'utf-8');
 }
 
-console.log('\n=== GhostAI Build Verification ===\n');
+console.log('\n=== InvisiQ Build Verification ===\n');
 
 // 1. Overlay stealth
 console.log('1. Overlay stealth checks:');

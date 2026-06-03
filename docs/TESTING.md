@@ -1,8 +1,8 @@
-# GhostAI Testing Guide
+# InvisiQ Testing Guide
 
 ## Stealth Matrix
 
-The core feature of GhostAI is invisibility to screen capture. After ANY change to window management, overlay, or BrowserWindow code, verify against this matrix:
+The core feature of InvisiQ is invisibility to screen capture. After ANY change to window management, overlay, or BrowserWindow code, verify against this matrix:
 
 | Tool | Expected Result | Priority |
 |------|----------------|----------|
@@ -18,7 +18,7 @@ The core feature of GhostAI is invisibility to screen capture. After ANY change 
 
 ### How to Verify
 
-1. Launch GhostAI (`npm run dev`)
+1. Launch InvisiQ (`npm run dev`)
 2. Ensure overlay is visible with content (send a test message)
 3. Open each capture tool and attempt to capture the screen area where the overlay is displayed
 4. The overlay must NOT appear in any captured output

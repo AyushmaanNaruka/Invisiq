@@ -159,7 +159,7 @@ export default function HeaderBar({
           </button>
         </GhostTooltip>
 
-        <GhostTooltip content="Hide (Esc)" placement="bottom">
+        <GhostTooltip content="Quit InvisiQ (Esc hides)" placement="bottom">
           <button
             onClick={onClose}
             className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-status-error transition-colors"

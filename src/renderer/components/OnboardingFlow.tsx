@@ -2,6 +2,7 @@ import { useState } from 'react';
 import OnboardingApiKey from './OnboardingApiKey';
 import OnboardingHotkeys from './OnboardingHotkeys';
 import OnboardingStealthTest from './OnboardingStealthTest';
+import { InvisiQMark } from './ui/InvisiQLogo';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -27,8 +28,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps): JSX
       {/* Header with progress */}
       <div className="px-6 pt-5 pb-3 drag-handle">
         <div className="no-drag">
+          <div className="flex justify-center mb-2">
+            <InvisiQMark size={40} className="rounded-xl" />
+          </div>
           <h1 className="text-text-primary text-sm font-semibold mb-3 text-center">
-            Welcome to GhostAI
+            Welcome to InvisiQ
           </h1>
 
           {/* Progress dots */}

@@ -1,4 +1,4 @@
-# GhostAI — Wireframes & UI Mockups
+# InvisiQ — Wireframes & UI Mockups
 
 > Visual specification for every screen, state, and interaction in the application.
 
@@ -9,7 +9,7 @@
 | **Version** | 1.0.0 |
 | **Date** | February 18, 2026 |
 | **Author** | Ayushmaan Singh Naruka |
-| **Related Document** | GhostAI-PRD.md |
+| **Related Document** | InvisiQ-PRD.md |
 
 ---
 
@@ -143,7 +143,7 @@ Line Heights:
 │            ┌───────────────┐            │
 │            │    👻         │            │
 │            │               │            │
-│            │   GhostAI     │            │
+│            │   InvisiQ     │            │
 │            │               │            │
 │            │  Capture your │            │
 │            │  screen or    │            │
@@ -182,7 +182,7 @@ Line Heights:
  └──────────────────────────────────────── Drag handle (6-dot grip)
 
 Drag handle:   Click + drag to move the entire overlay
-Mode selector: Dropdown with General, Coding, Meeting, Exam
+Mode selector: Dropdown with General, Coding, Meeting, Solve
 Model selector: Dropdown with all configured models
 Opacity:       Circular icon, hover reveals slider (10%-100%)
 Settings:      Opens settings panel (slide from right)
@@ -376,9 +376,9 @@ Syntax highlighting colors:
 State 1: User presses Ctrl+Shift+S
 ┌─────────────────────────────────────────────────────┐
 │                                                     │
-│   [Exam/Meeting content visible on screen]          │
+│   [Assessment/Meeting content visible on screen]    │
 │                                                     │
-│                                    ╭──── GhostAI ──╮│
+│                                    ╭──── InvisiQ ──╮│
 │                                    │ (overlay)     ││
 │                                    ╰───────────────╯│
 └─────────────────────────────────────────────────────┘
@@ -387,7 +387,7 @@ State 2: Overlay hides, screen flashes briefly (50ms border pulse)
 ┌─────────────────────────────────────────────────────┐
 │ ┌───────────────────────────────────────────────┐   │
 │ │                                               │   │
-│ │   [Exam/Meeting content]                      │   │  ← Green border
+│ │   [Assessment/Meeting content]                │   │  ← Green border
 │ │                                               │   │     flash (50ms)
 │ │                                               │   │
 │ └───────────────────────────────────────────────┘   │
@@ -459,7 +459,7 @@ During drag:
 After release:
   - Region captured as image
   - Selection overlay disappears
-  - GhostAI overlay reappears with screenshot attached
+  - InvisiQ overlay reappears with screenshot attached
 ```
 
 ### 5.2 Region Selector — Active Drag
@@ -661,7 +661,7 @@ Click on mode selector in header:
 │      │ │  ○  General         │         │
 │      │ │  ●  Coding       ✓  │         │  ← Currently selected
 │      │ │  ○  Meeting         │         │
-│      │ │  ○  Exam            │         │
+│      │ │  ○  Solve           │         │
 │      │ ├─────────────────────┤         │
 │      │ │  + Custom Mode...   │         │  ← Opens custom editor
 │      │ └─────────────────────┘         │
@@ -676,7 +676,7 @@ Each mode has a color-coded dot and label:
   ⚪ General     — Default, no special prompt
   🟣 Coding      — DSA, algorithms, code solutions
   🔵 Meeting     — Summarization, talking points
-  🟡 Exam        — Concise, direct, step-by-step
+  🟡 Solve       — Concise, direct, step-by-step
   🟢 Custom      — User-defined modes
 ```
 
@@ -846,7 +846,7 @@ Models without a valid API key:
 │                                         │
 │              👻                          │
 │                                         │
-│         Welcome to GhostAI              │
+│         Welcome to InvisiQ              │
 │                                         │
 │   Your invisible AI assistant.          │
 │   Let's get you set up.                 │

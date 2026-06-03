@@ -2,7 +2,7 @@
  * resilience-controller.ts — Phase 5 Resilience Mode
  *
  * Manages the lifecycle of the ghostai_helper.exe C++ process
- * and communicates with it via a Windows named pipe (\\.\pipe\GhostAI).
+ * and communicates with it via a Windows named pipe (\\.\pipe\InvisiQ).
  *
  * Architecture:
  * - ghostai_helper.exe is the named pipe SERVER (creates the pipe)
@@ -125,7 +125,7 @@ function handlePipeData(data: Buffer): void {
 
 export async function startAgent(
   helperPath = '',
-  pipeName = 'GhostAI',
+  pipeName = 'InvisiQ',
 ): Promise<{ success: boolean; error?: string }> {
   if (agentState !== 'stopped') {
     await stopAgent();

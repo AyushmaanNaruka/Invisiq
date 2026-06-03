@@ -499,7 +499,9 @@ function AppInner(): JSX.Element {
   );
 
   const handleClose = useCallback(() => {
-    window.ghostAPI.overlay.hide();
+    // X button fully quits the app (Escape still hides). Works in stealth mode —
+    // app.quit() is OS-level and unaffected by content protection / non-focusable window.
+    window.ghostAPI.app.quit();
   }, []);
 
   // Show nothing while settings are loading

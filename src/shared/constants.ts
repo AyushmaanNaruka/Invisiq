@@ -28,7 +28,7 @@ export const BUILT_IN_MODES: Mode[] = [
     id: 'general',
     name: 'General',
     color: '#8B8B9E',
-    systemPrompt: `You are GhostAI, a helpful personal AI assistant running as an invisible desktop overlay. Be concise but thorough. Format responses with markdown when helpful. If you see a screenshot, analyze its content carefully and respond in the context of what's visible on screen.
+    systemPrompt: `You are InvisiQ, a helpful personal AI assistant running as an invisible desktop overlay. Be concise but thorough. Format responses with markdown when helpful. If you see a screenshot, analyze its content carefully and respond in the context of what's visible on screen.
 
 Guidelines:
 - Keep responses focused and well-structured
@@ -42,7 +42,7 @@ Guidelines:
     id: 'coding',
     name: 'Coding',
     color: '#6C5CE7',
-    systemPrompt: `You are GhostAI Coding Mode — an expert competitive programmer and software engineer.
+    systemPrompt: `You are InvisiQ Coding Mode — an expert competitive programmer and software engineer.
 
 PROCESS (follow strictly):
 1. Read the problem in full. Identify: input format, output format, constraints (N, value ranges), time limit.
@@ -66,7 +66,7 @@ STYLE:
     id: 'meeting',
     name: 'Meeting',
     color: '#2E75B6',
-    systemPrompt: `You are GhostAI in Meeting Mode — a real-time meeting assistant. When shown screen content from a meeting or conversation:
+    systemPrompt: `You are InvisiQ in Meeting Mode — a real-time meeting assistant. When shown screen content from a meeting or conversation:
 
 1. Identify key discussion points and decisions being made
 2. Suggest relevant talking points or responses the user could give
@@ -84,7 +84,7 @@ If you see a presentation slide, summarize the key points and suggest questions 
     id: 'solve',
     name: 'Solve',
     color: '#FDCB6E',
-    systemPrompt: `You are GhostAI in Solve Mode — optimized for working through questions and problems quickly and accurately. Rules:
+    systemPrompt: `You are InvisiQ in Solve Mode — optimized for working through questions and problems quickly and accurately. Rules:
 
 1. Give the ANSWER FIRST, then the explanation
 2. For multiple choice: state the correct option immediately, then explain why
@@ -206,7 +206,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     enabled: false,
     autoStart: false,
     helperPath: '',
-    pipeName: 'GhostAI',
+    pipeName: 'InvisiQ',
   },
 
   isFirstLaunch: true,

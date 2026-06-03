@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0f1a,50:111d3a,100:00B894&height=220&section=header&text=GhostAI&fontSize=72&fontColor=E8E8E8&animation=fadeIn&fontAlignY=38&desc=Your%20AI%20copilot%20that%20sees%20everything%2C%20but%20is%20seen%20by%20no%20one.&descSize=16&descColor=8B8B9E&descAlignY=58" width="100%" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0f1a,50:111d3a,100:00B894&height=220&section=header&text=InvisiQ&fontSize=72&fontColor=E8E8E8&animation=fadeIn&fontAlignY=38&desc=Your%20AI%20copilot%20that%20sees%20everything%2C%20but%20is%20seen%20by%20no%20one.&descSize=16&descColor=8B8B9E&descAlignY=58" width="100%" />
 </p>
 
 <p align="center">
@@ -29,9 +29,9 @@
 
 <br/>
 
-## What is GhostAI?
+## What is InvisiQ?
 
-GhostAI is a desktop overlay that sits on top of every application on your screen — **completely invisible to all screen capture, screen sharing, recording software, and proctoring tools**. It uses Windows' native `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` API to make the overlay window undetectable.
+InvisiQ is a desktop overlay that sits on top of every application on your screen — **completely invisible to all screen capture, screen sharing, recording software, and proctoring tools**. It uses Windows' native `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` API to make the overlay window undetectable.
 
 Capture your screen, ask questions, get real-time AI responses with streaming — all through a sleek interface controlled entirely by keyboard shortcuts. Connect cloud AI providers with your own API keys, or run fully local with Ollama. Zero cloud dependency. Everything stays on your machine.
 
@@ -100,7 +100,7 @@ Full dark and light color palettes via CSS custom properties. Toggle in Display 
 <td width="50%" valign="top">
 
 ### 🧠 Smart Modes
-Four built-in modes: **General**, **Coding**, **Meeting**, and **Exam**. Create custom modes with personalized system prompts and colors. 20+ built-in prompt templates across 8 categories.
+Four built-in modes: **General**, **Coding**, **Meeting**, and **Solve**. Create custom modes with personalized system prompts and colors. 20+ built-in prompt templates across 8 categories.
 
 </td>
 <td width="50%" valign="top">
@@ -167,7 +167,7 @@ Single portable `.exe` — no installer needed. Just download, double-click, and
 
 ```
 ╔══════════════════════════════════════════════════════════════════════════╗
-║                         GhostAI Architecture                           ║
+║                         InvisiQ Architecture                           ║
 ╠══════════════════════════════════════════════════════════════════════════╣
 ║                                                                        ║
 ║  ┌─────────────────────────────────────────────────────────────────┐   ║
@@ -196,7 +196,7 @@ Single portable `.exe` — no installer needed. Just download, double-click, and
 ║  │  │  (Named Pipe Client)  │  │  (GitHub Releases)           │   ║
 ║  │  │                       │  │                              │   │   ║
 ║  │  │  Spawns helper.exe    │  │  Check → Download → Notify   │   │   ║
-║  │  │  \\.\pipe\GhostAI     │  │  Install on restart          │   │   ║
+║  │  │  \\.\pipe\InvisiQ     │  │  Install on restart          │   │   ║
 ║  │  └───────────┬───────────┘  └──────────────────────────────┘   │   ║
 ║  │              │                                                  │   ║
 ║  └──────────────┼────────────────────────┬─────────────────────────┘   ║
@@ -393,8 +393,8 @@ Channels: {domain}:{action}
 
 ```bash
 # Clone the repository
-git clone https://github.com/Nezeon/GhostAI.git
-cd GhostAI
+git clone https://github.com/Nezeon/InvisiQ.git
+cd InvisiQ
 
 # Install dependencies
 npm install
@@ -434,7 +434,7 @@ npm run package:dir
 
 #### Cloud Providers (OpenAI / Anthropic / Gemini)
 
-1. Open GhostAI → **Settings** (gear icon or `Ctrl+,`)
+1. Open InvisiQ → **Settings** (gear icon or `Ctrl+,`)
 2. Go to **API Keys** tab
 3. Paste your API key for the provider you want to use
 4. The key is validated automatically and stored with AES-256-GCM encryption
@@ -452,7 +452,7 @@ npm run package:dir
    ollama pull qwen2.5:7b
    ```
 3. Ollama runs automatically on `localhost:11434`
-4. In GhostAI, select any Ollama model from the model dropdown — no API key needed
+4. In InvisiQ, select any Ollama model from the model dropdown — no API key needed
 5. Screenshots are **auto-OCR processed** so the model reads text instead of describing images
 
 > **Tip:** For systems with 6GB VRAM, `qwen2.5-coder:7b` is the best fit. Don't use 13B+ models — they'll spill to CPU and run very slowly.
@@ -478,7 +478,7 @@ Screenshots are automatically:
 | **General** | Any question | Clear, accurate, concise answers |
 | **Coding** | LeetCode, algorithms, debugging | Clean solution → Big-O → edge cases |
 | **Meeting** | During calls | Summaries, talking points, context |
-| **Exam** | Assessments | Direct answer first, explanation after |
+| **Solve** | Assessments | Direct answer first, explanation after |
 
 **Custom Modes:** Click the mode dropdown → "Create Custom Mode" to define your own system prompt, name, and color.
 
@@ -486,7 +486,7 @@ Screenshots are automatically:
 
 1. Get an AI response with code or text you want to use
 2. Click **"Paste to App"** on the message or code block — OR press `Ctrl+Shift+V`
-3. GhostAI will:
+3. InvisiQ will:
    - Copy the content to clipboard
    - Hide the overlay
    - Activate the target window
@@ -502,7 +502,7 @@ Screenshots are automatically:
 
 ### Memory System (RAG)
 
-GhostAI has a built-in TF-IDF memory system:
+InvisiQ has a built-in TF-IDF memory system:
 - **Auto-Extract:** Key facts are extracted from conversations automatically
 - **Context Injection:** Relevant memories are injected into AI prompts
 - **Manual Add:** Add facts manually via the Memory panel
@@ -514,11 +514,11 @@ Resilience mode spawns a native C++ helper process for low-level operations:
 
 1. Go to **Settings → Resilience** tab
 2. Click **Start Agent** to launch the helper
-3. The helper communicates via Windows named pipes (`\\.\pipe\GhostAI`)
+3. The helper communicates via Windows named pipes (`\\.\pipe\InvisiQ`)
 4. Enable **Auto-Start** to launch the helper automatically with the app
 5. Monitor status, uptime, and PID in the settings panel
 
-> **Note:** Resilience mode requires the compiled `ghostai_helper.exe`. This is optional — GhostAI works fully without it.
+> **Note:** Resilience mode requires the compiled `ghostai_helper.exe`. This is optional — InvisiQ works fully without it.
 
 ### Tips & Best Practices
 
@@ -565,7 +565,7 @@ Resilience mode spawns a native C++ helper process for low-level operations:
 | **General** | All-purpose assistant | Clear, accurate answers to any question |
 | **Coding** | Algorithm & engineering help | Clean solutions with Big-O analysis |
 | **Meeting** | Meeting companion | Summaries, talking points, document analysis |
-| **Exam** | Assessment helper | Direct answers first, explanations after |
+| **Solve** | Assessment helper | Direct answers first, explanations after |
 
 <br/>
 

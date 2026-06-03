@@ -1,4 +1,4 @@
-# GhostAI — Complete Project Documentation
+# InvisiQ — Complete Project Documentation
 
 > **Version:** 2.0.0 (Phase 4 Complete)
 > **Author:** Ayushmaan Singh Naruka
@@ -40,9 +40,9 @@
 
 ## 1. Project Overview
 
-**GhostAI** is an invisible AI desktop overlay assistant for Windows. It creates a transparent, always-on-top window that is completely invisible to all screen capture, screen sharing, and recording software — while remaining fully visible on the user's physical monitor.
+**InvisiQ** is an invisible AI desktop overlay assistant for Windows. It creates a transparent, always-on-top window that is completely invisible to all screen capture, screen sharing, and recording software — while remaining fully visible on the user's physical monitor.
 
-- **Name:** GhostAI
+- **Name:** InvisiQ
 - **Tagline:** "Your AI copilot that sees everything, but is seen by no one."
 - **Type:** Invisible AI desktop overlay assistant
 - **Platform:** Windows 10 v2004+ (primary), macOS 14 and below (partial)
@@ -96,7 +96,7 @@ An AI assistant that:
 | User | Use Case |
 |------|----------|
 | **Software Developers** | Code assistance while working in IDEs, debugging, algorithm help |
-| **Students** | Study aid, exam preparation, research assistance |
+| **Students** | Study aid, test preparation, research assistance |
 | **Professionals** | Meeting preparation, real-time talking points, document analysis |
 | **Researchers** | Paper analysis, data interpretation, quick lookups |
 | **Anyone** | General AI assistance without disrupting workflow |
@@ -107,7 +107,7 @@ An AI assistant that:
 2. **Meeting Support:** User is in a Zoom meeting, captures slides/discussion, gets talking points and summaries
 3. **Document Analysis:** User captures a complex document or spreadsheet, asks AI for analysis
 4. **Quick Lookups:** User asks a question without leaving their current app
-5. **Study Aid:** User captures exam questions, gets explanations and answers
+5. **Study Aid:** User captures questions, gets explanations and answers
 
 ---
 
@@ -136,7 +136,7 @@ An AI assistant that:
 | Invisiwind | ~100 | C++ based |
 | ScreenPrompt | ~50 | Python based |
 
-### GhostAI's Unique Position
+### InvisiQ's Unique Position
 
 - Only BYOK invisible overlay (no subscription lock-in)
 - Multi-provider support (OpenAI + Anthropic + Gemini + Ollama)
@@ -150,7 +150,7 @@ An AI assistant that:
 
 ### The SetWindowDisplayAffinity Mechanism
 
-GhostAI's core innovation uses a Windows API that has existed since Windows 10 version 2004:
+InvisiQ's core innovation uses a Windows API that has existed since Windows 10 version 2004:
 
 ```
 SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)
@@ -175,7 +175,7 @@ Physical Monitor Output           Capture API Output
 ┌─────────────────────┐           ┌─────────────────────┐
 │ User's application  │           │ User's application  │
 │ ┌─────────────────┐ │           │                     │
-│ │   GhostAI       │ │           │  (GhostAI is NOT    │
+│ │   InvisiQ       │ │           │  (InvisiQ is NOT    │
 │ │   Overlay       │ │    →      │   visible here)     │
 │ │   Window        │ │           │                     │
 │ └─────────────────┘ │           │                     │
@@ -208,14 +208,14 @@ Physical Monitor Output           Capture API Output
 
 ### Stealth Reinforcement
 
-Beyond content protection, GhostAI implements multiple stealth layers:
+Beyond content protection, InvisiQ implements multiple stealth layers:
 
 1. **Stealth Watchdog:** Re-applies `setContentProtection(true)` every 2 seconds (in case it was dropped by OS updates or window state changes)
 2. **Process Disguise:** Process name shown as "SystemHelper" in Task Manager (configurable)
 3. **Skip Taskbar:** Window does not appear in taskbar or Alt+Tab
 4. **No Title:** Empty window title prevents identification
 5. **No Desktop Shortcut:** Installer creates no desktop/start menu shortcuts by default
-6. **Product Name:** `electron-builder.yml` sets `productName: SystemHelper` (not "GhostAI")
+6. **Product Name:** `electron-builder.yml` sets `productName: SystemHelper` (not "InvisiQ")
 
 ---
 
@@ -286,10 +286,10 @@ ghostai/
 ├── postcss.config.js                   # PostCSS plugins
 │
 ├── docs/                               # Detailed project documentation
-│   ├── GhostAI-PRD.md                 # Full product requirements document
-│   ├── GhostAI-Wireframes.md          # UI mockups & design specifications
-│   ├── GhostAI-API-Contract.md        # IPC channels & AI provider interfaces
-│   ├── GhostAI-Planning.md            # Market research & architecture decisions
+│   ├── InvisiQ-PRD.md                 # Full product requirements document
+│   ├── InvisiQ-Wireframes.md          # UI mockups & design specifications
+│   ├── InvisiQ-API-Contract.md        # IPC channels & AI provider interfaces
+│   ├── InvisiQ-Planning.md            # Market research & architecture decisions
 │   └── TESTING.md                     # Testing strategies & checklists
 │
 ├── src/
@@ -397,7 +397,7 @@ ghostai/
 │   └── shared/                      # ═══ Cross-Process Types & Constants ═══
 │       ├── types.ts                 # All TypeScript type definitions
 │       ├── constants.ts             # Default hotkeys, modes, model configs, settings
-│       ├── errors.ts                # GhostAIError enum + HTTP error mapper
+│       ├── errors.ts                # InvisiQError enum + HTTP error mapper
 │       └── logger.ts               # Production-safe logger
 │
 ├── assets/
@@ -418,7 +418,7 @@ ghostai/
 
 ### Process Model
 
-GhostAI follows Electron's multi-process architecture with strict security boundaries:
+InvisiQ follows Electron's multi-process architecture with strict security boundaries:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -835,7 +835,7 @@ CRUD for prompt templates stored in electron-store.
 - `deleteTemplate(id)` — Removes custom template
 - `recordTemplateUsage(id)` — Increments usage count, updates recent IDs
 
-**Built-in Templates:** 20 templates across 8 categories (coding, writing, analysis, meeting, exam, research, debugging, custom).
+**Built-in Templates:** 20 templates across 8 categories (coding, writing, analysis, meeting, solve, research, debugging, custom).
 
 ### 8.18 memory.ts — TF-IDF Memory Store (RAG)
 
@@ -1626,7 +1626,7 @@ interface CodeDetectionResult {
 }
 
 type TemplateCategory = 'coding' | 'writing' | 'analysis' | 'meeting'
-  | 'exam' | 'research' | 'debugging' | 'custom';
+  | 'solve' | 'research' | 'debugging' | 'custom';
 
 interface PromptTemplate {
   id: string;
@@ -1768,7 +1768,7 @@ toggle-passthrough: CommandOrControl+Shift+P
 | General | #8B8B9E (gray) | Concise, markdown, screenshot analysis |
 | Coding | #6C5CE7 (purple) | Algorithms, Big-O, multiple approaches, debugging |
 | Meeting | #2E75B6 (blue) | Talking points, summaries, action items |
-| Exam | #FDCB6E (yellow) | Answer first, then explain, speed priority |
+| Solve | #FDCB6E (yellow) | Answer first, then explain, speed priority |
 
 **Model Configurations:**
 
@@ -1826,8 +1826,8 @@ E5003  SYSTEM_UNSUPPORTED_OS        OS version doesn't support WDA_EXCLUDEFROMCA
 
 **Error Response Format:**
 ```typescript
-interface GhostAIErrorResponse {
-  code: GhostAIError;
+interface InvisiQErrorResponse {
+  code: InvisiQError;
   message: string;
   details?: string;
   retryable: boolean;
@@ -2196,7 +2196,7 @@ PBKDF2(
 | **Channel Whitelist** | Only whitelisted channels accepted in preload |
 | **Process Disguise** | Configurable process name (default: "SystemHelper") |
 | **No Desktop Shortcuts** | Installer creates no shortcuts by default |
-| **Product Name** | Packaged as "SystemHelper", not "GhostAI" |
+| **Product Name** | Packaged as "SystemHelper", not "InvisiQ" |
 
 ### 18.2 Privacy Architecture
 
@@ -2281,7 +2281,7 @@ All hotkeys are customizable via Settings > Hotkeys with conflict detection and 
 - Copy/paste buttons on messages and code blocks
 - Settings panel with API key management
 - AES-256-GCM encrypted key storage
-- 4 built-in modes (General, Coding, Meeting, Exam)
+- 4 built-in modes (General, Coding, Meeting, Solve)
 - StatusBar with connection indicator
 
 ### Phase 2 — Enhanced (Complete)
@@ -2394,7 +2394,7 @@ All hotkeys are customizable via Settings > Hotkeys with conflict detection and 
 - One-time UUID pairing token → persistent device ID; QR rendered via `qrcode` npm package
 - SettingsCompanion: start/stop server, QR display, connected devices list, port config, auto-start toggle
 - template-store.ts: CRUD for `PromptTemplate` in electron-store
-- 20 built-in templates across 8 categories (coding, writing, analysis, meeting, exam, research, debugging, custom)
+- 20 built-in templates across 8 categories (coding, writing, analysis, meeting, solve, research, debugging, custom)
 - TemplateLibrary modal: searchable/filterable grid, VariableDialog for `{{variable}}` substitution, template editor
 - `Ctrl+T` internal shortcut to open template library
 - export-service.ts: JSON/Markdown/Plain Text/PDF export
@@ -2427,7 +2427,7 @@ All hotkeys are customizable via Settings > Hotkeys with conflict detection and 
 - Toast notifications for non-critical errors
 
 **AI Providers:**
-- HTTP status codes mapped to `GhostAIError` codes via `mapProviderError()`
+- HTTP status codes mapped to `InvisiQError` codes via `mapProviderError()`
 - User-friendly messages with suggested actions
 - Retryable errors indicated
 
@@ -2462,15 +2462,15 @@ Test after ANY change to window management or overlay code:
 
 | Tool | Expected Result | Priority |
 |------|----------------|----------|
-| Windows Snipping Tool | GhostAI NOT visible in screenshot | Critical |
-| Windows Print Screen | GhostAI NOT visible | Critical |
-| Windows Game Bar (Win+G) | GhostAI NOT visible | Critical |
-| OBS Studio (Display Capture) | GhostAI NOT visible in preview | Critical |
-| Zoom Screen Share | GhostAI NOT visible to remote viewers | Critical |
-| Google Meet Screen Share | GhostAI NOT visible | High |
-| Microsoft Teams Screen Share | GhostAI NOT visible | High |
-| Discord Screen Share | GhostAI NOT visible | High |
-| Browser-based proctoring | GhostAI NOT visible | Critical |
+| Windows Snipping Tool | InvisiQ NOT visible in screenshot | Critical |
+| Windows Print Screen | InvisiQ NOT visible | Critical |
+| Windows Game Bar (Win+G) | InvisiQ NOT visible | Critical |
+| OBS Studio (Display Capture) | InvisiQ NOT visible in preview | Critical |
+| Zoom Screen Share | InvisiQ NOT visible to remote viewers | Critical |
+| Google Meet Screen Share | InvisiQ NOT visible | High |
+| Microsoft Teams Screen Share | InvisiQ NOT visible | High |
+| Discord Screen Share | InvisiQ NOT visible | High |
+| Browser-based proctoring | InvisiQ NOT visible | Critical |
 
 ### 22.2 Performance Benchmarks
 
@@ -2619,7 +2619,7 @@ import path from 'path';
 import React, { useState, useEffect } from 'react';
 
 // 3. Internal modules (path aliases)
-import { GhostAIError } from '@shared/errors';
+import { InvisiQError } from '@shared/errors';
 
 // 4. Relative imports
 import { CodeBlock } from './CodeBlock';
@@ -2640,7 +2640,7 @@ import { CodeBlock } from './CodeBlock';
 
 ```yaml
 appId: com.ghostai.app
-productName: SystemHelper          # Stealth: not "GhostAI"
+productName: SystemHelper          # Stealth: not "InvisiQ"
 directories:
   buildResources: assets
   output: release
@@ -2662,7 +2662,7 @@ nsis:
 publish:
   provider: github
   owner: Nezeon
-  repo: GhostAI
+  repo: InvisiQ
 ```
 
 ### 25.2 electron.vite.config.ts
@@ -2716,7 +2716,7 @@ Both use strict mode.
 
 ### Environment Variables
 
-GhostAI does **not** use environment variables for API keys. All keys are stored locally via electron-store with encryption. The only env var:
+InvisiQ does **not** use environment variables for API keys. All keys are stored locally via electron-store with encryption. The only env var:
 
 ```
 NODE_ENV=development|production    # Set automatically by Vite/Electron
@@ -2753,6 +2753,6 @@ overlayWindow.show();                       // Restore
 
 ---
 
-*This documentation covers the complete GhostAI project from conception through Phase 4 completion. It is the single source of truth for understanding the project's architecture, features, and implementation details.*
+*This documentation covers the complete InvisiQ project from conception through Phase 4 completion. It is the single source of truth for understanding the project's architecture, features, and implementation details.*
 
 *Generated: February 20, 2026*

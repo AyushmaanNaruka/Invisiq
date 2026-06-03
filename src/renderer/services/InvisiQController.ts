@@ -1,9 +1,9 @@
 import { spawn } from 'child_process';
 import { join } from 'path';
 
-export class GhostAIController {
+export class InvisiQController {
   private agentProcess?: any;
-  private pipeName = '\\\\.\\pipe\\GhostAI';
+  private pipeName = '\\\\.\\pipe\\InvisiQ';
   private isConnected = false;
 
   async startAgent(): Promise<boolean> {
@@ -13,7 +13,7 @@ export class GhostAIController {
     this.agentProcess = spawn(helperPath, [], { detached: false });
 
     this.agentProcess.on('error', (err) => {
-      console.error('[GhostAIController] Failed to start agent:', err);
+      console.error('[InvisiQController] Failed to start agent:', err);
     });
 
     // Simple ping to verify pipe is up

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Ghost } from 'lucide-react';
 import MessageBubble from './MessageBubble';
+import { InvisiQMark } from './ui/InvisiQLogo';
 import { fadeInUp } from './ui/animations';
 import type { ChatMessage } from '@shared/types';
 
@@ -70,11 +70,9 @@ export default function ChatPanel({ messages, isStreaming, streamingMessageId }:
           className="text-center px-6"
         >
           <div className="flex justify-center mb-3">
-            <div className="w-12 h-12 rounded-xl bg-accent-primary/10 border border-accent-primary/20 flex items-center justify-center">
-              <Ghost size={24} strokeWidth={1.75} className="text-accent-primary" />
-            </div>
+            <InvisiQMark size={56} className="rounded-2xl" />
           </div>
-          <h1 className="text-text-primary text-lg font-semibold mb-1.5">GhostAI</h1>
+          <h1 className="text-text-primary text-lg font-semibold mb-1.5">InvisiQ</h1>
           <p className="text-text-secondary text-xs mb-4">
             Your invisible AI assistant
           </p>

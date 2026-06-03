@@ -82,7 +82,7 @@ export default function SettingsCompanion({
       <div className="flex items-start gap-2 p-2.5 rounded-md bg-accent-primary/10 border border-accent-primary/20">
         <Smartphone size={14} className="text-accent-primary shrink-0 mt-0.5" />
         <p className="text-text-secondary text-[10px] leading-relaxed">
-          Companion mode lets you control GhostAI from your phone or tablet.
+          Companion mode lets you control InvisiQ from your phone or tablet.
           Your phone must be on the same Wi-Fi network as this computer.
         </p>
       </div>
@@ -196,7 +196,7 @@ export default function SettingsCompanion({
         <div>
           <span className="text-text-primary text-xs block">Auto-start on launch</span>
           <span className="text-text-placeholder text-[10px]">
-            Start companion server automatically when GhostAI opens
+            Start companion server automatically when InvisiQ opens
           </span>
         </div>
         <input

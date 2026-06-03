@@ -1,4 +1,4 @@
-// Centralized Lucide icon registry for GhostAI
+// Centralized Lucide icon registry for InvisiQ
 // All icons used in the app MUST be imported from here to ensure consistency.
 // Stroke width: 1.75 (slightly thinner than default 2 for elegance)
 

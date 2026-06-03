@@ -1,7 +1,7 @@
 /**
  * memory.ts — Phase 4 / Sprint 17
  *
- * TF-IDF based local memory store for GhostAI.
+ * TF-IDF based local memory store for InvisiQ.
  * Storage: userData/memory.json (atomic write: tmp file + rename)
  * Max 500 facts. Index rebuild <5ms for 500 facts.
  */

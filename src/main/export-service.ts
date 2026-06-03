@@ -29,7 +29,7 @@ function toMarkdown(conv: Conversation): string {
 
   for (const msg of conv.messages) {
     if (msg.role === 'system') continue;
-    const speaker = msg.role === 'user' ? '**You**' : msg.role === 'assistant' ? '**GhostAI**' : '*Error*';
+    const speaker = msg.role === 'user' ? '**You**' : msg.role === 'assistant' ? '**InvisiQ**' : '*Error*';
     const ts = new Date(msg.timestamp).toLocaleTimeString();
     lines.push(`### ${speaker} — ${ts}`);
     lines.push('');
@@ -56,7 +56,7 @@ function toPlainText(conv: Conversation): string {
 
   for (const msg of conv.messages) {
     if (msg.role === 'system') continue;
-    const speaker = msg.role === 'user' ? 'You' : msg.role === 'assistant' ? 'GhostAI' : 'Error';
+    const speaker = msg.role === 'user' ? 'You' : msg.role === 'assistant' ? 'InvisiQ' : 'Error';
     lines.push(`[${speaker}] ${new Date(msg.timestamp).toLocaleTimeString()}`);
     lines.push(msg.content);
     lines.push('');
@@ -76,7 +76,7 @@ function toHTML(conv: Conversation): string {
   const msgHTML = conv.messages
     .filter((m: ChatMessage) => m.role !== 'system')
     .map((m: ChatMessage) => {
-      const speaker = m.role === 'user' ? 'You' : m.role === 'assistant' ? 'GhostAI' : 'Error';
+      const speaker = m.role === 'user' ? 'You' : m.role === 'assistant' ? 'InvisiQ' : 'Error';
       const ts = new Date(m.timestamp).toLocaleString();
       return `
       <div style="margin-bottom:24px">

@@ -223,7 +223,7 @@ export function setStealthFocusMode(enabled: boolean): void {
   } else {
     overlayWindow.setFocusable(true);
     // Re-enforce skipTaskbar — setFocusable(true) can re-add WS_EX_APPWINDOW
-    // and bring the icon back to the taskbar. GhostAI is always meant to stay
+    // and bring the icon back to the taskbar. InvisiQ is always meant to stay
     // hidden from the taskbar regardless of stealth mode.
     overlayWindow.setSkipTaskbar(true);
     if (focusReturnTimer) {

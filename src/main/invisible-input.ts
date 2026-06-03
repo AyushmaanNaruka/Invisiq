@@ -5,11 +5,11 @@ import type { BrowserWindow } from 'electron';
  *
  * Why this exists:
  *   In Stealth Focus mode the overlay HWND has WS_EX_NOACTIVATE (via
- *   setFocusable(false)). That stops monitoring tools from detecting GhostAI
+ *   setFocusable(false)). That stops monitoring tools from detecting InvisiQ
  *   via foreground-window changes, but it also means the textarea can never
  *   receive WM_KEYDOWN. This module installs a global keyboard hook
  *   (uiohook-napi → libuiohook) and forwards keystrokes to the renderer over
- *   IPC, so the user can "type" into GhostAI while another app stays foreground.
+ *   IPC, so the user can "type" into InvisiQ while another app stays foreground.
  *
  * Trade-off (documented in Settings → Privacy):
  *   - uiohook-napi 1.5.5 does NOT support per-event suppression on Windows,

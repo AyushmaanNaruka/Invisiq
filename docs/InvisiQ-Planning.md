@@ -1,4 +1,4 @@
-# 👻 GhostAI — Invisible AI Desktop Assistant
+# 👻 InvisiQ — Invisible AI Desktop Assistant
 ## Research & Development Plan
 
 ---
@@ -60,11 +60,11 @@ The Windows API provides a function called `SetWindowDisplayAffinity` with a fla
 ┌──────────────────────────────────┐
 │  Your Screen (Physical Monitor)  │
 │                                  │
-│  [GhostAI Overlay]  ← You see   │
+│  [InvisiQ Overlay]  ← You see   │
 │  • AI answer here                │
 │  • Copy button                   │
 │                                  │
-│  Your Exam / Meeting             │
+│  Your Assessment / Meeting       │
 └──────────────────────────────────┘
 
 ┌──────────────────────────────────┐
@@ -73,7 +73,7 @@ The Windows API provides a function called `SetWindowDisplayAffinity` with a fla
 │                   ← Invisible!   │
 │                                  │
 │                                  │
-│  Your Exam / Meeting             │
+│  Your Assessment / Meeting       │
 └──────────────────────────────────┘
 ```
 
@@ -127,22 +127,22 @@ native.setWindowDisplayAffinity(handle, 0x00000011); // WDA_EXCLUDEFROMCAPTURE
 | `skipTaskbar: true` | Don't show in taskbar | Electron BrowserWindow option |
 | Process name disguise | Hide from task manager | Rename executable to something benign like `SystemHelper.exe` |
 | No window title | Avoid detection in window lists | `title: ''` in BrowserWindow |
-| `focusable: false` (optional) | Don't steal focus from exam | BrowserWindow option |
+| `focusable: false` (optional) | Don't steal focus from the foreground app | BrowserWindow option |
 | Global hotkeys | Toggle without alt-tabbing | `globalShortcut.register()` in Electron |
 | Low memory footprint | Don't trigger resource monitors | Optimize, lazy-load |
 
 ### 2.5 What Can Detect It (Limitations)
 
-| Detection Method | Can It Catch GhostAI? | Notes |
+| Detection Method | Can It Catch InvisiQ? | Notes |
 |-----------------|----------------------|-------|
 | Screen sharing (Zoom/Meet/Teams) | ❌ No | WDA_EXCLUDEFROMCAPTURE blocks this |
-| Browser tab switching detection | ❌ No | GhostAI is a separate desktop app, not a browser tab |
+| Browser tab switching detection | ❌ No | InvisiQ is a separate desktop app, not a browser tab |
 | Browser sandboxing | ❌ No | Runs outside the browser entirely |
 | Print Screen / Snipping Tool | ❌ No | Also uses capture APIs that respect the flag |
 | OBS / screen recording | ❌ No | Same capture APIs |
 | Physical camera / phone recording | ✅ Yes | Nothing can prevent a camera pointed at your screen |
 | Enterprise DLP / endpoint agents | ⚠️ Maybe | Some enterprise tools enumerate processes at kernel level |
-| Proctoring with webcam + eye tracking | ⚠️ Maybe | If your eyes frequently look away from the exam area |
+| Proctoring with webcam + eye tracking | ⚠️ Maybe | If your eyes frequently look away from the assessment area |
 | Mercer Mettl lockdown browser | ❌ No* | Browser-based lockdown can't see native desktop apps |
 
 *Note: Some proctoring tools may detect running processes. Process disguise helps mitigate this.
@@ -169,7 +169,7 @@ native.setWindowDisplayAffinity(handle, 0x00000011); // WDA_EXCLUDEFROMCAPTURE
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    GhostAI Desktop                   │
+│                    InvisiQ Desktop                   │
 ├─────────────────────────────────────────────────────┤
 │  Frontend:  React + TailwindCSS (in Electron)       │
 │  Backend:   Electron Main Process (Node.js)         │
@@ -257,7 +257,7 @@ native.setWindowDisplayAffinity(handle, 0x00000011); // WDA_EXCLUDEFROMCAPTURE
 #### P2.2 — Smart Modes / Presets
 - **Coding Interview Mode**: Auto-detect coding problems, provide solutions with explanations
 - **Meeting Assistant Mode**: Summarize discussions, suggest responses
-- **Exam Mode**: OCR the question, provide answer
+- **Solve Mode**: OCR the question, provide answer
 - **General Mode**: Open-ended Q&A
 - Custom prompt templates per mode
 
@@ -270,7 +270,7 @@ native.setWindowDisplayAffinity(handle, 0x00000011); // WDA_EXCLUDEFROMCAPTURE
 #### P2.4 — Clipboard Integration
 - Auto-detect copied text
 - Option to auto-send clipboard to AI
-- Smart paste: AI response → clipboard → paste into exam
+- Smart paste: AI response → clipboard → paste into the assessment
 
 ### 4.3 Phase 3: Polish (Week 5-6)
 
@@ -323,7 +323,7 @@ ghostai/
 │   │   │   ├── CodeBlock.tsx     # Syntax highlighted code + copy
 │   │   │   ├── ScreenCapture.tsx # Region selector overlay
 │   │   │   ├── Settings.tsx      # API keys, preferences
-│   │   │   ├── ModeSelector.tsx  # Interview/Meeting/Exam modes
+│   │   │   ├── ModeSelector.tsx  # Interview/Meeting/Solve modes
 │   │   │   ├── StatusBar.tsx     # Model, tokens, connection status
 │   │   │   └── Controls.tsx      # Opacity slider, pin, minimize
 │   │   ├── hooks/
@@ -413,7 +413,7 @@ Tasks:
 **Solution**: `win.setContentProtection(true)` — this is the #1 most important line of code in the entire project. On Windows 10 2004+, it uses `WDA_EXCLUDEFROMCAPTURE`. Test on every platform.
 
 ### Challenge 2: Screen capture while content-protected
-**Problem**: If our window is excluded from capture, won't `desktopCapturer` also miss the exam content?
+**Problem**: If our window is excluded from capture, won't `desktopCapturer` also miss the assessment content?
 **Solution**: `desktopCapturer` captures what's on screen. Our overlay is excluded from *other apps'* capture, but Electron's own `desktopCapturer` captures the full desktop composited output. Alternatively, use a native screenshot library that captures at a different level.
 
 **Better approach**: Take screenshot → hide overlay momentarily → capture → show overlay. Or use `win.setContentProtection(false)` temporarily just for our own capture, then re-enable.
@@ -446,24 +446,24 @@ Tasks:
 
 ## 8. Use Cases Expanded
 
-### UC1: Coding Exam (Locked Browser)
-1. Open exam in Mercer Mettl / HackerRank / CodeSignal
-2. Press `Ctrl+Shift+G` — GhostAI overlay appears (invisible to proctoring)
+### UC1: Coding Assessment (Locked Browser)
+1. Open assessment in Mercer Mettl / HackerRank / CodeSignal
+2. Press `Ctrl+Shift+G` — InvisiQ overlay appears (invisible to proctoring)
 3. Press `Ctrl+Shift+S` — captures the coding question
 4. AI analyzes the screenshot, understands the problem
 5. AI provides solution with explanation
-6. Click "Copy Code" → paste into the exam editor
+6. Click "Copy Code" → paste into the assessment editor
 7. Press `Escape` to hide overlay
 
 ### UC2: Video Meeting (Zoom/Teams/Meet)
 1. Join meeting normally
-2. Press `Ctrl+Shift+G` to open GhostAI
+2. Press `Ctrl+Shift+G` to open InvisiQ
 3. Type questions or capture screen content
 4. AI provides answers, talking points, summaries
 5. Overlay is invisible to all other participants during screen share
 
 ### UC3: Sales Call Preparation
-1. Before/during a sales call, activate GhostAI
+1. Before/during a sales call, activate InvisiQ
 2. Paste prospect's LinkedIn/company info
 3. AI generates talking points, objection handling
 4. Real-time suggestions during the call
@@ -552,7 +552,7 @@ Test the build process and verify setContentProtection works."
 | `setContentProtection` doesn't work on some Windows 11 builds | Test across versions; fallback to extreme transparency |
 | Enterprise endpoint agents detect the process | Process disguise; keep as personal tool, not for work laptops with MDM |
 | AI API costs accumulate | Use cheaper models (Haiku, Flash, GPT-4o-mini) by default; show token count |
-| Proctoring detects unusual behavior (eye movement) | Place overlay near the exam content area; use small, unobtrusive overlay |
+| Proctoring detects unusual behavior (eye movement) | Place overlay near the assessment content area; use small, unobtrusive overlay |
 | Electron app too large (~200MB) | Consider Tauri migration later; or use portable build |
 | API keys stored insecurely | Encrypt with electron-store using machine-specific key |
 
@@ -566,13 +566,13 @@ Test the build process and verify setContentProtection works."
 - [ ] Overlay invisible in OBS recording
 - [ ] Overlay invisible in Windows Snipping Tool
 - [ ] Overlay invisible in Discord screen share
-- [ ] Works during Mercer Mettl exam (browser-based)
+- [ ] Works during Mercer Mettl assessment (browser-based)
 - [ ] Works during HackerRank assessment
 - [ ] Works during CodeSignal test
-- [ ] Screenshot captures exam content correctly
+- [ ] Screenshot captures assessment content correctly
 - [ ] AI responds to captured screenshot within 3-5 seconds
-- [ ] Copy-paste works from overlay to exam editor
-- [ ] Global hotkeys work even when exam is focused
+- [ ] Copy-paste works from overlay to assessment editor
+- [ ] Global hotkeys work even when the assessment is focused
 - [ ] App doesn't appear in taskbar
 - [ ] App has low memory footprint (<100MB)
 - [ ] API keys persist across restarts (encrypted)

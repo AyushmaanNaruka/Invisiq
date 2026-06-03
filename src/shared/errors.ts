@@ -4,7 +4,7 @@ import type { ProviderID } from './types';
 //  ERROR CODE REGISTRY
 // ══════════════════════════════════════
 
-export enum GhostAIError {
+export enum InvisiQError {
   // Provider Errors (1xxx)
   PROVIDER_AUTH_FAILED = 'E1001',
   PROVIDER_RATE_LIMITED = 'E1002',
@@ -43,8 +43,8 @@ export enum GhostAIError {
 //  ERROR RESPONSE FORMAT
 // ══════════════════════════════════════
 
-export interface GhostAIErrorResponse {
-  code: GhostAIError;
+export interface InvisiQErrorResponse {
+  code: InvisiQError;
   message: string;
   details?: string;
   retryable: boolean;
@@ -60,11 +60,11 @@ export function mapProviderError(
   _provider: ProviderID,
   status: number,
   body?: Record<string, unknown>
-): GhostAIErrorResponse {
+): InvisiQErrorResponse {
   // HTTP 401 — Invalid API key
   if (status === 401) {
     return {
-      code: GhostAIError.PROVIDER_AUTH_FAILED,
+      code: InvisiQError.PROVIDER_AUTH_FAILED,
       message: 'Invalid API key. Please check your key in Settings.',
       retryable: false,
       action: 'add-key',
@@ -75,7 +75,7 @@ export function mapProviderError(
   if (status === 429) {
     const retryAfter = 60000; // Default 60s
     return {
-      code: GhostAIError.PROVIDER_RATE_LIMITED,
+      code: InvisiQError.PROVIDER_RATE_LIMITED,
       message: 'Rate limit exceeded. Please wait before trying again.',
       retryable: true,
       retryAfterMs: retryAfter,
@@ -88,14 +88,14 @@ export function mapProviderError(
     const errorType = (body?.error as Record<string, unknown>)?.type;
     if (errorType === 'invalid_request_error') {
       return {
-        code: GhostAIError.PROVIDER_CONTEXT_TOO_LONG,
+        code: InvisiQError.PROVIDER_CONTEXT_TOO_LONG,
         message: 'Input too long for this model. Try a model with a larger context window.',
         retryable: false,
         action: 'switch-model',
       };
     }
     return {
-      code: GhostAIError.PROVIDER_SERVER_ERROR,
+      code: InvisiQError.PROVIDER_SERVER_ERROR,
       message: 'Bad request. Please try again.',
       details: JSON.stringify(body),
       retryable: false,
@@ -105,7 +105,7 @@ export function mapProviderError(
   // HTTP 403 — Quota exceeded or permission denied
   if (status === 403) {
     return {
-      code: GhostAIError.PROVIDER_QUOTA_EXCEEDED,
+      code: InvisiQError.PROVIDER_QUOTA_EXCEEDED,
       message: 'API quota exceeded or access denied.',
       retryable: false,
       action: 'check-settings',
@@ -115,7 +115,7 @@ export function mapProviderError(
   // HTTP 404 — Model not found
   if (status === 404) {
     return {
-      code: GhostAIError.PROVIDER_MODEL_NOT_FOUND,
+      code: InvisiQError.PROVIDER_MODEL_NOT_FOUND,
       message: 'Model not found. It may have been deprecated.',
       retryable: false,
       action: 'switch-model',
@@ -125,7 +125,7 @@ export function mapProviderError(
   // HTTP 5xx — Server error
   if (status >= 500) {
     return {
-      code: GhostAIError.PROVIDER_SERVER_ERROR,
+      code: InvisiQError.PROVIDER_SERVER_ERROR,
       message: 'AI provider server error. Please try again in a moment.',
       retryable: true,
       retryAfterMs: 5000,
@@ -135,7 +135,7 @@ export function mapProviderError(
 
   // Default
   return {
-    code: GhostAIError.PROVIDER_SERVER_ERROR,
+    code: InvisiQError.PROVIDER_SERVER_ERROR,
     message: `Unexpected error (HTTP ${status}).`,
     details: JSON.stringify(body),
     retryable: true,

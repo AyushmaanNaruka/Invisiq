@@ -373,7 +373,7 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
 
           {activeTab === 'resilience' && (
             <SettingsResilience
-              settings={settings.resilience ?? { enabled: false, autoStart: false, helperPath: '', pipeName: 'GhostAI' }}
+              settings={settings.resilience ?? { enabled: false, autoStart: false, helperPath: '', pipeName: 'InvisiQ' }}
               onUpdate={onUpdateSetting}
             />
           )}
