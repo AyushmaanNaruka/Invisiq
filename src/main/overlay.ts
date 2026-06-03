@@ -5,7 +5,7 @@ import { ensureContentProtection } from './stealth';
 import { validateOverlayPosition, moveOverlayToMonitor as moveToMonitorImpl } from './monitors';
 
 let overlayWindow: BrowserWindow | null = null;
-let stealthFocusEnabled = false; // Exam anti-detection mode
+let stealthFocusEnabled = false; // Anti-detection focus mode
 let focusReturnTimer: ReturnType<typeof setTimeout> | null = null;
 let userOpacity = 0.85; // The user's chosen opacity (separate from stealth visibility)
 let stealthVisible = true; // Whether the overlay is "visible" in stealth mode (controlled via opacity)
@@ -101,7 +101,7 @@ export function showOverlay(): void {
       // Instead, the window stays "shown" at all times; we toggle visibility via opacity.
       // Opacity changes don't trigger any window events that proctoring can detect.
 
-      // 'screen-saver' is the highest z-order level — sits above fullscreen exam apps
+      // 'screen-saver' is the highest z-order level — sits above fullscreen apps
       // This mirrors ChatGPT Mac's "floating panel" strategy on Windows.
       overlayWindow.setAlwaysOnTop(true, 'screen-saver');
       overlayWindow.setSkipTaskbar(true); // Re-enforce after setAlwaysOnTop
@@ -171,7 +171,7 @@ export function toggleOverlay(): boolean {
   }
 }
 
-// ── Stealth Focus (Anti-Detection for Exams) ───────────────────
+// ── Stealth Focus (Anti-Detection for Monitored Apps) ───────────────────
 
 /**
  * Enable/disable stealth focus mode.
@@ -197,15 +197,15 @@ export function setStealthFocusMode(enabled: boolean): void {
     // ANTI-DETECTION: Make the window non-focusable.
     // On Windows, Electron maps setFocusable(false) to WS_EX_NOACTIVATE on the HWND,
     // so clicks on the overlay no longer call SetForegroundWindow / fire
-    // EVENT_SYSTEM_FOREGROUND. The exam window stays foreground, defeating
-    // foreground-change detection used by Mettl Secure Browser and similar proctors.
+    // EVENT_SYSTEM_FOREGROUND. The active window stays foreground, defeating
+    // foreground-change detection used by monitoring tools and similar software.
     //
     // Trade-off: a non-activating window can't receive WM_KEYDOWN. Free-form typing
     // is handled via the InvisibleInput global keyboard hook (src/main/invisible-input.ts);
     // clicks for buttons / scrolling still work because they don't require focus.
     overlayWindow.setFocusable(false);
 
-    // 'screen-saver' is the highest z-order — sits above fullscreen exam apps and proctoring overlays
+    // 'screen-saver' is the highest z-order — sits above fullscreen apps and other overlays
     overlayWindow.setAlwaysOnTop(true, 'screen-saver');
 
     // Re-enforce skipTaskbar — setAlwaysOnTop can reset it

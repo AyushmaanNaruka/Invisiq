@@ -191,25 +191,25 @@ export const BUILT_IN_TEMPLATES: PromptTemplate[] = [
     tags: ['meeting', 'answer', 'quick'],
   },
 
-  // ── Exam ──────────────────────────────────────────────────────────────────
+  // ── Solve ─────────────────────────────────────────────────────────────────
   {
     id: 'bt-solve-question',
-    name: 'Solve Exam Question',
-    description: 'Get a direct answer to an exam question',
-    category: 'exam',
-    prompt: 'Solve this exam question:\n\n{{question}}\n\nProvide:\n1. ANSWER FIRST (bold, clear)\n2. Step-by-step solution\n3. Key formula/theorem used (if applicable)\n4. Common mistakes to avoid',
+    name: 'Solve Question',
+    description: 'Get a direct answer to a question',
+    category: 'solve',
+    prompt: 'Solve this question:\n\n{{question}}\n\nProvide:\n1. ANSWER FIRST (bold, clear)\n2. Step-by-step solution\n3. Key formula/theorem used (if applicable)\n4. Common mistakes to avoid',
     variables: [
-      { name: 'question', label: 'Exam Question', placeholder: 'Paste the question here', required: true },
+      { name: 'question', label: 'Question', placeholder: 'Paste the question here', required: true },
     ],
     isBuiltIn: true,
     usageCount: 0,
-    tags: ['exam', 'answer', 'academic'],
+    tags: ['solve', 'answer', 'study'],
   },
   {
     id: 'bt-multiple-choice',
     name: 'Multiple Choice',
     description: 'Identify the correct answer with explanation',
-    category: 'exam',
+    category: 'solve',
     prompt: 'For this multiple choice question, identify the correct answer:\n\n{{question}}\n\nOptions:\n{{options}}\n\nState the correct option immediately, then explain WHY it is correct and why each incorrect option is wrong.',
     variables: [
       { name: 'question', label: 'Question', placeholder: 'The question text', required: true },
@@ -217,7 +217,7 @@ export const BUILT_IN_TEMPLATES: PromptTemplate[] = [
     ],
     isBuiltIn: true,
     usageCount: 0,
-    tags: ['exam', 'multiple-choice', 'quiz'],
+    tags: ['solve', 'multiple-choice', 'quiz'],
   },
 
   // ── Research ──────────────────────────────────────────────────────────────

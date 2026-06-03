@@ -5,17 +5,17 @@ import type { BrowserWindow } from 'electron';
  *
  * Why this exists:
  *   In Stealth Focus mode the overlay HWND has WS_EX_NOACTIVATE (via
- *   setFocusable(false)). That stops proctoring tools from detecting GhostAI
+ *   setFocusable(false)). That stops monitoring tools from detecting GhostAI
  *   via foreground-window changes, but it also means the textarea can never
  *   receive WM_KEYDOWN. This module installs a global keyboard hook
  *   (uiohook-napi → libuiohook) and forwards keystrokes to the renderer over
- *   IPC, so the user can "type" into GhostAI while the exam stays foreground.
+ *   IPC, so the user can "type" into GhostAI while another app stays foreground.
  *
  * Trade-off (documented in Settings → Privacy):
  *   - uiohook-napi 1.5.5 does NOT support per-event suppression on Windows,
  *     so captured keys also reach the foreground app. The user must click an
- *     inert region of the exam (not an answer box) before arming, otherwise
- *     their typing will leak into the exam's currently-focused input.
+ *     inert region of the foreground app (not an input box) before arming,
+ *     otherwise their typing will leak into that app's currently-focused input.
  *   - Some AV / proctor tools may flag global keyboard hooks. This module
  *     loads lazily and stays inert until the user explicitly arms it.
  */

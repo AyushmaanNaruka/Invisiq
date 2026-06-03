@@ -137,7 +137,7 @@ export default function InputArea({
     } else if (result.armed) {
       showToast(
         'info',
-        'Invisible Input armed — keys are captured. Click an inert area of the exam first to prevent leaks. Press Esc to disarm.'
+        'Invisible Input armed — keys are captured. Click an inert area of the focused app first to prevent leaks. Press Esc to disarm.'
       );
     } else {
       showToast('info', 'Invisible Input disarmed.');

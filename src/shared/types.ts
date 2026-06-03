@@ -203,7 +203,7 @@ export type TemplateCategory =
   | 'writing'
   | 'analysis'
   | 'meeting'
-  | 'exam'
+  | 'solve'
   | 'research'
   | 'debugging'
   | 'custom';

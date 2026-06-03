@@ -54,7 +54,7 @@ const ghostAPI = {
     // Phase 4
     setPassthrough: (enabled: boolean, forward?: boolean): Promise<void> =>
       ipcRenderer.invoke('overlay:set-passthrough', { enabled, forward }),
-    // Phase 5 — Stealth focus (anti-detection for exams)
+    // Phase 5 — Stealth focus (anti-detection for monitored apps)
     setStealthFocus: (enabled: boolean): Promise<{ enabled: boolean }> =>
       ipcRenderer.invoke('overlay:set-stealth-focus', { enabled }),
     getStealthFocusStatus: (): Promise<{ enabled: boolean }> =>

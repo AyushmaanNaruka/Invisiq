@@ -144,7 +144,7 @@ function AppInner(): JSX.Element {
     }
   }, [isListening, startListening, stopListening, settings.audio?.engine, settings.audio?.language]);
 
-  // Stealth focus toggle (anti-detection for exams)
+  // Stealth focus toggle (anti-detection for monitored apps)
   const handleToggleStealthFocus = useCallback(async () => {
     const newState = !isStealthFocus;
     try {

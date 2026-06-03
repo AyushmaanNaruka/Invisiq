@@ -33,7 +33,7 @@ declare global {
         getBounds(): Promise<{ x: number; y: number; width: number; height: number }>;
         /** Phase 4: Click-through passthrough mode */
         setPassthrough(enabled: boolean, forward?: boolean): Promise<void>;
-        /** Phase 5: Stealth focus — anti-detection for exams */
+        /** Phase 5: Stealth focus — anti-detection for monitored apps */
         setStealthFocus(enabled: boolean): Promise<{ enabled: boolean }>;
         getStealthFocusStatus(): Promise<{ enabled: boolean }>;
         requestFocus(timeoutMs?: number): Promise<void>;

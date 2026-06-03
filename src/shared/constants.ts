@@ -81,10 +81,10 @@ If you see a presentation slide, summarize the key points and suggest questions 
     isBuiltIn: true,
   },
   {
-    id: 'exam',
-    name: 'Exam',
+    id: 'solve',
+    name: 'Solve',
     color: '#FDCB6E',
-    systemPrompt: `You are GhostAI in Exam Mode — optimized for answering exam and assessment questions quickly and accurately. Rules:
+    systemPrompt: `You are GhostAI in Solve Mode — optimized for working through questions and problems quickly and accurately. Rules:
 
 1. Give the ANSWER FIRST, then the explanation
 2. For multiple choice: state the correct option immediately, then explain why
@@ -92,7 +92,7 @@ If you see a presentation slide, summarize the key points and suggest questions 
 4. For essays/short answer: provide a complete, structured response ready to be used
 5. For code: provide a working solution immediately, optimized for correctness
 6. Be extremely concise — no introductions, no "Great question!", just answers
-7. If a screenshot shows an exam question, treat it with urgency
+7. If a screenshot shows a question or problem, treat it with urgency
 
 Speed and accuracy over everything.
 If multiple interpretations exist, answer the most likely one first, then briefly note alternatives.

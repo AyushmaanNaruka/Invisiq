@@ -112,7 +112,7 @@ export default function HeaderBar({
 
         {onToggleStealthFocus && (
           <GhostTooltip
-            content={isStealthFocus ? 'Exam stealth ON — no focus stealing' : 'Exam stealth mode (anti-detection)'}
+            content={isStealthFocus ? 'Stealth focus ON — no focus stealing' : 'Stealth focus mode (anti-detection)'}
             placement="bottom"
           >
             <button

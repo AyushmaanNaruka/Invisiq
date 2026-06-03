@@ -29,7 +29,7 @@ const CATEGORIES: CategoryDef[] = [
   { id: 'writing', label: 'Writing', icon: <Pencil size={12} strokeWidth={1.75} /> },
   { id: 'analysis', label: 'Analysis', icon: <ChartNoAxesColumn size={12} strokeWidth={1.75} /> },
   { id: 'meeting', label: 'Meeting', icon: <Users size={12} strokeWidth={1.75} /> },
-  { id: 'exam', label: 'Exam', icon: <BookOpen size={12} strokeWidth={1.75} /> },
+  { id: 'solve', label: 'Solve', icon: <BookOpen size={12} strokeWidth={1.75} /> },
   { id: 'research', label: 'Research', icon: <FlaskConical size={12} strokeWidth={1.75} /> },
   { id: 'debugging', label: 'Debug', icon: <Bug size={12} strokeWidth={1.75} /> },
   { id: 'custom', label: 'Custom', icon: <FileText size={12} strokeWidth={1.75} /> },
@@ -124,7 +124,7 @@ function TemplateCard({
     writing: 'text-accent-cyan',
     analysis: 'text-accent-blue',
     meeting: 'text-accent-primary',
-    exam: 'text-accent-amber',
+    solve: 'text-accent-amber',
     research: 'text-status-success',
     custom: 'text-text-secondary',
   };

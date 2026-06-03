@@ -252,7 +252,7 @@ const MODE_COLORS: Record<string, string> = {
   general: '#8B8B9E',
   coding: '#6C5CE7',
   meeting: '#2E75B6',
-  exam: '#FDCB6E',
+  solve: '#FDCB6E',
 };
 
 function getModeColor(mode: string): string {
