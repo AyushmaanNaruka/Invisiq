@@ -14,7 +14,7 @@ interface InputAreaProps {
   onStop: () => void;
   onCaptureScreen: () => void;
   onClearScreenshot: (index: number) => void;
-  inputRef?: React.RefObject<HTMLTextAreaElement | null>;
+  inputRef?: React.RefObject<HTMLTextAreaElement>;
   // Audio props (lifted from useAudioTranscription hook)
   isListening: boolean;
   transcript: string;

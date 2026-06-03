@@ -17,7 +17,7 @@ export function useSettings(): UseSettingsReturn {
       .then((loaded) => {
         // Deep-merge with defaults so newly added keys are always present
         const merged = { ...DEFAULT_SETTINGS } as Record<string, unknown>;
-        const src = loaded as Record<string, unknown>;
+        const src = loaded as unknown as Record<string, unknown>;
         for (const key of Object.keys(src)) {
           if (
             src[key] !== null &&
@@ -32,7 +32,7 @@ export function useSettings(): UseSettingsReturn {
             merged[key] = src[key];
           }
         }
-        setSettings(merged as AppSettings);
+        setSettings(merged as unknown as AppSettings);
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));

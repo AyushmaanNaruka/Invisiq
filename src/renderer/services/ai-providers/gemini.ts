@@ -165,7 +165,7 @@ export class GeminiProvider implements AIProvider {
     // Attach message-level images (preferred source)
     const hasMessageImages = lastMsg?.images && lastMsg.images.length > 0;
     if (hasMessageImages) {
-      for (const img of lastMsg.images) {
+      for (const img of lastMsg?.images ?? []) {
         if (!img.data || typeof img.data !== 'string') {
           console.error('[Gemini] Invalid image data in last message:', { dataType: typeof img.data });
           continue;

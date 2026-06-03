@@ -25,6 +25,9 @@ export default function OnboardingApiKey({ onContinue }: OnboardingApiKeyProps):
     openai: { value: '', masked: true, status: 'idle' },
     anthropic: { value: '', masked: true, status: 'idle' },
     gemini: { value: '', masked: true, status: 'idle' },
+    // Onboarding only collects cloud-provider keys (see PROVIDERS); ollama uses a
+    // server URL, not a key. Present here only to satisfy Record<ProviderID, …>.
+    ollama: { value: '', masked: true, status: 'idle' },
   });
 
   const hasAnyKey = Object.values(keys).some((k) => k.status === 'valid');

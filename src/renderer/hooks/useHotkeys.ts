@@ -11,7 +11,8 @@ export function useHotkeys(): UseHotkeysReturn {
   const callbacksRef = useRef<Map<HotkeyAction, HotkeyCallback>>(new Map());
 
   useEffect(() => {
-    const handler = (data: { action: HotkeyAction }) => {
+    const handler = (...args: unknown[]) => {
+      const data = args[0] as { action: HotkeyAction };
       const callback = callbacksRef.current.get(data.action);
       if (callback) callback();
     };

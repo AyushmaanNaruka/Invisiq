@@ -21,6 +21,12 @@ import type {
 } from '@shared/types';
 
 declare global {
+  // electron-vite/Vite statically replaces `process.env.NODE_ENV` in renderer
+  // builds. Declare a minimal shape so shared modules (e.g. @shared/logger)
+  // typecheck under the web tsconfig, which intentionally excludes @types/node.
+  // eslint-disable-next-line no-var
+  var process: { env: Record<string, string | undefined> };
+
   interface Window {
     ghostAPI: {
       overlay: {

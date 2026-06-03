@@ -79,7 +79,7 @@ export const GhostTooltip: React.FC<GhostTooltipProps> = ({
   const child = React.cloneElement(children, {
     ref: (el: HTMLElement | null) => {
       triggerRef.current = el;
-      const childRef = (children as React.RefObject<HTMLElement> & { ref?: React.Ref<HTMLElement> }).ref;
+      const childRef = (children as unknown as { ref?: React.Ref<HTMLElement> }).ref;
       if (typeof childRef === 'function') childRef(el);
       else if (childRef && 'current' in childRef) (childRef as React.MutableRefObject<HTMLElement | null>).current = el;
     },
