@@ -51,7 +51,9 @@ function migrateFromOldConfig(): void {
 migrateFromOldConfig();
 
 const store = new Store<StoreSchema>({
-  projectName: 'RuntimeBroker',
+  // electron-store v10 derives the path from app.getPath('userData') and no
+  // longer accepts `projectName`. The data dir stays "RuntimeBroker" via the
+  // app name; `name` below fixes the config filename (disguise preserved).
   name: 'runtime-broker-config',
   defaults: {
     settings: DEFAULT_SETTINGS,

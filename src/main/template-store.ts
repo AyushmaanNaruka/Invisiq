@@ -6,7 +6,7 @@
  */
 
 import { getSettings, setNestedSetting } from './store';
-import { BUILT_IN_TEMPLATES } from '../renderer/constants/built-in-templates';
+import { BUILT_IN_TEMPLATES } from '@shared/built-in-templates';
 import type { PromptTemplate } from '@shared/types';
 
 export function listTemplates(): { builtIn: PromptTemplate[]; custom: PromptTemplate[] } {

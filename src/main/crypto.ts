@@ -30,7 +30,7 @@ function getDerivedKey(): Buffer {
 
   let machineId: string;
   try {
-    machineId = machineIdSync({ original: true });
+    machineId = machineIdSync(true);
   } catch {
     machineId = getFallbackMachineId();
   }
