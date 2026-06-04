@@ -12,10 +12,11 @@
     "postinstall": "node scripts/postinstall.js",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "lint": "eslint src/ --ext .ts,.tsx",
+    "build:helper": "node scripts/build-helper.js",
     "verify": "npx ts-node scripts/verify-build.ts",
-    "package": "electron-vite build && electron-builder --win",
-    "package:dir": "electron-vite build && electron-builder --win --dir",
-    "publish": "electron-vite build && electron-builder --win --publish always"
+    "package": "npm run build:helper && electron-vite build && electron-builder --win",
+    "package:dir": "npm run build:helper && electron-vite build && electron-builder --win --dir",
+    "publish": "npm run build:helper && electron-vite build && electron-builder --win --publish always"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.35.0",

@@ -325,6 +325,7 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
           {activeTab === 'privacy' && (
             <SettingsPrivacy
               settings={settings.privacy}
+              stealth={settings.stealth}
               onUpdate={onUpdateSetting}
               onClearAll={async () => {
                 await window.ghostAPI.store.clearAll();

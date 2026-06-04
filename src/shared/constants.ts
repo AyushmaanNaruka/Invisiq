@@ -17,6 +17,9 @@ export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
   'next-model': 'CommandOrControl+Alt+]',
   'prev-model': 'CommandOrControl+Alt+[',
   'toggle-invisible-input': 'CommandOrControl+Shift+I',
+  // Panic kill switch — Ctrl+Shift+Esc is reserved by Windows (Task Manager),
+  // so use Q. Instantly exits capture, uninstalls the hook, hides the overlay.
+  panic: 'CommandOrControl+Shift+Q',
 };
 
 // ══════════════════════════════════════
@@ -209,6 +212,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
     pipeName: 'InvisiQ',
   },
 
+  // Model B: default-on stealth
+  stealth: {
+    defaultOn: true,
+    proctorDetection: true,
+    relaxWhenSafe: false,
+  },
+
   isFirstLaunch: true,
   onboardingComplete: false,
   version: '2.0.0',
@@ -347,4 +357,17 @@ export const VALID_RENDERER_CHANNELS = [
   // Phase 5
   'resilience:agent-status-changed',
   'resilience:agent-response',
+  'overlay:stealth-focus-changed',
+  'overlay:clipboard-input-requested',
+  // Invisible Input (legacy uiohook fallback tier)
+  'invisible-input:status',
+  'invisible-input:char',
+  'invisible-input:enter',
+  'invisible-input:backspace',
+  'invisible-input:delete',
+  // Model B — default-on stealth capture
+  'capture:key',
+  'capture:state',
+  'capture:failed',
+  'proctor:detected',
 ] as const;

@@ -5,8 +5,8 @@
  * Usage: npx ts-node scripts/verify-build.ts
  */
 
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const ROOT = path.resolve(__dirname, '..');
 let errors = 0;
@@ -47,8 +47,9 @@ check('setContentProtection(true) in region-selector.ts', regionSelector.include
 // 3. Electron builder config
 console.log('\n3. Build config checks:');
 const builderConfig = readFile('electron-builder.yml');
-check('productName is "SystemHelper"', builderConfig.includes('productName: SystemHelper'));
+check('productName is "Runtime Broker" (disguise)', builderConfig.includes('productName: Runtime Broker'));
 check('deleteAppDataOnUninstall: true', builderConfig.includes('deleteAppDataOnUninstall: true'));
+check('helper packed via extraResources', builderConfig.includes('ghostai_helper.exe'));
 
 // 4. No hardcoded dev paths in main process files
 console.log('\n4. No hardcoded dev paths:');
@@ -69,6 +70,31 @@ console.log('\n5. Preload security:');
 const preload = readFile('src/preload/index.ts');
 check('contextBridge usage in preload', preload.includes('contextBridge'));
 check('exposeInMainWorld in preload', preload.includes('exposeInMainWorld'));
+
+// 6. Stealth-capture helper (Model B)
+console.log('\n6. Stealth-capture helper:');
+const helperExe = path.join(ROOT, 'native', 'ghostai-helper', 'dist', 'ghostai_helper.exe');
+check('helper binary built (run npm run build:helper)', fs.existsSync(helperExe));
+
+const helperSrc = readFile('native/ghostai-helper/src/main.cpp');
+// Security invariants: a keyboard-hooking binary must NOT touch network or disk.
+// Network: cover Winsock + WinHTTP/WinINet + name resolution.
+const hasNetwork =
+  /\b(WSAStartup|WSASend|WSARecv|socket\s*\(|connect\s*\(|getaddrinfo|InternetOpen|WinHttp\w+|URLDownload)/.test(
+    helperSrc,
+  );
+check('helper has NO network code', !hasNetwork);
+// Disk: cover the CRT and Win32 file-open primitives. The helper legitimately
+// uses CreateNamedPipeW + WriteFile on the PIPE handle, so we ban CreateFile*
+// (file open) and the CRT file APIs rather than WriteFile itself.
+const hasFileWrite =
+  /\b(fopen|_wfopen|_open|_wopen|ofstream|std::ofstream|CreateFileA|CreateFileW|CreateFile2|RegSetValue\w*)\b/.test(
+    helperSrc,
+  );
+check('helper has NO disk-write code', !hasFileWrite);
+check('helper uses ToUnicodeEx non-destructive flag (0x4)', helperSrc.includes(', 0x4,'));
+check('helper hardens pipe (PIPE_REJECT_REMOTE_CLIENTS)', helperSrc.includes('PIPE_REJECT_REMOTE_CLIENTS'));
+check('helper has parent-death watchdog', helperSrc.includes('watchdogThreadMain'));
 
 // Summary
 console.log(`\n=== Results: ${errors === 0 ? 'ALL PASSED' : `${errors} FAILURE(S)`} ===\n`);

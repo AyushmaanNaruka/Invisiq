@@ -16,7 +16,10 @@ export type HotkeyAction =
   | 'toggle-passthrough'
   | 'next-model'
   | 'prev-model'
-  | 'toggle-invisible-input';
+  // toggle-invisible-input now toggles Model B capture mode (kept for settings compat)
+  | 'toggle-invisible-input'
+  // Model B — panic kill switch: instantly exit capture, uninstall hook, hide overlay
+  | 'panic';
 
 export interface ModelConfig {
   id: string;
@@ -297,15 +300,79 @@ export interface ResilienceStatus {
 }
 
 export interface ResilienceCommand {
-  type: 'start_overlay' | 'hide_overlay' | 'get_status' | 'shutdown' | 'ping';
+  // start_overlay / hide_overlay / get_status / shutdown / ping are legacy/diagnostic.
+  // set_capture toggles the suppressing keyboard hook for stealth typing (Model B).
+  type:
+    | 'start_overlay'
+    | 'hide_overlay'
+    | 'get_status'
+    | 'shutdown'
+    | 'ping'
+    | 'set_capture';
   payload?: Record<string, unknown>;
 }
 
 export interface ResilienceResponse {
-  type: 'status' | 'ack' | 'error' | 'pong';
+  // ready  → pipe is up (replaces the fixed spawn-wait)
+  // key    → a translated keystroke from the suppressing hook (payload = CaptureKeyEvent)
+  // proctor→ proctor-process detection update (payload = ProctorDetection)
+  // capture_failed → hook/pipe died mid-capture; renderer must degrade
+  type:
+    | 'status'
+    | 'ack'
+    | 'error'
+    | 'pong'
+    | 'ready'
+    | 'key'
+    | 'proctor'
+    | 'capture_failed';
   payload?: Record<string, unknown>;
   error?: string;
 }
+
+// ══════════════════════════════════════
+//  MODEL B: STEALTH CAPTURE (suppressing keyboard hook)
+// ══════════════════════════════════════
+
+/** Kinds of key events the helper forwards while capture is active. */
+export type CaptureKeyKind =
+  | 'char'
+  | 'backspace'
+  | 'delete'
+  | 'enter'
+  | 'left'
+  | 'right'
+  | 'home'
+  | 'end';
+
+/**
+ * A single translated keystroke from the helper's WH_KEYBOARD_LL hook.
+ * `seq` is monotonic per capture session; `epoch` identifies the session so
+ * the renderer can reject stale events that arrive after capture exits.
+ */
+export interface CaptureKeyEvent {
+  seq: number;
+  epoch: number;
+  kind: CaptureKeyKind;
+  char?: string; // present only when kind === 'char'
+}
+
+/** Proctor-detection snapshot pushed by the helper (confirmation only). */
+export interface ProctorDetection {
+  detected: boolean;
+  names: string[];
+}
+
+/** Which input tier is currently servicing stealth typing (degradation ladder). */
+export type CaptureTier = 'helper' | 'uiohook' | 'clipboard' | 'focus' | 'none';
+
+/** Reason a capture session degraded or failed. */
+export type CaptureFailReason =
+  | 'helper-missing'
+  | 'pipe-dropped'
+  | 'heartbeat-lost'
+  | 'session-locked'
+  | 'hook-unavailable';
 
 // ══════════════════════════════════════
 //  APPLICATION SETTINGS
@@ -403,6 +470,19 @@ export interface AppSettings {
     autoStart: boolean;
     helperPath: string;
     pipeName: string;
+  };
+
+  // Model B: default-on stealth (suppressing keyboard hook + logical-focus capture)
+  stealth: {
+    // When true, the overlay starts in WS_EX_NOACTIVATE stealth-focus mode and
+    // typing routes through the suppressing capture hook. Fail-safe default.
+    defaultOn: boolean;
+    // Poll for known proctoring processes and show a confirmation badge.
+    // Confirmation only — never a trigger for protection.
+    proctorDetection: boolean;
+    // When highly confident nothing is watching, offer to relax to easy-focus
+    // typing. Only flips toward convenience, never away from safety.
+    relaxWhenSafe: boolean;
   };
 
   isFirstLaunch: boolean;

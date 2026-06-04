@@ -21,7 +21,8 @@ const HOTKEY_LABELS: Record<HotkeyAction, string> = {
   'toggle-passthrough': 'Toggle Click-Through',
   'next-model': 'Next Model',
   'prev-model': 'Previous Model',
-  'toggle-invisible-input': 'Invisible Input (Stealth Typing)',
+  'toggle-invisible-input': 'Stealth Typing (Capture)',
+  panic: 'Panic — Hide & Stop Capture',
 };
 
 const INTERNAL_SHORTCUTS: { label: string; shortcut: string }[] = [

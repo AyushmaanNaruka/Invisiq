@@ -20,6 +20,13 @@ files:
 # bindings, etc.) can resolve the prebuilds/ directory at runtime.
 asarUnpack:
   - node_modules/uiohook-napi/**/*
+# The stealth-capture helper is a standalone exe we spawn() — it must sit beside
+# the app in resources/, NOT inside asar. `npm run build:helper` produces it at
+# the toolchain-independent dist/ path. resolveHelperPath() looks for it at
+# process.resourcesPath/ghostai_helper.exe when packaged.
+extraResources:
+  - from: native/ghostai-helper/dist/ghostai_helper.exe
+    to: ghostai_helper.exe
 win:
   icon: assets/invisiq-icon-512.png
   executableName: RuntimeBroker

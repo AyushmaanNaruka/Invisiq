@@ -32,6 +32,33 @@ The core feature of InvisiQ is invisibility to screen capture. After ANY change 
 
 ---
 
+## Model B — Default-On Stealth & Capture
+
+Run after any change to `overlay.ts`, `capture-controller.ts`, `resilience-controller.ts`, the helper (`native/ghostai-helper/`), or the renderer capture hook.
+
+**Prerequisite:** `npm run build:helper` (produces `dist/ghostai_helper.exe`).
+
+| # | Scenario | Expected |
+|---|----------|----------|
+| 1 | Launch app | Overlay visible, stealth focus ON by default; clicking it does NOT bring it to foreground (foreground app unchanged). |
+| 2 | Suppression / leak | Focus Notepad, enter capture (click textarea / Ctrl+Shift+I), type → text appears in InvisiQ, **nothing** in Notepad. Exit capture → keys reach Notepad normally. |
+| 3 | Foreground monitoring | With a proctor/secure browser foreground, entering capture + typing fires **no** "navigated away" alert (window never activates). Proctor badge appears. |
+| 4 | EU layouts / dead keys | Switch to German/French layout; type accented + AltGr + dead-key chars → correct in InvisiQ; the foreground app's later dead-key composition is unaffected. |
+| 5 | Cursor editing | Arrows / Home / End / Backspace / Delete edit at the caret mid-text (not append-only). |
+| 6 | Hotkey survival | During capture, Ctrl+C in the foreground app still copies; toggle/hide/panic hotkeys still fire (not eaten by suppression). |
+| 7 | Panic | Ctrl+Shift+Q exits capture, removes the hook, hides the overlay instantly. |
+| 8 | Degradation | Kill `ghostai_helper.exe` mid-capture → indicator turns red, falls back to uiohook→clipboard, textarea never goes dead (`capture:failed` fired). |
+| 9 | Orphan safety | Kill the main process while capturing → `ghostai_helper.exe` self-exits within ~1s (Task Manager); the keyboard is never left frozen. |
+| 10 | Session lock | Win+L during capture → on unlock, capture has exited cleanly (no stuck hook). |
+| 11 | Visibility | Opacity slider + toggle + click-through behave with no conflict; a hidden (opacity-0) overlay does not eat clicks. |
+
+### Common Failure Modes
+- Helper not built → `dist/ghostai_helper.exe` missing → capture silently degrades to uiohook (leaky). Run `npm run build:helper`.
+- Blocking work added to the helper's `LowLevelKeyboardProc` → Windows uninstalls the hook (keys start leaking). Keep the callback to translate+enqueue+return.
+- `ToUnicodeEx` called without `wFlags=0x4` → foreground app's dead-key composition corrupted.
+
+---
+
 ## Performance Benchmarks
 
 | Metric | Target | How to Measure |

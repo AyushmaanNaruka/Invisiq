@@ -48,6 +48,13 @@ import { getOverlayWindow } from './overlay';
 import { startSystemCapture, stopSystemCapture, getCaptureStatus } from './audio-capture';
 import { startAgent, stopAgent, sendCommand, getStatus as getResilienceStatus } from './resilience-controller';
 import { armInvisibleInput, disarmInvisibleInput, isInvisibleInputArmed } from './invisible-input';
+import {
+  enterCapture,
+  exitCapture,
+  getCaptureStatus as getCaptureSessionStatus,
+  getProctorStatus,
+  panic as panicCapture,
+} from './capture-controller';
 
 const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'ollama'];
 
@@ -597,6 +604,28 @@ export function registerIPCHandlers(): void {
 
   ipcMain.handle('invisible-input:toggle', () => {
     return isInvisibleInputArmed() ? disarmInvisibleInput() : armInvisibleInput();
+  });
+
+  // ── Model B: Stealth Capture (logical-focus typing) ──────────
+
+  ipcMain.handle('capture:enter', () => {
+    return enterCapture();
+  });
+
+  ipcMain.handle('capture:exit', async () => {
+    return exitCapture();
+  });
+
+  ipcMain.handle('capture:status', () => {
+    return getCaptureSessionStatus();
+  });
+
+  ipcMain.handle('capture:panic', async () => {
+    return panicCapture();
+  });
+
+  ipcMain.handle('capture:proctor-status', () => {
+    return getProctorStatus();
   });
 
   ipcMain.handle('screenshot:capture-for-snip', async () => {

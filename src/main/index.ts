@@ -1,6 +1,6 @@
 import { app, session, BrowserWindow } from 'electron';
 import { join } from 'path';
-import { createOverlayWindow } from './overlay';
+import { createOverlayWindow, setStealthFocusMode } from './overlay';
 import { registerAllHotkeys, unregisterAllHotkeys } from './hotkeys';
 import { registerIPCHandlers } from './ipc-handlers';
 import { ensureConversationsDir } from './conversations';
@@ -11,7 +11,8 @@ import { initMonitorManager } from './monitors';
 import { initializeAutoUpdater } from './updater';
 import { createTray } from './tray';
 import { initMemoryStore } from './memory';
-import { cleanupResilience, startAgent as startResilienceAgent } from './resilience-controller';
+import { cleanupResilience } from './resilience-controller';
+import { initCaptureController, cleanupCaptureController } from './capture-controller';
 import { initInvisibleInput, cleanupInvisibleInput } from './invisible-input';
 import { AI_API_DOMAINS } from '@shared/constants';
 
@@ -117,8 +118,17 @@ app.whenReady().then(async () => {
   // protection is needed most (during ready-to-show → show()).
   startStealthWatchdog(overlayWindow);
 
-  // Initialize invisible-input module (hook stays inert until armed)
+  // Initialize invisible-input module (legacy uiohook fallback tier — stays inert)
   initInvisibleInput(overlayWindow);
+
+  // Model B — default-on stealth. Enable WS_EX_NOACTIVATE stealth focus before
+  // the renderer presents (the actual present is gated to 'ready-to-show', so
+  // this sets the mode without flashing an unpainted window). Fail-safe: the
+  // overlay is protected from the first frame, not after a proctor is detected.
+  const stealthDefaultOn = (getNestedSetting('stealth.defaultOn') as boolean | undefined) !== false;
+  if (stealthDefaultOn) {
+    setStealthFocusMode(true);
+  }
 
   // Load the renderer
   if (process.env['ELECTRON_RENDERER_URL']) {
@@ -146,16 +156,12 @@ app.whenReady().then(async () => {
     // Initialize memory store (async, non-blocking)
     initMemoryStore().catch((err) => console.error('[Memory] Init failed:', err));
 
-    // Auto-start resilience agent if enabled
-    const resilienceSettings = getNestedSetting('resilience') as
-      | { autoStart?: boolean; helperPath?: string; pipeName?: string }
-      | undefined;
-    if (resilienceSettings?.autoStart) {
-      startResilienceAgent(
-        resilienceSettings.helperPath || '',
-        resilienceSettings.pipeName || 'InvisiQ',
-      ).catch((err) => console.error('[Resilience] Auto-start failed:', err));
-    }
+    // Model B — spawn the resident stealth-capture helper (best-effort). The
+    // keyboard HOOK is installed only during active capture, so an idle helper
+    // carries no keylogger signature. Capture degrades gracefully if it fails.
+    // The capture-controller now owns the helper lifecycle (supersedes the old
+    // resilience auto-start).
+    initCaptureController().catch((err) => console.error('[Capture] Init failed:', err));
   });
 });
 
@@ -171,7 +177,9 @@ app.on('will-quit', () => {
   unregisterAllHotkeys();
   // Stop clipboard monitor
   stopClipboardMonitor();
-  // Clean up resilience helper
+  // Tear down the capture controller (heartbeat timer + helper response listener)
+  cleanupCaptureController();
+  // Clean up resilience helper (kills ghostai_helper.exe; its watchdog is the backstop)
   cleanupResilience();
   // Stop invisible-input keyboard hook
   cleanupInvisibleInput();

@@ -4,6 +4,32 @@ All notable changes to InvisiQ are documented here.
 
 ---
 
+## [1.3.0] — Model B: Default-On Stealth
+
+### Stealth is now the default (fail-safe)
+- The overlay starts in `WS_EX_NOACTIVATE` stealth-focus mode (gated by `settings.stealth.defaultOn`) — invisible to screen capture **and** foreground-window monitoring (e.g. Mercer Mettl `MsbWindowCef`) from the first frame. Protection is no longer something you switch on after a proctor appears.
+- Proctor detection is a **confirmation indicator only** ("Monitored app detected — you're invisible" badge), never the trigger for protection.
+
+### Suppressing out-of-process capture helper
+- New standalone Win32 helper `native/ghostai-helper/` (`ghostai_helper.exe`) hosts the `WH_KEYBOARD_LL` hook **out of the main process** and **suppresses** captured keys (`return 1`) so they no longer leak into the foreground app — fixing the core limitation of the old uiohook path.
+- Layout-aware translation via `ToUnicodeEx` (wFlags `0x4`, non-destructive) + self-managed dead-key composition (`NormalizeString`) — covers EU layouts, AltGr, and accented/dead keys without corrupting the foreground app.
+- Hardened: user-SID-only pipe DACL + `PIPE_REJECT_REMOTE_CLIENTS`, randomized pipe name, parent-death watchdog, WTS session-lock safety, zero disk/network, hook installed **only while capturing** (no idle keylogger signature).
+
+### Logical-focus capture mode
+- Click the textarea (or `Ctrl+Shift+I`) to enter capture — type into InvisiQ while the foreground app stays foreground. Cursor-aware editing (insert/backspace/delete/arrows/home/end) with seq+epoch ordering.
+- Glowing-border + caret indicator; new **panic** hotkey (`Ctrl+Shift+Q`) instantly exits capture, uninstalls the hook, and hides the overlay.
+
+### Degradation ladder (never a dead textarea)
+- `capture-controller.ts` runs a ping/pong heartbeat and degrades helper → uiohook (legacy, leaky, warns) → clipboard if the helper is missing or the pipe drops mid-capture; surfaces `capture:failed` to the UI.
+
+### Other
+- Overlay visibility collapsed to a single opacity-only state machine (fixes opacity-slider / click-through edge cases; 0-opacity window no longer eats clicks).
+- New IPC: `capture:enter|exit|status|panic|proctor-status` (invoke) and `capture:key|state|failed`, `proctor:detected` (events).
+- `npm run build:helper` (MSVC via CMake, g++ dev fallback) → packed via electron-builder `extraResources`. Signing wired but cert-deferred (parametrized publisher).
+- Settings → Privacy: stealth toggles + plain-language keyboard-hook disclosure. Store schema backfill so existing users gain the new `stealth` block.
+
+---
+
 ## [1.2.0] — Phase 5: Resilience & Camouflage
 
 ### Resilience Mode (Native C++ Helper)

@@ -24,12 +24,17 @@ const VALID_CHANNELS = [
   'resilience:agent-response',
   'overlay:stealth-focus-changed',
   'overlay:clipboard-input-requested',
-  // Invisible Input (global keyboard capture)
+  // Invisible Input (legacy uiohook fallback tier)
   'invisible-input:status',
   'invisible-input:char',
   'invisible-input:enter',
   'invisible-input:backspace',
   'invisible-input:delete',
+  // Model B — default-on stealth capture
+  'capture:key',
+  'capture:state',
+  'capture:failed',
+  'proctor:detected',
 ];
 
 const ghostAPI = {
@@ -279,6 +284,22 @@ const ghostAPI = {
       ipcRenderer.invoke('invisible-input:toggle'),
     status: (): Promise<{ armed: boolean }> =>
       ipcRenderer.invoke('invisible-input:status'),
+  },
+
+  // ══════════════════════════════════════
+  //  MODEL B: STEALTH CAPTURE (logical-focus typing)
+  // ══════════════════════════════════════
+  capture: {
+    enter: (): Promise<{ active: boolean; epoch: number; tier: string }> =>
+      ipcRenderer.invoke('capture:enter'),
+    exit: (): Promise<{ active: boolean }> =>
+      ipcRenderer.invoke('capture:exit'),
+    status: (): Promise<{ active: boolean; epoch: number; tier: string }> =>
+      ipcRenderer.invoke('capture:status'),
+    panic: (): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke('capture:panic'),
+    proctorStatus: (): Promise<{ detected: boolean; names: string[] }> =>
+      ipcRenderer.invoke('capture:proctor-status'),
   },
 
   // ══════════════════════════════════════

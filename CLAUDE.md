@@ -103,8 +103,10 @@ ghostai/
 │   │   ├── screenshot.ts             # desktopCapturer, full + region capture
 │   │   ├── region-selector.ts        # Temporary full-screen selection window
 │   │   ├── stealth.ts                # Process disguise, stealth watchdog, alt-tab hiding
-│   │   ├── invisible-input.ts        # Global WH_KEYBOARD_LL hook (uiohook-napi) — stealth typing
-│   │   ├── store.ts                  # electron-store with AES-256 encryption
+│   │   ├── invisible-input.ts        # Legacy WH_KEYBOARD_LL hook (uiohook-napi) — capture fallback tier
+│   │   ├── capture-controller.ts     # Model B capture session: epoch, heartbeat, degradation ladder
+│   │   ├── resilience-controller.ts  # Spawns + pipes to ghostai_helper.exe (named pipe, JSON)
+│   │   ├── store.ts                  # electron-store with AES-256 encryption + schema backfill
 │   │   ├── ipc-handlers.ts           # All ipcMain.handle() registrations
 │   │   ├── conversations.ts          # Filesystem-based conversation CRUD (Phase 2)
 │   │   ├── clipboard.ts              # Smart paste via PowerShell SendKeys (Phase 2)
@@ -157,7 +159,8 @@ ghostai/
 │   │   │   ├── useAudioTranscription.ts  # Speech-to-text hook (Phase 2)
 │   │   │   ├── useTokenCost.ts       # Token/cost tracking per request/conversation/session (Phase 3)
 │   │   │   ├── useWindowSize.ts      # Responsive breakpoints: compact/normal/expanded (Phase 3)
-│   │   │   └── useInternalKeyboard.ts # Ctrl+, Ctrl+L, Ctrl+K shortcuts (Phase 3)
+│   │   │   ├── useInternalKeyboard.ts # Ctrl+, Ctrl+L, Ctrl+K shortcuts (Phase 3)
+│   │   │   └── useCapture.ts          # Model B stealth typing: capture state + key events (seq/epoch)
 │   │   │
 │   │   ├── services/
 │   │   │   ├── ai-providers/
@@ -185,10 +188,13 @@ ghostai/
 ├── assets/
 │   └── icons/                        # App icons (256x256, 128x128, etc.)
 │
-├── native/                           # Optional C++ addon (fallback)
-│   └── window-utils/
-│       ├── binding.gyp
-│       └── window-utils.cc
+├── native/                           # Standalone Win32 C++ helpers (NOT node addons)
+│   └── ghostai-helper/               # Model B suppressing keyboard hook (out-of-process)
+│       ├── CMakeLists.txt            # MSVC build (signing-ready, parametrized publisher)
+│       ├── src/main.cpp              # Pipe server + WH_KEYBOARD_LL + ToUnicodeEx + watchdog
+│       ├── res/app.manifest          # asInvoker manifest
+│       ├── res/version.rc.in         # VERSIONINFO template (CMake-configured)
+│       └── dist/ghostai_helper.exe   # Build output → electron-builder extraResources
 │
 ├── scripts/
 │   ├── build.js                      # Custom build scripts
@@ -227,24 +233,34 @@ The fix is in `src/main/overlay.ts → setStealthFocusMode(true)`:
 overlayWindow.setFocusable(false); // → applies WS_EX_NOACTIVATE on the HWND
 ```
 
-A `WS_EX_NOACTIVATE` window cannot become the foreground window — even when clicked. **Do not remove or revert this** while stealth mode is on. The trade-off is that the window can no longer receive `WM_KEYDOWN` (Windows routes keys to the foreground thread), so free-form typing is delivered through the InvisibleInput global keyboard hook described below.
+A `WS_EX_NOACTIVATE` window cannot become the foreground window — even when clicked. **Do not remove or revert this** while stealth mode is on. The trade-off is that the window can no longer receive `WM_KEYDOWN` (Windows routes keys to the foreground thread), so free-form typing is delivered through the **Model B capture pipeline** (§1c), with the legacy InvisibleInput hook (§1b) as a fallback tier.
 
-### 1b. Invisible Input — typing without activation
+### 1b. Invisible Input — legacy uiohook fallback tier
 
-`src/main/invisible-input.ts` installs an opt-in `WH_KEYBOARD_LL` hook via `uiohook-napi` and forwards keystrokes to the renderer as IPC events:
+`src/main/invisible-input.ts` installs a `WH_KEYBOARD_LL` hook via `uiohook-napi` and forwards keystrokes to the renderer (`invisible-input:char|backspace|delete|enter`, `invisible-input:status`). **This is no longer the primary path** — it's tier 2 of the degradation ladder (§1c), used only when the native helper is unavailable.
 
-- `invisible-input:char { char }` — printable character
-- `invisible-input:backspace` / `invisible-input:delete` / `invisible-input:enter`
-- `invisible-input:status { armed }` — state sync
+**Known limitation:** `uiohook-napi` 1.5.5 has no per-event suppression on Windows → on this tier captured keys also reach the foreground app, so the renderer shows a "click an inert area first" warning when it degrades to uiohook. The primary helper tier (§1c) does NOT have this problem (it suppresses).
 
-The renderer hook `useInvisibleInput` mutates the textarea state via React setters — it **never** calls `.focus()` on the window. This lets the user "type" into InvisiQ while the foreground app stays foreground.
+### 1c. Model B — default-on stealth + suppressing capture (the current design)
 
-**Constraints (document changes here when revisited):**
-- `uiohook-napi` 1.5.5 does NOT support per-event suppression on Windows → captured keys also reach the foreground app's active control. Users are told (via toast + button tooltip) to click an inert region of the foreground app before arming.
-- The hook stays inert until the user explicitly arms it (button in `InputArea` or `Ctrl+Shift+I` global hotkey) — no perf cost, no AV signature when idle.
-- Some AV / proctor tools may flag global keyboard hooks. Default = OFF. Disclose in `SettingsPrivacy` when adding new UI surfaces.
+Stealth focus is **on by default** (fail-safe: protected from launch; proctor detection is only a confirmation indicator, never the trigger). Gated by `settings.stealth.defaultOn`, applied in `src/main/index.ts` via `setStealthFocusMode(true)`.
 
-When adding new control keys (e.g. arrow-key cursor support), extend `onKeyDown` in `invisible-input.ts` and add the corresponding IPC channel to `VALID_CHANNELS` in `src/preload/index.ts`.
+Typing flows through three pieces:
+
+1. **`native/ghostai-helper/` → `ghostai_helper.exe`** — a standalone Win32 C++ helper (NOT a node addon — keeps `npmRebuild:false`) that hosts the SUPPRESSING `WH_KEYBOARD_LL` hook out-of-process. It is the named-pipe server; `resilience-controller.ts` is the client. Critical invariants baked into `src/main.cpp` (do not break):
+   - **Non-blocking hook callback** (translate + enqueue + `return 1`); a separate pump thread does all pipe writes. Blocking the callback past `LowLevelHooksTimeout` makes Windows silently uninstall the hook → keys leak.
+   - **`ToUnicodeEx` with `wFlags=0x4`** (non-destructive) + self-managed modifier/dead-key state → never corrupts the foreground app's dead-key composition.
+   - **Selective suppression** — passes through Ctrl/Win chords + Escape so global hotkeys and the panic key still fire.
+   - **Parent-death watchdog** (`WaitForSingleObject` on parent PID → self-exit) so a crashed main never leaves an orphaned hook freezing the keyboard.
+   - **WTS session-lock** → force-exit capture (LL hooks get nothing on the secure desktop).
+   - Pipe hardened with a **user-SID-only DACL** + `PIPE_REJECT_REMOTE_CLIENTS`; randomized pipe name per launch. **Zero disk writes, zero network, no captured chars in stdout.**
+   - The hook is installed **only during active capture** — idle helper carries no keylogger signature.
+2. **`src/main/capture-controller.ts`** — owns the capture session: `enterCapture()`/`exitCapture()` with a monotonic **epoch**, relays `key` events to the renderer over `capture:key`, runs a `ping`/`pong` heartbeat, and drives the **degradation ladder** on failure: helper → uiohook → clipboard (never a silently-dead textarea). Emits `capture:failed` so the renderer can react.
+3. **`src/renderer/hooks/useCapture.ts` + `InputArea.tsx`** — a cursor-aware input model (`{value, caret}`) driven by `capture:key` (with seq/epoch ordering; stale events dropped). Click the textarea or `Ctrl+Shift+I` to enter capture; a glowing border + caret indicate it's live. Never calls window-level `.focus()`.
+
+Build: `npm run build:helper` (MSVC via CMake, g++ fallback) → `native/ghostai-helper/dist/ghostai_helper.exe`, packed via electron-builder `extraResources`. Signing is wired but cert-deferred; version-info publisher is parametrized (see `native/ghostai-helper/README.md` for the disguise-vs-honest-cert decision).
+
+When adding control keys, extend the helper's `LowLevelKeyboardProc` (`navEditKind`/translation), the `CaptureKeyKind` union in `src/shared/types.ts`, and the renderer's `onCaptureKey` reducer.
 
 ### 2. Electron Security Model
 
@@ -333,6 +349,7 @@ export:conversation  export:save-dialog
 memory:search  memory:add  memory:delete  memory:list
 memory:clear-all  memory:stats  memory:extract
 invisible-input:arm  invisible-input:disarm  invisible-input:toggle  invisible-input:status
+capture:enter  capture:exit  capture:status  capture:panic  capture:proctor-status
 ```
 
 Renderer event channels (main → renderer):
@@ -346,6 +363,7 @@ audio:chunk
 companion:message  companion:device-connected  companion:device-disconnected
 invisible-input:status  invisible-input:char  invisible-input:enter
 invisible-input:backspace  invisible-input:delete
+capture:key  capture:state  capture:failed  proctor:detected
 ```
 
 Full IPC contract is in `docs/InvisiQ-API-Contract.md` Section 2.
@@ -503,8 +521,9 @@ Ctrl+Shift+A  →  Focus text input
 Ctrl+Shift+C  →  Copy last AI response
 Ctrl+Shift+V  →  Paste last AI response to active app
 Ctrl+Shift+N  →  New conversation
-Ctrl+Shift+I  →  Arm/disarm Invisible Input (stealth typing via global hook)
-Escape        →  Hide overlay immediately
+Ctrl+Shift+I  →  Toggle stealth typing / capture mode (Model B)
+Ctrl+Shift+Q  →  Panic — exit capture, uninstall hook, hide overlay
+Escape        →  Hide overlay immediately (also exits capture)
 ```
 
 Registered via `globalShortcut.register()` in `src/main/hotkeys.ts`. All customizable via settings.
@@ -865,5 +884,5 @@ npm install @types/uuid --save-dev
 
 ---
 
-*Last updated: February 19, 2026 (Phase 4 fully complete — all Sprint 13-17 features shipped)*
+*Last updated: June 3, 2026 (Phase 5 — Model B default-on stealth: suppressing out-of-process capture helper, logical-focus capture mode, degradation ladder)*
 *This file should be updated whenever major architecture decisions change.*

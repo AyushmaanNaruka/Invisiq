@@ -1,8 +1,8 @@
 import { globalShortcut, type BrowserWindow } from 'electron';
 import { DEFAULT_HOTKEYS } from '@shared/constants';
 import type { HotkeyAction } from '@shared/types';
-import { toggleOverlay, hideOverlay, showOverlay, getOverlayWindow, requestStealthFocus } from './overlay';
-import { armInvisibleInput, disarmInvisibleInput, isInvisibleInputArmed } from './invisible-input';
+import { toggleOverlay, hideOverlay, showOverlay, getOverlayWindow, requestStealthFocus, isOverlayVisible } from './overlay';
+import { enterCapture, exitCapture, panic as panicCapture, isCaptureActive } from './capture-controller';
 import { getSettings } from './store';
 
 type HotkeyMap = Record<HotkeyAction, string>;
@@ -56,6 +56,8 @@ function handleHotkeyAction(action: HotkeyAction): void {
       break;
 
     case 'hide-overlay':
+      // Escape also exits capture so keystrokes flow back to the foreground app.
+      if (isCaptureActive()) void exitCapture();
       hideOverlay();
       break;
 
@@ -63,7 +65,7 @@ function handleHotkeyAction(action: HotkeyAction): void {
     case 'capture-region':
       // Ensure overlay is visible before sending event to renderer
       if (win && !win.isDestroyed()) {
-        if (!win.isVisible()) {
+        if (!isOverlayVisible()) {
           showOverlay();
         }
         sendHotkeyEvent(win, action);
@@ -72,11 +74,13 @@ function handleHotkeyAction(action: HotkeyAction): void {
 
     case 'focus-input':
       if (win && !win.isDestroyed()) {
-        if (!win.isVisible()) {
+        if (!isOverlayVisible()) {
           showOverlay();
         }
-        // Focus the window so user can type (safe in stealth — hotkeys aren't detected)
+        // Bring overlay forward (no focus steal in stealth) and enter capture
+        // so the user can immediately type. The renderer shows the capture caret.
         requestStealthFocus();
+        enterCapture();
         sendHotkeyEvent(win, action);
       }
       break;
@@ -91,13 +95,23 @@ function handleHotkeyAction(action: HotkeyAction): void {
       break;
 
     case 'toggle-invisible-input':
-      // Toggle global keyboard capture for stealth-mode typing.
-      // Handled entirely in main so it works even before renderer is ready.
-      if (isInvisibleInputArmed()) {
-        disarmInvisibleInput();
-      } else {
-        armInvisibleInput();
+      // Toggle Model B capture mode (stealth-typing). Handled in main so it works
+      // regardless of renderer focus. Renderer reflects state via 'capture:state'.
+      // Use isOverlayVisible() (logical) — in stealth the HWND is always "shown"
+      // at opacity 0 when hidden, so win.isVisible() would skip the needed show.
+      if (win && !win.isDestroyed() && !isOverlayVisible()) {
+        showOverlay();
       }
+      if (isCaptureActive()) {
+        void exitCapture();
+      } else {
+        enterCapture();
+      }
+      break;
+
+    case 'panic':
+      // Kill switch — exit capture, uninstall hook, hide overlay immediately.
+      void panicCapture();
       break;
   }
 }

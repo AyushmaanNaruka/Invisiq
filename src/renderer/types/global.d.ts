@@ -18,6 +18,7 @@ import type {
   MemoryStats,
   ResilienceCommand,
   ResilienceStatus,
+  CaptureTier,
 } from '@shared/types';
 
 declare global {
@@ -145,12 +146,20 @@ declare global {
         stats(): Promise<MemoryStats>;
         extract(conversationId: string): Promise<{ extracted: number }>;
       };
-      /** Invisible Input — global keyboard capture for stealth mode */
+      /** Invisible Input — legacy uiohook fallback tier */
       invisibleInput: {
         arm(): Promise<{ armed: boolean; error?: string }>;
         disarm(): Promise<{ armed: boolean }>;
         toggle(): Promise<{ armed: boolean; error?: string }>;
         status(): Promise<{ armed: boolean }>;
+      };
+      /** Model B — stealth capture (logical-focus typing via suppressing hook) */
+      capture: {
+        enter(): Promise<{ active: boolean; epoch: number; tier: CaptureTier }>;
+        exit(): Promise<{ active: boolean }>;
+        status(): Promise<{ active: boolean; epoch: number; tier: CaptureTier }>;
+        panic(): Promise<{ success: boolean }>;
+        proctorStatus(): Promise<{ detected: boolean; names: string[] }>;
       };
       /** Phase 5: Resilience helper agent */
       resilience: {

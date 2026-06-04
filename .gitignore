@@ -10,3 +10,6 @@ Thumbs.db
 # Claude Code
 .claude/
 build/
+
+# Native helper build outputs (compiled by `npm run build:helper`, not committed)
+native/ghostai-helper/dist/

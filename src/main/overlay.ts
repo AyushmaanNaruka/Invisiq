@@ -5,10 +5,12 @@ import { ensureContentProtection } from './stealth';
 import { validateOverlayPosition, moveOverlayToMonitor as moveToMonitorImpl } from './monitors';
 
 let overlayWindow: BrowserWindow | null = null;
-let stealthFocusEnabled = false; // Anti-detection focus mode
-let focusReturnTimer: ReturnType<typeof setTimeout> | null = null;
-let userOpacity = 0.85; // The user's chosen opacity (separate from stealth visibility)
-let stealthVisible = true; // Whether the overlay is "visible" in stealth mode (controlled via opacity)
+let stealthFocusEnabled = false; // Anti-detection focus mode (WS_EX_NOACTIVATE)
+let userOpacity = 0.85;          // The user's chosen opacity (separate from visibility)
+let logicalVisible = true;       // Whether the overlay should be visible to the user
+let everShown = false;           // Has the HWND been shown at least once (for showInactive)
+let userPassthrough = false;     // The user's click-through preference (restored on show)
+let readyToShowDone = false;     // Gate the first present to 'ready-to-show' (avoids white flash)
 
 export function createOverlayWindow(): BrowserWindow {
   const windowState = getWindowState();
@@ -45,7 +47,6 @@ export function createOverlayWindow(): BrowserWindow {
   overlayWindow.setPosition(posX, posY);
 
   // Validate position is on a connected display (handles saved position for disconnected monitor)
-  // Deferred to after 'ready-to-show' so initMonitorManager has been called
   overlayWindow.once('show', () => {
     validateOverlayPosition();
   });
@@ -54,17 +55,19 @@ export function createOverlayWindow(): BrowserWindow {
   userOpacity = windowState.opacity;
   overlayWindow.setOpacity(windowState.opacity);
 
-  // Show window only after content is ready to paint
+  // Show window only after content is ready to paint. Route through the unified
+  // visibility model so default-on stealth presents correctly on first launch.
   overlayWindow.once('ready-to-show', () => {
     if (overlayWindow && !overlayWindow.isDestroyed()) {
       // CRITICAL — re-apply WDA_EXCLUDEFROMCAPTURE both before and after the
-      // first ShowWindow call. Windows DWM does not always commit the affinity
-      // for the first composition cycle if it was only set on a hidden HWND,
-      // which causes the overlay to flash briefly in screen-share captures
-      // (Google Meet / Zoom / OBS) until the watchdog re-applies it. Setting
-      // it twice around show() eliminates that leak.
+      // first show. Windows DWM doesn't always commit the affinity for the first
+      // composition cycle if it was only set on a hidden HWND, causing the
+      // overlay to flash briefly in screen-share captures until the watchdog
+      // re-applies it. Setting it around the first present eliminates that leak.
       overlayWindow.setContentProtection(true);
-      overlayWindow.show();
+      readyToShowDone = true;
+      logicalVisible = true;
+      applyVisibility();
       overlayWindow.setContentProtection(true);
     }
   });
@@ -93,153 +96,111 @@ export function getOverlayWindow(): BrowserWindow | null {
   return overlayWindow;
 }
 
-export function showOverlay(): void {
-  if (overlayWindow && !overlayWindow.isDestroyed()) {
-    if (stealthFocusEnabled) {
-      // ANTI-DETECTION: Do NOT use show()/showInactive() — these trigger WM_SHOWWINDOW
-      // which proctoring tools hook via SetWinEventHook / EnumWindows.
-      // Instead, the window stays "shown" at all times; we toggle visibility via opacity.
-      // Opacity changes don't trigger any window events that proctoring can detect.
+// ── Unified visibility model ────────────────────────────────────────────────
+//
+// A single function enforces the current logical state on the HWND. In stealth
+// mode visibility is opacity-driven (no show()/hide() → no WM_SHOWWINDOW events
+// that proctoring tools hook); in normal mode it uses real show()/hide().
+function applyVisibility(): void {
+  const win = overlayWindow;
+  if (!win || win.isDestroyed()) return;
+  // Defer the first present to 'ready-to-show' so default-on stealth (set during
+  // app startup) doesn't show an unpainted window.
+  if (!readyToShowDone) return;
 
-      // 'screen-saver' is the highest z-order level — sits above fullscreen apps
-      // This mirrors ChatGPT Mac's "floating panel" strategy on Windows.
-      overlayWindow.setAlwaysOnTop(true, 'screen-saver');
-      overlayWindow.setSkipTaskbar(true); // Re-enforce after setAlwaysOnTop
-
-      // moveTop() raises the window in z-order WITHOUT triggering focus/foreground events.
-      overlayWindow.moveTop();
-
-      stealthVisible = true;
-      overlayWindow.setOpacity(userOpacity);
-      console.log('[Overlay] showOverlay — stealth: moveTop + opacity restored to', userOpacity);
-    } else {
-      // Re-apply content protection BEFORE show() — Windows DWM may briefly
-      // composite the overlay into screen-share captures on the first frame
-      // after ShowWindow if the affinity isn't set on the visible HWND.
-      overlayWindow.setContentProtection(true);
-      overlayWindow.setAlwaysOnTop(true);
-      overlayWindow.show();
-      // Re-enforce skipTaskbar — setAlwaysOnTop / show() can drop WS_EX_TOOLWINDOW
-      // and re-add WS_EX_APPWINDOW on Windows, putting the icon back in the taskbar.
-      overlayWindow.setSkipTaskbar(true);
-      console.log('[Overlay] showOverlay — visible, alwaysOnTop restored');
+  if (stealthFocusEnabled) {
+    // Keep the HWND "shown" in the window stack; toggle visibility via opacity.
+    if (!everShown) {
+      win.showInactive(); // one-time, never activates (WS_EX_NOACTIVATE)
+      everShown = true;
     }
+    // 'screen-saver' is the highest z-order — sits above fullscreen apps.
+    win.setAlwaysOnTop(true, 'screen-saver');
+    win.setSkipTaskbar(true);
+    if (logicalVisible) {
+      win.setOpacity(userOpacity);
+      win.moveTop(); // raise without focus/foreground events
+      win.setIgnoreMouseEvents(userPassthrough, { forward: true });
+    } else {
+      // 0-opacity window must not eat clicks meant for the app underneath.
+      win.setOpacity(0);
+      win.setIgnoreMouseEvents(true, { forward: true });
+    }
+  } else {
+    if (logicalVisible) {
+      win.setContentProtection(true);
+      win.setAlwaysOnTop(true);
+      if (!win.isVisible()) win.show();
+      everShown = true;
+      // Re-enforce skipTaskbar — setAlwaysOnTop / show() can re-add WS_EX_APPWINDOW.
+      win.setSkipTaskbar(true);
+      win.setOpacity(userOpacity);
+      win.setIgnoreMouseEvents(userPassthrough, { forward: true });
+    } else {
+      win.hide();
+    }
+  }
 
-    ensureContentProtection(overlayWindow);
-    overlayWindow.webContents.send('overlay:visibility-changed', { visible: true });
+  ensureContentProtection(win);
+}
+
+function notifyVisibility(): void {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.webContents.send('overlay:visibility-changed', { visible: logicalVisible });
   }
 }
 
-export function hideOverlay(): void {
-  if (overlayWindow && !overlayWindow.isDestroyed()) {
-    if (stealthFocusEnabled) {
-      // ANTI-DETECTION: Don't actually hide — set opacity to 0 instead.
-      // The window stays in the window stack (no WM_SHOWWINDOW event),
-      // but becomes completely transparent / invisible.
-      stealthVisible = false;
-      overlayWindow.setOpacity(0);
-      console.log('[Overlay] hideOverlay — stealth: opacity set to 0 (window still "shown")');
-    } else {
-      overlayWindow.hide();
-      console.log('[Overlay] hideOverlay — hidden');
-    }
+export function showOverlay(): void {
+  logicalVisible = true;
+  applyVisibility();
+  notifyVisibility();
+}
 
-    overlayWindow.webContents.send('overlay:visibility-changed', { visible: false });
-  }
+export function hideOverlay(): void {
+  logicalVisible = false;
+  applyVisibility();
+  notifyVisibility();
 }
 
 export function toggleOverlay(): boolean {
   if (!overlayWindow || overlayWindow.isDestroyed()) return false;
-
-  if (stealthFocusEnabled) {
-    // In stealth mode, toggle via opacity (not show/hide)
-    if (stealthVisible) {
-      hideOverlay();
-      return false;
-    } else {
-      showOverlay();
-      return true;
-    }
-  } else {
-    if (overlayWindow.isVisible()) {
-      hideOverlay();
-      return false;
-    } else {
-      showOverlay();
-      return true;
-    }
-  }
+  logicalVisible = !logicalVisible;
+  applyVisibility();
+  notifyVisibility();
+  return logicalVisible;
 }
 
-// ── Stealth Focus (Anti-Detection for Monitored Apps) ───────────────────
+/** Logical visibility (NOT win.isVisible() — in stealth the HWND is always "shown"). */
+export function isOverlayVisible(): boolean {
+  return logicalVisible;
+}
+
+// ── Stealth Focus (Anti-Detection for Monitored Apps) ───────────────────────
 
 /**
  * Enable/disable stealth focus mode.
  *
- * When enabled:
- * - Window is NEVER hidden/shown (no WM_SHOWWINDOW events)
- * - Visibility is controlled via opacity (0 = hidden, userOpacity = visible)
- * - Window is non-focusable by default (no focus steal = no blur on test window)
- * - Focus is only granted temporarily via requestStealthFocus()
- * - Focus auto-returns after timeout or when message is sent
- *
- * This defeats proctoring tools that monitor:
- * - EnumWindows for new windows appearing
- * - SetWinEventHook for EVENT_SYSTEM_FOREGROUND / EVENT_OBJECT_SHOW
- * - Browser blur/visibilitychange events
+ * When enabled the overlay HWND gets WS_EX_NOACTIVATE (via setFocusable(false))
+ * so clicking it never calls SetForegroundWindow / fires EVENT_SYSTEM_FOREGROUND
+ * — defeating the foreground-window monitoring used by proctoring tools. The
+ * trade-off (a non-activating window can't receive WM_KEYDOWN) is handled by the
+ * capture-controller + helper hook, not by giving the window focus.
  */
 export function setStealthFocusMode(enabled: boolean): void {
   stealthFocusEnabled = enabled;
-
   if (!overlayWindow || overlayWindow.isDestroyed()) return;
 
   if (enabled) {
-    // ANTI-DETECTION: Make the window non-focusable.
-    // On Windows, Electron maps setFocusable(false) to WS_EX_NOACTIVATE on the HWND,
-    // so clicks on the overlay no longer call SetForegroundWindow / fire
-    // EVENT_SYSTEM_FOREGROUND. The active window stays foreground, defeating
-    // foreground-change detection used by monitoring tools and similar software.
-    //
-    // Trade-off: a non-activating window can't receive WM_KEYDOWN. Free-form typing
-    // is handled via the InvisibleInput global keyboard hook (src/main/invisible-input.ts);
-    // clicks for buttons / scrolling still work because they don't require focus.
+    // WS_EX_NOACTIVATE — clicks no longer activate the overlay.
     overlayWindow.setFocusable(false);
-
-    // 'screen-saver' is the highest z-order — sits above fullscreen apps and other overlays
     overlayWindow.setAlwaysOnTop(true, 'screen-saver');
-
-    // Re-enforce skipTaskbar — setAlwaysOnTop can reset it
     overlayWindow.setSkipTaskbar(true);
-
-    // If the window is currently hidden, we need to show it (at opacity 0)
-    // so that future show/hide only toggles opacity, never actual show/hide
-    if (!overlayWindow.isVisible()) {
-      overlayWindow.setOpacity(0);
-      stealthVisible = false;
-      overlayWindow.showInactive(); // One-time show at opacity 0 — invisible
-    }
-
-    console.log('[Overlay] Stealth focus ENABLED — non-focusable HWND (WS_EX_NOACTIVATE), opacity-driven visibility');
   } else {
     overlayWindow.setFocusable(true);
-    // Re-enforce skipTaskbar — setFocusable(true) can re-add WS_EX_APPWINDOW
-    // and bring the icon back to the taskbar. InvisiQ is always meant to stay
-    // hidden from the taskbar regardless of stealth mode.
-    overlayWindow.setSkipTaskbar(true);
-    if (focusReturnTimer) {
-      clearTimeout(focusReturnTimer);
-      focusReturnTimer = null;
-    }
-
-    // If it was "hidden" via opacity, actually hide it properly now
-    if (!stealthVisible) {
-      overlayWindow.setOpacity(0);
-      overlayWindow.hide();
-    }
-
-    console.log('[Overlay] Stealth focus DISABLED — normal show/hide behavior');
+    overlayWindow.setSkipTaskbar(true); // setFocusable(true) can re-add WS_EX_APPWINDOW
   }
 
+  applyVisibility();
   overlayWindow.webContents.send('overlay:stealth-focus-changed', { enabled });
 }
 
@@ -248,51 +209,39 @@ export function isStealthFocusEnabled(): boolean {
 }
 
 /**
- * Request focus for input.
+ * Bring the overlay forward for input.
  *
- * In stealth mode: NEVER calls focus(); the window is non-focusable
- * (WS_EX_NOACTIVATE) so clicks won't activate it either. Free-form typing
- * is delivered via the InvisibleInput global keyboard hook, not by giving
- * the window keyboard focus. We just bring it visually to front.
- *
+ * In stealth mode: NEVER calls focus() — the window is WS_EX_NOACTIVATE so clicks
+ * won't activate it either. Typing is delivered via the capture-controller. We
+ * only bring it visually to front.
  * In normal mode: focus the overlay so the user can type into the textarea.
  */
 export function requestStealthFocus(_timeoutMs: number = 30000): void {
   if (!overlayWindow || overlayWindow.isDestroyed()) return;
 
   if (stealthFocusEnabled) {
-    if (!stealthVisible) {
+    if (!logicalVisible) {
       showOverlay();
     } else {
       overlayWindow.moveTop();
     }
-    console.log('[Overlay] Stealth: moveTop only (no focus — InvisibleInput delivers keys)');
     return;
   }
-
-  // Normal mode — focus the window for typing
   overlayWindow.focus();
 }
 
-/**
- * Release focus back (no-op in stealth mode since we never take focus).
- */
+/** Release focus back (no-op in stealth mode since we never take focus). */
 export function releaseFocus(): void {
   if (!overlayWindow || overlayWindow.isDestroyed()) return;
   if (!stealthFocusEnabled) return;
-  // No-op — we never took focus, so nothing to release
-  console.log('[Overlay] Stealth focus: releaseFocus no-op (never had focus)');
+  // No-op — we never took focus, so nothing to release.
 }
 
 export function setOverlayOpacity(opacity: number): void {
   const clamped = Math.max(0.1, Math.min(1.0, opacity));
   userOpacity = clamped; // Always track the user's intended opacity
-
   if (overlayWindow && !overlayWindow.isDestroyed()) {
-    // Only apply if overlay is "visible" (in stealth mode, hidden = opacity 0)
-    if (!stealthFocusEnabled || stealthVisible) {
-      overlayWindow.setOpacity(clamped);
-    }
+    applyVisibility(); // re-applies userOpacity only when logically visible
     setWindowState({ opacity: clamped });
   }
 }
@@ -322,9 +271,13 @@ export function moveToMonitor(monitorId: string): boolean {
   return moveToMonitorImpl(monitorId);
 }
 
-// ── Phase 4: Click-through passthrough ──────────────────────────
+// ── Click-through passthrough ───────────────────────────────────────────────
 export function setPassthrough(enabled: boolean, forward: boolean = true): void {
+  userPassthrough = enabled; // remember the user's preference
   if (overlayWindow && !overlayWindow.isDestroyed()) {
-    overlayWindow.setIgnoreMouseEvents(enabled, { forward });
+    // When hidden in stealth, applyVisibility forces ignore=true regardless.
+    if (logicalVisible) {
+      overlayWindow.setIgnoreMouseEvents(enabled, { forward });
+    }
   }
 }

@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
-import { Trash2, FolderOpen, Shield, RefreshCw, Monitor } from 'lucide-react';
+import { Trash2, FolderOpen, Shield, RefreshCw, EyeOff, KeyRound } from 'lucide-react';
 import type { AppSettings } from '@shared/types';
 
 interface SettingsPrivacyProps {
   settings: AppSettings['privacy'];
+  stealth: AppSettings['stealth'];
   onUpdate: (key: string, value: unknown) => Promise<void>;
   onClearAll: () => Promise<void>;
   onOpenDataFolder: () => Promise<void>;
@@ -11,6 +12,7 @@ interface SettingsPrivacyProps {
 
 export default function SettingsPrivacy({
   settings,
+  stealth,
   onUpdate,
   onClearAll,
   onOpenDataFolder,
@@ -35,6 +37,60 @@ export default function SettingsPrivacy({
         <p className="text-text-secondary text-[10px] leading-relaxed">
           API keys are encrypted with AES-256-GCM using a machine-derived key. Data is stored locally only.
         </p>
+      </div>
+
+      {/* Stealth Mode */}
+      <div className="space-y-3">
+        <div className="flex items-start gap-2 p-2.5 rounded-md bg-accent-primary/10 border border-accent-primary/20">
+          <EyeOff size={14} className="text-accent-primary shrink-0 mt-0.5" />
+          <p className="text-text-secondary text-[10px] leading-relaxed">
+            Stealth keeps InvisiQ invisible to screen capture and foreground-window monitoring.
+            It is on by default (fail-safe): you're protected from launch, not after a monitored
+            app is detected. Detection is only a confirmation indicator.
+          </p>
+        </div>
+
+        <label className="flex items-center justify-between cursor-pointer">
+          <div>
+            <span className="text-text-primary text-xs block">Default-On Stealth</span>
+            <span className="text-text-placeholder text-[10px]">
+              Start in non-activating stealth mode. Recommended. Requires restart.
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={stealth?.defaultOn ?? true}
+            onChange={(e) => onUpdate('stealth.defaultOn', e.target.checked)}
+            className="rounded accent-accent-primary"
+          />
+        </label>
+
+        <label className="flex items-center justify-between cursor-pointer">
+          <div>
+            <span className="text-text-primary text-xs block">Proctor Detection</span>
+            <span className="text-text-placeholder text-[10px]">
+              Show a "you're invisible" badge when a monitored app is detected
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={stealth?.proctorDetection ?? true}
+            onChange={(e) => onUpdate('stealth.proctorDetection', e.target.checked)}
+            className="rounded accent-accent-primary"
+          />
+        </label>
+
+        {/* Keyboard-hook disclosure (transparency for AV-aware users) */}
+        <div className="flex items-start gap-2 p-2.5 rounded-md bg-bg-input border border-border-subtle">
+          <KeyRound size={14} className="text-text-secondary shrink-0 mt-0.5" />
+          <p className="text-text-secondary text-[10px] leading-relaxed">
+            Stealth typing installs a keyboard hook <strong>only while capture is active</strong> —
+            you start it by clicking the input box or pressing Ctrl+Shift+I, and it's removed the
+            moment you stop capture (Esc, the panic key, or toggling it off). Keystrokes are never
+            logged or written to disk, and the hook runs in an isolated local helper with no network
+            access. Some antivirus tools may still flag keyboard hooks — this is expected.
+          </p>
+        </div>
       </div>
 
       {/* Toggles */}

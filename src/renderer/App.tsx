@@ -155,6 +155,16 @@ function AppInner(): JSX.Element {
     }
   }, [isStealthFocus]);
 
+  // Model B: stealth focus is default-ON in main. Sync the UI toggle to the
+  // actual main-process state on mount so the HeaderBar reflects reality.
+  useEffect(() => {
+    let cancelled = false;
+    window.ghostAPI.overlay.getStealthFocusStatus().then((s) => {
+      if (!cancelled) setIsStealthFocus(s.enabled);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   // Phase 4: system audio / live transcription
   const {
     isActive: isSystemAudioActive,

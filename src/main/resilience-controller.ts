@@ -32,6 +32,25 @@ let incomingBuffer = '';
 const MAX_PIPE_RETRIES = 5;
 const INITIAL_RETRY_DELAY_MS = 300;
 
+// Response listeners — the capture-controller subscribes here to consume
+// key/proctor/capture_failed/pong/ready messages from the helper. The renderer
+// still receives the raw stream via 'resilience:agent-response' for diagnostics.
+type ResponseListener = (response: ResilienceResponse) => void;
+const responseListeners: ResponseListener[] = [];
+
+export function onHelperResponse(listener: ResponseListener): () => void {
+  responseListeners.push(listener);
+  return () => {
+    const i = responseListeners.indexOf(listener);
+    if (i !== -1) responseListeners.splice(i, 1);
+  };
+}
+
+/** True when the helper process is running and the pipe is connected. */
+export function isHelperConnected(): boolean {
+  return pipeClient !== null && !pipeClient.destroyed && agentState === 'running';
+}
+
 // ══════════════════════════════════════
 //  INTERNAL HELPERS
 // ══════════════════════════════════════
@@ -111,8 +130,22 @@ function handlePipeData(data: Buffer): void {
 
     try {
       const response: ResilienceResponse = JSON.parse(line);
-      logger.log('[resilience] Received:', response);
-      notifyRenderer('resilience:agent-response', response);
+      // Don't log 'key' responses — they would put captured characters in logs.
+      if (response.type !== 'key') {
+        logger.log('[resilience] Received:', response.type);
+      }
+      // Fan out to capture-controller listeners first (hot path: key events).
+      for (const listener of responseListeners) {
+        try {
+          listener(response);
+        } catch (err) {
+          logger.warn('[resilience] response listener threw:', err);
+        }
+      }
+      // Diagnostics stream to renderer (skip 'key' — high volume + sensitive).
+      if (response.type !== 'key') {
+        notifyRenderer('resilience:agent-response', response);
+      }
     } catch {
       logger.warn('[resilience] Failed to parse pipe message:', line);
     }
@@ -138,8 +171,10 @@ export async function startAgent(
   const resolvedPath = resolveHelperPath(helperPath);
 
   try {
-    // 1. Spawn the helper process
-    helperProcess = spawn(resolvedPath, [pipeName], {
+    // 1. Spawn the helper process. argv[2] = parent PID so the helper's watchdog
+    //    can self-terminate (removing the LL hook) if this process dies — never
+    //    leaving an orphaned hook that would freeze the user's keyboard.
+    helperProcess = spawn(resolvedPath, [pipeName, String(process.pid)], {
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
       detached: false,
