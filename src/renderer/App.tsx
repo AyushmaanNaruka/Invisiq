@@ -547,8 +547,6 @@ function AppInner(): JSX.Element {
         onClose={handleClose}
         isPassthrough={isPassthrough}
         onTogglePassthrough={togglePassthrough}
-        isStealthFocus={isStealthFocus}
-        onToggleStealthFocus={handleToggleStealthFocus}
       />
 
       <ChatPanel
@@ -649,6 +647,8 @@ function AppInner(): JSX.Element {
         settings={settings}
         onUpdateSetting={updateSetting}
         compact={compact}
+        isStealthFocus={isStealthFocus}
+        onToggleStealthFocus={handleToggleStealthFocus}
       />
 
       <ConversationHistory

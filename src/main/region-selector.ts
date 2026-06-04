@@ -12,7 +12,12 @@ const REGION_SELECTOR_HTML = `<!DOCTYPE html>
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    cursor: crosshair;
+    /* STEALTH: keep the OS arrow cursor instead of a crosshair. The window is
+       hidden from capture (content protection), but the cursor is composited
+       by the OS on top — a crosshair sweeping an apparently-empty screen would
+       reveal that a selection overlay is active. The dim + dashed selection
+       rectangle still indicate select mode on the user's own display. */
+    cursor: default;
     background: rgba(0, 0, 0, 0.3);
     user-select: none;
     -webkit-user-select: none;

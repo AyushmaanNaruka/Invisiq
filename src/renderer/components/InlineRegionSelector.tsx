@@ -109,7 +109,10 @@ export default function InlineRegionSelector({
       transition={{ duration: 0.15 }}
       className="fixed inset-0 z-[100] select-none"
       style={{
-        cursor: 'crosshair',
+        // STEALTH: arrow, not crosshair — the OS-composited cursor is visible to
+        // screen capture even though this overlay isn't. (The global cursor rule
+        // in globals.css enforces this too; kept explicit for clarity.)
+        cursor: 'default',
         backgroundImage: `url(data:image/png;base64,${screenshot.base64})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',

@@ -1,10 +1,12 @@
 import { useState, useCallback } from 'react';
-import { Trash2, FolderOpen, Shield, RefreshCw, EyeOff, KeyRound } from 'lucide-react';
+import { Trash2, FolderOpen, Shield, RefreshCw, EyeOff, KeyRound, TriangleAlert } from 'lucide-react';
 import type { AppSettings } from '@shared/types';
 
 interface SettingsPrivacyProps {
   settings: AppSettings['privacy'];
   stealth: AppSettings['stealth'];
+  isStealthFocus?: boolean;
+  onToggleStealthFocus?: () => void;
   onUpdate: (key: string, value: unknown) => Promise<void>;
   onClearAll: () => Promise<void>;
   onOpenDataFolder: () => Promise<void>;
@@ -13,6 +15,8 @@ interface SettingsPrivacyProps {
 export default function SettingsPrivacy({
   settings,
   stealth,
+  isStealthFocus = false,
+  onToggleStealthFocus,
   onUpdate,
   onClearAll,
   onOpenDataFolder,
@@ -49,6 +53,38 @@ export default function SettingsPrivacy({
             app is detected. Detection is only a confirmation indicator.
           </p>
         </div>
+
+        {/* Live stealth toggle (relocated from the header bar) */}
+        {onToggleStealthFocus && (
+          <label className="flex items-center justify-between cursor-pointer">
+            <div>
+              <span className="text-text-primary text-xs block">Stealth Mode</span>
+              <span className="text-text-placeholder text-[10px]">
+                {isStealthFocus
+                  ? 'Active now — InvisiQ is hidden from screen capture and stays out of focus.'
+                  : 'Off — InvisiQ may be visible to others. Turn on to hide it again.'}
+              </span>
+            </div>
+            <input
+              type="checkbox"
+              checked={isStealthFocus}
+              onChange={onToggleStealthFocus}
+              className="rounded accent-accent-primary"
+            />
+          </label>
+        )}
+
+        {/* Warning shown only while stealth is OFF */}
+        {onToggleStealthFocus && !isStealthFocus && (
+          <div className="flex items-start gap-2 p-2.5 rounded-md bg-status-error/10 border border-status-error/30">
+            <TriangleAlert size={14} className="text-status-error shrink-0 mt-0.5" />
+            <p className="text-status-error text-[10px] leading-relaxed">
+              Stealth is OFF. InvisiQ can now be seen in screen sharing, recordings,
+              and screenshots, and it can take keyboard focus from other apps. Only turn
+              this off when you don't need to stay hidden.
+            </p>
+          </div>
+        )}
 
         <label className="flex items-center justify-between cursor-pointer">
           <div>

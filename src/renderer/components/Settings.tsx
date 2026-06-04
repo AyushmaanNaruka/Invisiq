@@ -21,6 +21,8 @@ interface SettingsProps {
   settings: AppSettings;
   onUpdateSetting: (key: string, value: unknown) => Promise<void>;
   compact?: boolean;
+  isStealthFocus?: boolean;
+  onToggleStealthFocus?: () => void;
 }
 
 interface KeyState {
@@ -39,7 +41,7 @@ const PROVIDERS: { id: ProviderID; name: string; placeholder: string; isServerUr
 
 type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio' | 'memory' | 'companion' | 'templates' | 'resilience';
 
-export default function Settings({ isOpen, onClose, settings, onUpdateSetting, compact = false }: SettingsProps): JSX.Element | null {
+export default function Settings({ isOpen, onClose, settings, onUpdateSetting, compact = false, isStealthFocus = false, onToggleStealthFocus }: SettingsProps): JSX.Element | null {
   const [activeTab, setActiveTab] = useState<TabId>('api-keys');
   const [keys, setKeys] = useState<Record<ProviderID, KeyState>>({
     openai: { value: '', masked: true, status: 'idle' },
@@ -326,6 +328,8 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
             <SettingsPrivacy
               settings={settings.privacy}
               stealth={settings.stealth}
+              isStealthFocus={isStealthFocus}
+              onToggleStealthFocus={onToggleStealthFocus}
               onUpdate={onUpdateSetting}
               onClearAll={async () => {
                 await window.ghostAPI.store.clearAll();

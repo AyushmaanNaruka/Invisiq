@@ -169,6 +169,33 @@
   box-sizing: border-box;
 }
 
+/* ── STEALTH: lock the OS mouse cursor to the default arrow everywhere ──
+   The mouse cursor is composited by the OS on top of the window, so it is
+   NOT hidden by setContentProtection(true). If hovering a button shows the
+   hand cursor, or clicking an input shows the I-beam, screen-share/recording
+   tools capture that shape change over an otherwise-empty area of the screen —
+   a tell that an invisible overlay is there. Forcing `default` on every
+   element (and every interactive state) makes the cursor look exactly as it
+   would over the bare desktop. This is purely visual; text input, caret,
+   clicks, and drag regions all keep working.
+   NOTE: overrides Tailwind cursor-* utilities and the browser's native
+   text/pointer cursors by design — do not add cursor exceptions here. */
+*,
+*::before,
+*::after,
+*:hover,
+*:focus,
+*:active,
+a,
+button,
+input,
+textarea,
+select,
+[role='button'],
+[contenteditable] {
+  cursor: default !important;
+}
+
 html, body {
   width: 100%;
   height: 100%;
