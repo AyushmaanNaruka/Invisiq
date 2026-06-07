@@ -1,6 +1,7 @@
 node_modules/
 out/
 release/
+release-test/
 *.env
 *.env.local
 .DS_Store
