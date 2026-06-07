@@ -35,9 +35,23 @@ const VALID_CHANNELS = [
   'capture:state',
   'capture:failed',
   'proctor:detected',
+  // Beta — auth
+  'auth:changed',
 ];
 
 const ghostAPI = {
+  // ══════════════════════════════════════
+  //  AUTH (Google OAuth — Beta)
+  // ══════════════════════════════════════
+  auth: {
+    login: (): Promise<{ signedIn: boolean; email: string | null; userId: string | null; error?: string }> =>
+      ipcRenderer.invoke('auth:login'),
+    logout: (): Promise<{ signedIn: boolean; email: string | null; userId: string | null }> =>
+      ipcRenderer.invoke('auth:logout'),
+    status: (): Promise<{ signedIn: boolean; email: string | null; userId: string | null }> =>
+      ipcRenderer.invoke('auth:status'),
+  },
+
   // ══════════════════════════════════════
   //  OVERLAY
   // ══════════════════════════════════════

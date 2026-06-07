@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  AuthStatus,
   ProviderID,
   ScreenshotResult,
   MonitorInfo,
@@ -30,6 +31,11 @@ declare global {
 
   interface Window {
     ghostAPI: {
+      auth: {
+        login(): Promise<AuthStatus & { error?: string }>;
+        logout(): Promise<AuthStatus>;
+        status(): Promise<AuthStatus>;
+      };
       overlay: {
         toggle(): Promise<{ visible: boolean }>;
         hide(): Promise<void>;

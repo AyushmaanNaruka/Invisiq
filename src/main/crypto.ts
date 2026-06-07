@@ -87,3 +87,19 @@ export function decryptApiKey(payload: EncryptedPayload): string {
 
   return decrypted.toString('utf-8');
 }
+
+// ══════════════════════════════════════
+//  GENERIC SECRET ENCRYPTION
+// ══════════════════════════════════════
+// Same AES-256-GCM + machine-only derived key as API keys, exposed under a
+// neutral name for non-API-key secrets (e.g. the auth refresh token). Uses the
+// MACHINE-ONLY derivation deliberately: auth must work offline and before the
+// entitlement fragment exists, so it must NOT depend on the (later) trial gate.
+
+export function encryptSecret(plaintext: string): EncryptedPayload {
+  return encryptApiKey(plaintext);
+}
+
+export function decryptSecret(payload: EncryptedPayload): string {
+  return decryptApiKey(payload);
+}

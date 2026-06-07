@@ -14,6 +14,7 @@ import { initMemoryStore } from './memory';
 import { cleanupResilience } from './resilience-controller';
 import { initCaptureController, cleanupCaptureController } from './capture-controller';
 import { initInvisibleInput, cleanupInvisibleInput } from './invisible-input';
+import { initAuth } from './auth';
 import { AI_API_DOMAINS } from '@shared/constants';
 
 // ══════════════════════════════════════
@@ -101,6 +102,11 @@ app.whenReady().then(async () => {
 
   // Register IPC handlers (needed before renderer loads)
   registerIPCHandlers();
+
+  // Kick off silent auth refresh (non-blocking). The renderer's auth:status
+  // query awaits this internally, so the login gate reflects a real session
+  // without re-prompting returning users. Pure backend — no stealth impact.
+  initAuth().catch((err) => console.error('[Auth] Silent refresh failed:', err));
 
   // Create the overlay window
   const overlayWindow = createOverlayWindow();

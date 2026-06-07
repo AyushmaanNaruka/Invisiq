@@ -375,6 +375,16 @@ export type CaptureFailReason =
   | 'hook-unavailable';
 
 // ══════════════════════════════════════
+//  AUTH (Beta — Google OAuth via Supabase)
+// ══════════════════════════════════════
+
+export interface AuthStatus {
+  signedIn: boolean;
+  email: string | null;
+  userId: string | null;
+}
+
+// ══════════════════════════════════════
 //  APPLICATION SETTINGS
 // ══════════════════════════════════════
 

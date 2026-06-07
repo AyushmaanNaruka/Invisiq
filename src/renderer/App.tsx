@@ -9,6 +9,7 @@ import Settings from './components/Settings';
 import ConversationHistory from './components/ConversationHistory';
 import CustomModeEditor from './components/CustomModeEditor';
 import OnboardingFlow from './components/OnboardingFlow';
+import LoginScreen from './components/LoginScreen';
 import UpdateNotification from './components/UpdateNotification';
 import InlineRegionSelector from './components/InlineRegionSelector';
 import MeetingPanel from './components/MeetingPanel';
@@ -21,6 +22,7 @@ import { useConversationHistory } from './hooks/useConversationHistory';
 import { useAI } from './hooks/useAI';
 import { useScreenshot } from './hooks/useScreenshot';
 import { useSettings } from './hooks/useSettings';
+import { useAuth } from './hooks/useAuth';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useClickThrough } from './hooks/useClickThrough';
 import { useAudioTranscription } from './hooks/useAudioTranscription';
@@ -66,6 +68,13 @@ function ClipboardListener({ onAnalyze }: { onAnalyze: (text: string) => void })
 
 function AppInner(): JSX.Element {
   const { settings, isLoading: settingsLoading, updateSetting } = useSettings();
+  const {
+    status: authStatus,
+    isLoading: authLoading,
+    isBusy: authBusy,
+    error: authError,
+    login: authLoginFn,
+  } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
 
   // Determine whether to show onboarding after settings load
@@ -514,9 +523,14 @@ function AppInner(): JSX.Element {
     window.ghostAPI.app.quit();
   }, []);
 
-  // Show nothing while settings are loading
-  if (settingsLoading || showOnboarding === null) {
+  // Show nothing while settings/auth are loading
+  if (settingsLoading || authLoading || showOnboarding === null) {
     return <div className="h-screen w-screen bg-bg-overlay rounded-lg" />;
+  }
+
+  // Auth gate — must sign in before anything else (precedes onboarding)
+  if (!authStatus.signedIn) {
+    return <LoginScreen onLogin={authLoginFn} isBusy={authBusy} error={authError} />;
   }
 
   // Onboarding gate

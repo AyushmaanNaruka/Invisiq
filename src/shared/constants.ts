@@ -1,6 +1,15 @@
 import type { HotkeyAction, Mode, AppSettings, WindowState, ModelConfig } from './types';
 
 // ══════════════════════════════════════
+//  SUPABASE BACKEND (Beta — auth / trial / analytics)
+// ══════════════════════════════════════
+// Project: hlpxesuuqypxnubswbzh. The anon key is client-safe (RLS-protected;
+// Beta Launch Plan §5.1/§14) — service-role key & signing secrets NEVER ship.
+export const SUPABASE_URL = 'https://hlpxesuuqypxnubswbzh.supabase.co';
+export const SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhscHhlc3V1cXlweG51YnN3YnpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NjIxOTEsImV4cCI6MjA5NjIzODE5MX0.aJwlUR3mTODc9j26idwW2amHwmSyMaecPAcZqHO5eZY';
+
+// ══════════════════════════════════════
 //  DEFAULT HOTKEYS
 // ══════════════════════════════════════
 

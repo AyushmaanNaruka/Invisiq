@@ -6,6 +6,12 @@ import { encryptApiKey, decryptApiKey } from './crypto';
 import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE } from '@shared/constants';
 import type { AppSettings, ProviderID, EncryptedPayload, WindowState } from '@shared/types';
 
+interface StoredAuthSession {
+  refreshToken: EncryptedPayload; // encrypted with the machine-only key
+  userId: string;
+  email: string | null;
+}
+
 interface StoreSchema {
   settings: AppSettings;
   keys: {
@@ -15,6 +21,7 @@ interface StoreSchema {
     ollama?: EncryptedPayload;
   };
   windowState: WindowState;
+  auth?: StoredAuthSession;
 }
 
 // ══════════════════════════════════════
@@ -205,6 +212,22 @@ export function getWindowState(): WindowState {
 export function setWindowState(state: Partial<WindowState>): void {
   const current = getWindowState();
   store.set('windowState', { ...current, ...state });
+}
+
+// ══════════════════════════════════════
+//  AUTH SESSION (refresh token encrypted)
+// ══════════════════════════════════════
+
+export function getAuthSession(): StoredAuthSession | null {
+  return (store.get('auth') as StoredAuthSession | undefined) ?? null;
+}
+
+export function setAuthSession(session: StoredAuthSession): void {
+  store.set('auth', session);
+}
+
+export function clearAuthSession(): void {
+  store.delete('auth' as keyof StoreSchema);
 }
 
 // ══════════════════════════════════════

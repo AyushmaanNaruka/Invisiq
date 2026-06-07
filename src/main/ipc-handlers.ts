@@ -55,10 +55,36 @@ import {
   getProctorStatus,
   panic as panicCapture,
 } from './capture-controller';
+import { login as authLogin, logout as authLogout, getStatusReady as authStatus } from './auth';
 
 const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'ollama'];
 
 export function registerIPCHandlers(): void {
+  // ══════════════════════════════════════
+  //  AUTH (Google OAuth — Beta)
+  // ══════════════════════════════════════
+
+  ipcMain.handle('auth:login', async () => {
+    try {
+      return await authLogin();
+    } catch (error) {
+      return {
+        signedIn: false,
+        email: null,
+        userId: null,
+        error: error instanceof Error ? error.message : 'login_failed',
+      };
+    }
+  });
+
+  ipcMain.handle('auth:logout', async () => {
+    return authLogout();
+  });
+
+  ipcMain.handle('auth:status', async () => {
+    return authStatus();
+  });
+
   // ══════════════════════════════════════
   //  OVERLAY MANAGEMENT
   // ══════════════════════════════════════
