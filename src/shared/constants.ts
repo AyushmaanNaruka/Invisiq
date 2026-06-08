@@ -333,12 +333,12 @@ export const ALL_MODELS: ModelConfig[] = [
 //  AI API DOMAINS (for CORS bypass)
 // ══════════════════════════════════════
 
+// Cloud-only (Beta Launch Plan §6.3). Local LLM endpoints removed permanently —
+// no localhost entry means an OpenAI-compatible local server can't be reached.
 export const AI_API_DOMAINS = [
   'https://api.openai.com/*',
   'https://api.anthropic.com/*',
   'https://generativelanguage.googleapis.com/*',
-  'http://localhost:11434/*',
-  'http://127.0.0.1:11434/*',
 ];
 
 // ══════════════════════════════════════

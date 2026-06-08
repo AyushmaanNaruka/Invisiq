@@ -56,8 +56,9 @@ import {
   panic as panicCapture,
 } from './capture-controller';
 import { login as authLogin, logout as authLogout, getStatusReady as authStatus } from './auth';
+import { getStatusReady as entitlementStatus, refresh as entitlementRefresh } from './entitlement';
 
-const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'ollama'];
+const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini'];
 
 export function registerIPCHandlers(): void {
   // ══════════════════════════════════════
@@ -83,6 +84,18 @@ export function registerIPCHandlers(): void {
 
   ipcMain.handle('auth:status', async () => {
     return authStatus();
+  });
+
+  // ══════════════════════════════════════
+  //  ENTITLEMENT (14-day trial — Beta)
+  // ══════════════════════════════════════
+
+  ipcMain.handle('entitlement:status', async () => {
+    return entitlementStatus();
+  });
+
+  ipcMain.handle('entitlement:refresh', async () => {
+    return entitlementRefresh();
   });
 
   // ══════════════════════════════════════

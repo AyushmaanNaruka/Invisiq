@@ -10,6 +10,8 @@ import ConversationHistory from './components/ConversationHistory';
 import CustomModeEditor from './components/CustomModeEditor';
 import OnboardingFlow from './components/OnboardingFlow';
 import LoginScreen from './components/LoginScreen';
+import LockScreen from './components/LockScreen';
+import TrialBanner from './components/TrialBanner';
 import UpdateNotification from './components/UpdateNotification';
 import InlineRegionSelector from './components/InlineRegionSelector';
 import MeetingPanel from './components/MeetingPanel';
@@ -23,6 +25,7 @@ import { useAI } from './hooks/useAI';
 import { useScreenshot } from './hooks/useScreenshot';
 import { useSettings } from './hooks/useSettings';
 import { useAuth } from './hooks/useAuth';
+import { useEntitlement } from './hooks/useEntitlement';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useClickThrough } from './hooks/useClickThrough';
 import { useAudioTranscription } from './hooks/useAudioTranscription';
@@ -74,7 +77,14 @@ function AppInner(): JSX.Element {
     isBusy: authBusy,
     error: authError,
     login: authLoginFn,
+    logout: authLogoutFn,
   } = useAuth();
+  const {
+    entitlement,
+    isLoading: entitlementLoading,
+    isRefreshing: entitlementRefreshing,
+    refresh: refreshEntitlement,
+  } = useEntitlement(authStatus.signedIn);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
 
   // Determine whether to show onboarding after settings load
@@ -261,8 +271,6 @@ function AppInner(): JSX.Element {
         const { key } = await window.ghostAPI.store.getApiKey(p);
         if (key) available.add(p);
       }
-      // Ollama is always "available" — no API key required
-      available.add('ollama');
       setAvailableProviders(available);
     }
     checkProviders();
@@ -533,6 +541,22 @@ function AppInner(): JSX.Element {
     return <LoginScreen onLogin={authLoginFn} isBusy={authBusy} error={authError} />;
   }
 
+  // Entitlement gate — block until the server confirms the trial is active.
+  // Fail-closed: expired/offline/unknown all lock (the hard gate is in getApiKey).
+  if (entitlementLoading) {
+    return <div className="h-screen w-screen bg-bg-overlay rounded-lg" />;
+  }
+  if (entitlement.status !== 'active') {
+    return (
+      <LockScreen
+        entitlement={entitlement}
+        isRefreshing={entitlementRefreshing}
+        onRefresh={refreshEntitlement}
+        onSignOut={authLogoutFn}
+      />
+    );
+  }
+
   // Onboarding gate
   if (showOnboarding) {
     return <OnboardingFlow onComplete={() => setShowOnboarding(false)} />;
@@ -543,6 +567,7 @@ function AppInner(): JSX.Element {
     <ClipboardListener onAnalyze={handleSend} />
     <UpdateNotification />
     <div className="flex flex-col h-screen w-screen bg-bg-overlay rounded-lg overflow-hidden select-none">
+      <TrialBanner daysLeft={entitlement.daysLeft} />
       <HeaderBar
         activeMode={settings.activeMode}
         activeModel={settings.activeModel}

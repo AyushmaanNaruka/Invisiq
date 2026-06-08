@@ -32,11 +32,11 @@ interface KeyState {
   error?: string;
 }
 
+// Cloud-only (Beta Launch Plan §6.3) — Ollama removed permanently.
 const PROVIDERS: { id: ProviderID; name: string; placeholder: string; isServerUrl?: boolean }[] = [
   { id: 'openai', name: 'OpenAI', placeholder: 'sk-proj-...' },
   { id: 'anthropic', name: 'Anthropic', placeholder: 'sk-ant-...' },
   { id: 'gemini', name: 'Google Gemini', placeholder: 'AIza...' },
-  { id: 'ollama', name: 'Ollama (Local)', placeholder: 'http://localhost:11434', isServerUrl: true },
 ];
 
 type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio' | 'memory' | 'companion' | 'templates' | 'resilience';

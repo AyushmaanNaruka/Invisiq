@@ -1,5 +1,4 @@
 import { providerManager } from './provider-manager';
-import { OllamaProvider } from './ollama';
 
 // Lazy-load heavy SDK providers — saves ~4MB at startup
 providerManager.registerLazy('openai', async () => {
@@ -17,8 +16,7 @@ providerManager.registerLazy('gemini', async () => {
   return new GeminiProvider();
 });
 
-// Ollama is lightweight (no SDK dependency), register eagerly
-providerManager.register(new OllamaProvider());
+// Ollama removed permanently for the beta (Beta Launch Plan §6.3) — cloud-only.
 
 export { providerManager };
 export type { AIProvider } from './types';

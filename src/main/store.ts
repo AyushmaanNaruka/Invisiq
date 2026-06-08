@@ -2,7 +2,7 @@ import Store from 'electron-store';
 import { app } from 'electron';
 import { existsSync, copyFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import { encryptApiKey, decryptApiKey } from './crypto';
+import { encryptApiKey, decryptApiKey, hasServerFragment, isLegacyApiKeyPayload } from './crypto';
 import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE } from '@shared/constants';
 import type { AppSettings, ProviderID, EncryptedPayload, WindowState } from '@shared/types';
 
@@ -18,6 +18,8 @@ interface StoreSchema {
     openai?: EncryptedPayload;
     anthropic?: EncryptedPayload;
     gemini?: EncryptedPayload;
+    // Retained only to keep the dot-notation key type valid (ProviderID still
+    // includes 'ollama'); never written — Ollama is removed from VALID_PROVIDERS.
     ollama?: EncryptedPayload;
   };
   windowState: WindowState;
@@ -161,7 +163,8 @@ export function getNestedSetting(key: string): unknown {
 //  API KEYS (ENCRYPTED)
 // ══════════════════════════════════════
 
-const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'ollama'];
+// Ollama removed permanently for the beta (Beta Launch Plan §6.3) — cloud-only.
+const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini'];
 
 export function setApiKey(provider: ProviderID, key: string): void {
   if (!VALID_PROVIDERS.includes(provider)) {
@@ -178,16 +181,35 @@ export function getApiKey(provider: ProviderID): string | null {
     throw new Error(`Invalid provider: ${provider}`);
   }
 
+  // Entitlement gate (Beta Launch Plan §6.1): with no server fragment held
+  // (trial expired or unverified), API keys cannot be decrypted — so no key is
+  // returned and no provider can initialize. This is the core trial enforcement.
+  if (!hasServerFragment()) {
+    return null;
+  }
+
   const encrypted = store.get(`keys.${provider}`) as EncryptedPayload | undefined;
   if (!encrypted || !encrypted.iv || !encrypted.data || !encrypted.tag) {
     return null;
   }
 
   try {
-    return decryptApiKey(encrypted);
+    const plain = decryptApiKey(encrypted);
+    // Migrate legacy (machine-key, v1) payloads to the entitled (v2) scheme on
+    // first read while active. Guarded so a re-encrypt failure never bricks the
+    // key — we've already decrypted it successfully.
+    if (isLegacyApiKeyPayload(encrypted)) {
+      try {
+        store.set(`keys.${provider}`, encryptApiKey(plain));
+      } catch (migErr) {
+        console.error(`Key migration failed for ${provider} (kept legacy):`, migErr);
+      }
+    }
+    return plain;
   } catch (error) {
     console.error(`Failed to decrypt ${provider} API key:`, error);
-    // Clear corrupted entry
+    // Clear corrupted entry so the user is prompted to re-enter rather than
+    // hitting a permanent silent failure.
     store.delete(`keys.${provider}` as keyof StoreSchema);
     store.set(`settings.providers.${provider}.hasKey`, false);
     store.set(`settings.providers.${provider}.isValid`, false);

@@ -35,8 +35,9 @@ const VALID_CHANNELS = [
   'capture:state',
   'capture:failed',
   'proctor:detected',
-  // Beta — auth
+  // Beta — auth + entitlement
   'auth:changed',
+  'entitlement:changed',
 ];
 
 const ghostAPI = {
@@ -50,6 +51,16 @@ const ghostAPI = {
       ipcRenderer.invoke('auth:logout'),
     status: (): Promise<{ signedIn: boolean; email: string | null; userId: string | null }> =>
       ipcRenderer.invoke('auth:status'),
+  },
+
+  // ══════════════════════════════════════
+  //  ENTITLEMENT (14-day trial — Beta)
+  // ══════════════════════════════════════
+  entitlement: {
+    status: (): Promise<{ status: string; daysLeft: number; expiresAt: string | null }> =>
+      ipcRenderer.invoke('entitlement:status'),
+    refresh: (): Promise<{ status: string; daysLeft: number; expiresAt: string | null }> =>
+      ipcRenderer.invoke('entitlement:refresh'),
   },
 
   // ══════════════════════════════════════

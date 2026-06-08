@@ -171,17 +171,10 @@ export function useAI(): UseAIReturn {
 
     if (!initializedProviders.current.has(providerId)) {
       const { key: apiKey } = await window.ghostAPI.store.getApiKey(providerId);
-      // Ollama uses server URL (default localhost:11434) instead of an API key
-      if (providerId === 'ollama') {
-        provider.initialize(apiKey || 'http://localhost:11434');
-        // Refresh dynamic model list on first use if empty
-        if (provider.models.length === 0) {
-          await providerManager.refreshModels('ollama');
-        }
-      } else {
-        if (!apiKey) throw new Error(`No API key for ${provider.name}. Open Settings to add one.`);
-        provider.initialize(apiKey);
-      }
+      // No key → either not entered, or the trial has expired (getApiKey gates
+      // on entitlement). Either way, prompt rather than silently failing.
+      if (!apiKey) throw new Error(`No API key for ${provider.name}. Open Settings to add one.`);
+      provider.initialize(apiKey);
       initializedProviders.current.add(providerId);
     }
 

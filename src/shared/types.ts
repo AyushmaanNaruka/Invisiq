@@ -385,6 +385,22 @@ export interface AuthStatus {
 }
 
 // ══════════════════════════════════════
+//  ENTITLEMENT (Beta — 14-day trial gate)
+// ══════════════════════════════════════
+
+export type EntitlementStatusKind =
+  | 'active' // trial live → API keys decryptable
+  | 'expired' // trial ended → locked
+  | 'offline' // couldn't verify at launch (fail-closed) → locked
+  | 'unknown'; // not signed in / not yet checked
+
+export interface EntitlementStatus {
+  status: EntitlementStatusKind;
+  daysLeft: number;
+  expiresAt: string | null;
+}
+
+// ══════════════════════════════════════
 //  APPLICATION SETTINGS
 // ══════════════════════════════════════
 
@@ -540,6 +556,9 @@ export interface EncryptedPayload {
   iv: string;
   data: string;
   tag: string;
+  // Payload scheme version. Absent/1 = machine-only key (legacy API keys + auth
+  // secrets). 2 = entitlement-bound key (machineId + server fragment). See crypto.ts.
+  v?: number;
 }
 
 // ══════════════════════════════════════

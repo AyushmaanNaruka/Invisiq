@@ -15,6 +15,7 @@ import { cleanupResilience } from './resilience-controller';
 import { initCaptureController, cleanupCaptureController } from './capture-controller';
 import { initInvisibleInput, cleanupInvisibleInput } from './invisible-input';
 import { initAuth } from './auth';
+import { initEntitlement } from './entitlement';
 import { AI_API_DOMAINS } from '@shared/constants';
 
 // ══════════════════════════════════════
@@ -107,6 +108,11 @@ app.whenReady().then(async () => {
   // query awaits this internally, so the login gate reflects a real session
   // without re-prompting returning users. Pure backend — no stealth impact.
   initAuth().catch((err) => console.error('[Auth] Silent refresh failed:', err));
+
+  // Verify trial entitlement against the server (fetches the unlock fragment so
+  // API keys can decrypt while active). Awaits auth internally. entitlement:status
+  // awaits this, so the renderer's lock screen reflects a real server verdict.
+  initEntitlement().catch((err) => console.error('[Entitlement] Init failed:', err));
 
   // Create the overlay window
   const overlayWindow = createOverlayWindow();

@@ -1,6 +1,7 @@
 import type {
   AppSettings,
   AuthStatus,
+  EntitlementStatus,
   ProviderID,
   ScreenshotResult,
   MonitorInfo,
@@ -35,6 +36,10 @@ declare global {
         login(): Promise<AuthStatus & { error?: string }>;
         logout(): Promise<AuthStatus>;
         status(): Promise<AuthStatus>;
+      };
+      entitlement: {
+        status(): Promise<EntitlementStatus>;
+        refresh(): Promise<EntitlementStatus>;
       };
       overlay: {
         toggle(): Promise<{ visible: boolean }>;
