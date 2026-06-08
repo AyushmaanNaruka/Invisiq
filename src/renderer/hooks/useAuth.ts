@@ -43,6 +43,9 @@ export function useAuth(): UseAuthResult {
       const s = (await window.ghostAPI.auth.login()) as AuthStatus & { error?: string };
       if (s.error) setError(s.error);
       setStatus({ signedIn: s.signedIn, email: s.email, userId: s.userId });
+      if (s.signedIn) {
+        window.ghostAPI.analytics.track('signin', {}).catch(() => {});
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sign-in failed');
     } finally {

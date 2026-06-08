@@ -12,6 +12,7 @@ import OnboardingFlow from './components/OnboardingFlow';
 import LoginScreen from './components/LoginScreen';
 import LockScreen from './components/LockScreen';
 import TrialBanner from './components/TrialBanner';
+import TosGate from './components/TosGate';
 import UpdateNotification from './components/UpdateNotification';
 import InlineRegionSelector from './components/InlineRegionSelector';
 import MeetingPanel from './components/MeetingPanel';
@@ -36,11 +37,20 @@ import { useMemory } from './hooks/useMemory';
 import { useTokenCost } from './hooks/useTokenCost';
 import { useInternalKeyboard } from './hooks/useInternalKeyboard';
 import { useWindowSize } from './hooks/useWindowSize';
-import { BUILT_IN_MODES } from '@shared/constants';
+import { BUILT_IN_MODES, CURRENT_TOS_VERSION } from '@shared/constants';
 import type { ProviderID, CustomMode } from '@shared/types';
 
 // Initialize AI providers
 import './services/ai-providers/index';
+
+// Coarse length bucket for the message_sent event (never the text itself).
+function lengthBucket(len: number): string {
+  if (len <= 50) return '0-50';
+  if (len <= 200) return '51-200';
+  if (len <= 500) return '201-500';
+  if (len <= 1000) return '501-1000';
+  return '1000+';
+}
 
 // Clipboard monitor — lives inside ToastProvider so it can show toasts
 function ClipboardListener({ onAnalyze }: { onAnalyze: (text: string) => void }): null {
@@ -415,6 +425,21 @@ function AppInner(): JSX.Element {
       addUserMessage(text, images);
       clearAllScreenshots();
 
+      // Beta analytics (§8): capture the user's TYPED prompt (text only — never
+      // screenshots/OCR) + a privacy-safe event. Server redacts before storing.
+      window.ghostAPI.analytics.capturePrompt({
+        content: text,
+        model: settings.activeModel,
+        mode: settings.activeMode,
+        hasImage: !!images && images.length > 0,
+      });
+      window.ghostAPI.analytics.track('message_sent', {
+        lengthBucket: lengthBucket(text.length),
+        model: settings.activeModel,
+        mode: settings.activeMode,
+        hasImage: !!images && images.length > 0,
+      });
+
       // Phase 4: Auto-extract facts from user message (non-blocking)
       if (settings.memory?.enabled && settings.memory?.autoExtract) {
         autoExtractFromMessage(text).catch(() => {});
@@ -531,6 +556,20 @@ function AppInner(): JSX.Element {
     window.ghostAPI.app.quit();
   }, []);
 
+  // ── T&C acceptance (beta prompt-logging disclosure, §8) ──
+  const handleAcceptTos = useCallback(async () => {
+    await updateSetting('tosAcceptedVersion', CURRENT_TOS_VERSION);
+    window.ghostAPI.tos.accept().catch(() => {});
+    window.ghostAPI.analytics.track('tos_accepted', { version: CURRENT_TOS_VERSION });
+  }, [updateSetting]);
+
+  // Analytics: record when the trial lock is hit.
+  useEffect(() => {
+    if (entitlement.status === 'expired') {
+      window.ghostAPI.analytics.track('expired_hit', {});
+    }
+  }, [entitlement.status]);
+
   // Show nothing while settings/auth are loading
   if (settingsLoading || authLoading || showOnboarding === null) {
     return <div className="h-screen w-screen bg-bg-overlay rounded-lg" />;
@@ -555,6 +594,12 @@ function AppInner(): JSX.Element {
         onSignOut={authLogoutFn}
       />
     );
+  }
+
+  // T&C gate — must accept the current beta terms (prompt-logging disclosure)
+  // before any use; acceptance is logged server-side as proof of disclosure.
+  if (settings.tosAcceptedVersion !== CURRENT_TOS_VERSION) {
+    return <TosGate onAccept={handleAcceptTos} />;
   }
 
   // Onboarding gate

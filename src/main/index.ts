@@ -16,6 +16,7 @@ import { initCaptureController, cleanupCaptureController } from './capture-contr
 import { initInvisibleInput, cleanupInvisibleInput } from './invisible-input';
 import { initAuth } from './auth';
 import { initEntitlement } from './entitlement';
+import { trackEvent, flush as flushAnalytics } from './analytics';
 import { AI_API_DOMAINS } from '@shared/constants';
 
 // ══════════════════════════════════════
@@ -114,6 +115,10 @@ app.whenReady().then(async () => {
   // awaits this, so the renderer's lock screen reflects a real server verdict.
   initEntitlement().catch((err) => console.error('[Entitlement] Init failed:', err));
 
+  // Analytics (§8): privacy-safe launch event. Queued now, flushed once the
+  // auth token is available (no-op if signed out).
+  trackEvent('app_launch', { version: app.getVersion() });
+
   // Create the overlay window
   const overlayWindow = createOverlayWindow();
 
@@ -185,6 +190,8 @@ app.on('window-all-closed', () => {
 });
 
 app.on('will-quit', () => {
+  // Best-effort final analytics flush (fire-and-forget; quit doesn't await).
+  flushAnalytics().catch(() => {});
   // Unregister all global shortcuts before quitting
   unregisterAllHotkeys();
   // Stop clipboard monitor

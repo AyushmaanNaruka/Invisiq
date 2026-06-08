@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Trash2, FolderOpen, Shield, RefreshCw, EyeOff, KeyRound, TriangleAlert } from 'lucide-react';
+import { Trash2, FolderOpen, Shield, RefreshCw, EyeOff, KeyRound, TriangleAlert, FileText } from 'lucide-react';
 import type { AppSettings } from '@shared/types';
 
 interface SettingsPrivacyProps {
@@ -22,6 +22,8 @@ export default function SettingsPrivacy({
   onOpenDataFolder,
 }: SettingsPrivacyProps): JSX.Element {
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmDeleteData, setConfirmDeleteData] = useState(false);
+  const [deleteResult, setDeleteResult] = useState<string | null>(null);
 
   const handleClearAll = useCallback(async () => {
     if (confirmClear) {
@@ -32,6 +34,18 @@ export default function SettingsPrivacy({
       setTimeout(() => setConfirmClear(false), 3000);
     }
   }, [confirmClear, onClearAll]);
+
+  const handleDeleteMyData = useCallback(async () => {
+    if (confirmDeleteData) {
+      setConfirmDeleteData(false);
+      const res = await window.ghostAPI.analytics.deleteMyData();
+      setDeleteResult(res.ok ? 'Your stored prompts were deleted.' : `Failed: ${res.error ?? 'error'}`);
+      setTimeout(() => setDeleteResult(null), 4000);
+    } else {
+      setConfirmDeleteData(true);
+      setTimeout(() => setConfirmDeleteData(false), 3000);
+    }
+  }, [confirmDeleteData]);
 
   return (
     <div className="space-y-5">
@@ -208,6 +222,32 @@ export default function SettingsPrivacy({
             className="rounded accent-accent-primary"
           />
         </label>
+      </div>
+
+      {/* Beta data — prompt-logging disclosure + delete (§8) */}
+      <div className="space-y-2 pt-2 border-t border-border-subtle">
+        <div className="flex items-start gap-2 p-2.5 rounded-md bg-bg-input border border-border-subtle">
+          <FileText size={14} className="text-text-secondary shrink-0 mt-0.5" />
+          <p className="text-text-secondary text-[10px] leading-relaxed">
+            During the beta, the <strong>text</strong> of the prompts you send is stored to improve
+            InvisiQ — text only (never screenshots/screen content), with API keys and obvious personal
+            info stripped, and deleted after 30 days. You can wipe your stored prompts anytime.
+          </p>
+        </div>
+        <button
+          onClick={handleDeleteMyData}
+          className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs transition-colors ${
+            confirmDeleteData
+              ? 'bg-status-error/20 text-status-error border border-status-error/40'
+              : 'text-text-secondary hover:text-status-error hover:bg-bg-hover'
+          }`}
+        >
+          <Trash2 size={12} />
+          {confirmDeleteData ? 'Click again to delete your stored prompts' : 'Delete My Data'}
+        </button>
+        {deleteResult && (
+          <p className="text-[10px] text-text-secondary text-center">{deleteResult}</p>
+        )}
       </div>
 
       {/* Process Name */}

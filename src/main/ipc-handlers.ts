@@ -57,6 +57,8 @@ import {
 } from './capture-controller';
 import { login as authLogin, logout as authLogout, getStatusReady as authStatus } from './auth';
 import { getStatusReady as entitlementStatus, refresh as entitlementRefresh } from './entitlement';
+import { trackEvent, capturePrompt, acceptTos, deleteMyData } from './analytics';
+import { CURRENT_TOS_VERSION } from '@shared/constants';
 
 const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini'];
 
@@ -96,6 +98,43 @@ export function registerIPCHandlers(): void {
 
   ipcMain.handle('entitlement:refresh', async () => {
     return entitlementRefresh();
+  });
+
+  // ══════════════════════════════════════
+  //  ANALYTICS + T&C (Beta — §8)
+  // ══════════════════════════════════════
+
+  ipcMain.handle('analytics:track', (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') return;
+    const { name, props } = args as { name?: unknown; props?: unknown };
+    if (typeof name !== 'string') return;
+    trackEvent(name, (props && typeof props === 'object' ? (props as Record<string, unknown>) : {}));
+  });
+
+  ipcMain.handle('analytics:capture-prompt', (_event, args: unknown) => {
+    if (!args || typeof args !== 'object') return;
+    const { prompt } = args as { prompt?: unknown };
+    if (!prompt || typeof prompt !== 'object') return;
+    const p = prompt as { content?: unknown; model?: unknown; mode?: unknown; hasImage?: unknown };
+    if (typeof p.content !== 'string') return;
+    capturePrompt({
+      content: p.content,
+      model: typeof p.model === 'string' ? p.model : undefined,
+      mode: typeof p.mode === 'string' ? p.mode : undefined,
+      hasImage: p.hasImage === true,
+    });
+  });
+
+  ipcMain.handle('analytics:delete-my-data', async () => {
+    return deleteMyData();
+  });
+
+  ipcMain.handle('tos:accept', async () => {
+    return acceptTos();
+  });
+
+  ipcMain.handle('tos:status', () => {
+    return { current: CURRENT_TOS_VERSION };
   });
 
   // ══════════════════════════════════════

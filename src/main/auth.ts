@@ -70,6 +70,11 @@ export function getStatus(): AuthStatus {
   };
 }
 
+/** Current signed-in user id (null if signed out). */
+export function getUserId(): string | null {
+  return session?.userId ?? null;
+}
+
 function emitChanged(): void {
   try {
     getOverlayWindow()?.webContents.send('auth:changed', getStatus());

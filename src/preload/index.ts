@@ -64,6 +64,26 @@ const ghostAPI = {
   },
 
   // ══════════════════════════════════════
+  //  ANALYTICS + T&C (Beta — §8)
+  // ══════════════════════════════════════
+  analytics: {
+    track: (name: string, props?: Record<string, unknown>): Promise<void> =>
+      ipcRenderer.invoke('analytics:track', { name, props }),
+    capturePrompt: (prompt: {
+      content: string;
+      model?: string;
+      mode?: string;
+      hasImage?: boolean;
+    }): Promise<void> => ipcRenderer.invoke('analytics:capture-prompt', { prompt }),
+    deleteMyData: (): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('analytics:delete-my-data'),
+  },
+  tos: {
+    accept: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('tos:accept'),
+    status: (): Promise<{ current: string }> => ipcRenderer.invoke('tos:status'),
+  },
+
+  // ══════════════════════════════════════
   //  OVERLAY
   // ══════════════════════════════════════
   overlay: {

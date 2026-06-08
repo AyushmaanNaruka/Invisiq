@@ -513,6 +513,9 @@ export interface AppSettings {
 
   isFirstLaunch: boolean;
   onboardingComplete: boolean;
+  // T&C version the user has accepted (beta prompt-logging disclosure, §8). When
+  // this !== CURRENT_TOS_VERSION the app shows the T&C gate before use.
+  tosAcceptedVersion: string;
   version: string;
 }
 

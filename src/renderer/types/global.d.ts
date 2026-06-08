@@ -41,6 +41,20 @@ declare global {
         status(): Promise<EntitlementStatus>;
         refresh(): Promise<EntitlementStatus>;
       };
+      analytics: {
+        track(name: string, props?: Record<string, unknown>): Promise<void>;
+        capturePrompt(prompt: {
+          content: string;
+          model?: string;
+          mode?: string;
+          hasImage?: boolean;
+        }): Promise<void>;
+        deleteMyData(): Promise<{ ok: boolean; error?: string }>;
+      };
+      tos: {
+        accept(): Promise<{ ok: boolean }>;
+        status(): Promise<{ current: string }>;
+      };
       overlay: {
         toggle(): Promise<{ visible: boolean }>;
         hide(): Promise<void>;
