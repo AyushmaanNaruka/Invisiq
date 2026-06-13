@@ -13,6 +13,7 @@ import LoginScreen from './components/LoginScreen';
 import LockScreen from './components/LockScreen';
 import TrialBanner from './components/TrialBanner';
 import TosGate from './components/TosGate';
+import ForcedUpdate from './components/ForcedUpdate';
 import UpdateNotification from './components/UpdateNotification';
 import InlineRegionSelector from './components/InlineRegionSelector';
 import MeetingPanel from './components/MeetingPanel';
@@ -27,6 +28,7 @@ import { useScreenshot } from './hooks/useScreenshot';
 import { useSettings } from './hooks/useSettings';
 import { useAuth } from './hooks/useAuth';
 import { useEntitlement } from './hooks/useEntitlement';
+import { useUpdateGate } from './hooks/useUpdateGate';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useClickThrough } from './hooks/useClickThrough';
 import { useAudioTranscription } from './hooks/useAudioTranscription';
@@ -95,6 +97,7 @@ function AppInner(): JSX.Element {
     isRefreshing: entitlementRefreshing,
     refresh: refreshEntitlement,
   } = useEntitlement(authStatus.signedIn);
+  const { gate: updateGate } = useUpdateGate();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
 
   // Determine whether to show onboarding after settings load
@@ -569,6 +572,12 @@ function AppInner(): JSX.Element {
       window.ghostAPI.analytics.track('expired_hit', {});
     }
   }, [entitlement.status]);
+
+  // Forced-update gate — precedes everything (a killed/below-floor build must
+  // update before any use, even sign-in). Fail-open: default is not-required.
+  if (updateGate.required) {
+    return <ForcedUpdate gate={updateGate} />;
+  }
 
   // Show nothing while settings/auth are loading
   if (settingsLoading || authLoading || showOnboarding === null) {

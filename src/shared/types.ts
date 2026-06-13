@@ -401,6 +401,19 @@ export interface EntitlementStatus {
 }
 
 // ══════════════════════════════════════
+//  VERSION GATE (Beta — remote kill-switch / forced update §10.4)
+// ══════════════════════════════════════
+
+export interface VersionGateStatus {
+  required: boolean; // running build must update before it can be used
+  reason: 'killed' | 'below-floor' | null;
+  message: string | null;
+  minVersion: string | null;
+  latestVersion: string | null;
+  currentVersion: string;
+}
+
+// ══════════════════════════════════════
 //  APPLICATION SETTINGS
 // ══════════════════════════════════════
 

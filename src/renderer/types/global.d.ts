@@ -2,6 +2,7 @@ import type {
   AppSettings,
   AuthStatus,
   EntitlementStatus,
+  VersionGateStatus,
   ProviderID,
   ScreenshotResult,
   MonitorInfo,
@@ -130,6 +131,7 @@ declare global {
         check(): Promise<void>;
         download(): Promise<void>;
         install(): Promise<void>;
+        versionStatus(): Promise<VersionGateStatus>;
       };
       /** Phase 4: System audio capture */
       audio: {

@@ -8,7 +8,7 @@ import { disguiseProcess, applyFullStealth, startStealthWatchdog } from './steal
 import { getNestedSetting } from './store';
 import { stopClipboardMonitor } from './clipboard-monitor';
 import { initMonitorManager } from './monitors';
-import { initializeAutoUpdater } from './updater';
+import { initializeAutoUpdater, initVersionGate } from './updater';
 import { createTray } from './tray';
 import { initMemoryStore } from './memory';
 import { cleanupResilience } from './resilience-controller';
@@ -118,6 +118,10 @@ app.whenReady().then(async () => {
   // Analytics (§8): privacy-safe launch event. Queued now, flushed once the
   // auth token is available (no-op if signed out).
   trackEvent('app_launch', { version: app.getVersion() });
+
+  // Remote kill-switch / version floor (§10.4). Runs pre-auth (anon read);
+  // fail-open. The renderer queries update:version-status to gate the UI.
+  initVersionGate().catch((err) => console.error('[VersionGate] check failed:', err));
 
   // Create the overlay window
   const overlayWindow = createOverlayWindow();

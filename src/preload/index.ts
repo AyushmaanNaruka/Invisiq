@@ -14,6 +14,7 @@ const VALID_CHANNELS = [
   'update:progress',
   'update:downloaded',
   'update:error',
+  'update:required',
   // Phase 4
   'audio:chunk',
   'companion:message',
@@ -247,6 +248,8 @@ const ghostAPI = {
       ipcRenderer.invoke('update:download'),
     install: () =>
       ipcRenderer.invoke('update:install'),
+    versionStatus: () =>
+      ipcRenderer.invoke('update:version-status'),
   },
 
   // ══════════════════════════════════════

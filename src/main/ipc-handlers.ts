@@ -31,7 +31,7 @@ import { captureFullScreen, captureForSnip, captureSilent } from './screenshot';
 import { openRegionSelector } from './region-selector';
 import { getMonitors, moveOverlayToMonitor } from './monitors';
 import { smartPaste } from './clipboard';
-import { checkForUpdates, downloadUpdate, installUpdate } from './updater';
+import { checkForUpdates, downloadUpdate, installUpdate, getVersionGateStatus } from './updater';
 import { startClipboardMonitor, stopClipboardMonitor, isClipboardMonitorRunning } from './clipboard-monitor';
 import {
   saveConversation,
@@ -634,6 +634,10 @@ export function registerIPCHandlers(): void {
 
   ipcMain.handle('update:install', () => {
     installUpdate();
+  });
+
+  ipcMain.handle('update:version-status', async () => {
+    return getVersionGateStatus();
   });
 
   // ══════════════════════════════════════
