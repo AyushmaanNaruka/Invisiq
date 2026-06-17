@@ -21,16 +21,16 @@ export const CURRENT_TOS_VERSION = '2026-06-08';
 
 export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
   'toggle-overlay': 'Ctrl+Shift+G',
-  'capture-screen': 'CommandOrControl+Alt+S',
-  'capture-region': 'CommandOrControl+Alt+R',
-  'focus-input': 'CommandOrControl+Alt+A',
-  'copy-response': 'CommandOrControl+Alt+C',
-  'new-conversation': 'CommandOrControl+Alt+N',
+  'capture-screen': 'CommandOrControl+Shift+S',
+  'capture-region': 'CommandOrControl+Shift+R',
+  'focus-input': 'CommandOrControl+Shift+A',
+  'copy-response': 'CommandOrControl+Shift+C',
+  'new-conversation': 'CommandOrControl+Shift+N',
   'hide-overlay': 'Escape',
   'paste-response': 'CommandOrControl+Shift+V',
   'toggle-passthrough': 'CommandOrControl+Shift+P',
-  'next-model': 'CommandOrControl+Alt+]',
-  'prev-model': 'CommandOrControl+Alt+[',
+  'next-model': 'CommandOrControl+Shift+]',
+  'prev-model': 'CommandOrControl+Shift+[',
   'toggle-invisible-input': 'CommandOrControl+Shift+I',
   // Panic kill switch — Ctrl+Shift+Esc is reserved by Windows (Task Manager),
   // so use Q. Instantly exits capture, uninstalls the hook, hides the overlay.

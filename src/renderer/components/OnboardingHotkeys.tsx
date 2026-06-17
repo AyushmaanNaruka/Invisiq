@@ -12,12 +12,12 @@ const SHORTCUTS = [
     description: 'Show or hide InvisiQ instantly',
   },
   {
-    keys: 'Ctrl+Alt+S',
+    keys: 'Ctrl+Shift+S',
     label: 'Capture Screen',
     description: 'Screenshot your screen and send to AI',
   },
   {
-    keys: 'Ctrl+Alt+R',
+    keys: 'Ctrl+Shift+R',
     label: 'Capture Region',
     description: 'Select and capture a specific area',
   },
