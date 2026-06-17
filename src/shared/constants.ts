@@ -307,18 +307,18 @@ export const ANTHROPIC_MODELS: ModelConfig[] = [
 
 export const GEMINI_MODELS: ModelConfig[] = [
   {
-    id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
     provider: 'gemini',
     supportsVision: true,
     maxContextTokens: 1048576,
-    maxOutputTokens: 8192,
-    costPer1MInput: 0.075,
-    costPer1MOutput: 0.30,
+    maxOutputTokens: 65536,
+    costPer1MInput: 0.30,
+    costPer1MOutput: 2.50,
     speed: 'fast',
   },
   {
-    id: 'gemini-2.5-pro-preview-06-05',
+    id: 'gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     provider: 'gemini',
     supportsVision: true,

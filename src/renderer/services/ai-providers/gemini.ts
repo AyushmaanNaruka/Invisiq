@@ -18,7 +18,7 @@ export class GeminiProvider implements AIProvider {
     if (!this.genAI) return { valid: false, error: 'Not initialized' };
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       await model.generateContent('test');
       return { valid: true };
     } catch (error: unknown) {
@@ -27,8 +27,13 @@ export class GeminiProvider implements AIProvider {
       if (err.message?.includes('API_KEY_INVALID') || err.status === 400) {
         return { valid: false, error: 'Invalid API key' };
       }
-      if (err.status === 429 || err.status === 403 || err.status === 404) {
-        return { valid: true }; // Key is valid, issue is rate limit/permissions/model
+      if (err.status === 429 || err.status === 403) {
+        return { valid: true }; // Key is valid, issue is rate limit/permissions
+      }
+      if (err.status === 404) {
+        // Model route is dead (e.g. a retired model id) — the key may be fine, but
+        // this build cannot connect. Surface it instead of masking as valid.
+        return { valid: false, error: 'Model unavailable — this app build needs updating' };
       }
       return { valid: false, error: `Could not validate: ${err.message || 'Network error'}` };
     }
