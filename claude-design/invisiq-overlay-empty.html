@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<!--
+  InvisiQ — overlay window reference (empty / welcome state)
+  Replicates ChatPanel's empty state: centered InvisiQ mark, name, tagline, hotkey hints.
+  Use this for the "app just opened" beat of an explainer video.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InvisiQ — Overlay (Welcome)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-overlay: #0b0e14; --bg-chat: #0f1219; --bg-header: #12161e;
+    --bg-input: #161b24; --bg-hover: #1c222e;
+    --text-primary: #e2e8f0; --text-secondary: #64748b; --text-placeholder: #475569;
+    --accent-primary: #14b8a6; --status-success: #22c55e;
+    --border-subtle: #1e2532;
+    --radius-lg: 12px; --radius-sm: 6px;
+    --shadow-overlay: 0 8px 32px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1a2030 0%, #0a0d14 100%);
+    font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased;
+  }
+  .overlay {
+    width: 420px; height: 600px;
+    background: rgba(11,14,20,.92);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-overlay);
+    display: flex; flex-direction: column; overflow: hidden;
+    color: var(--text-primary); font-size: 13px;
+  }
+  .icon { stroke: currentColor; stroke-width: 1.75; fill: none;
+          stroke-linecap: round; stroke-linejoin: round; display: block; }
+
+  .header {
+    height: 32px; flex-shrink: 0; background: var(--bg-header);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex; align-items: center; padding: 0 8px;
+  }
+  .grip { color: var(--text-placeholder); margin-right: 4px; display: flex; }
+  .hbtn { display: flex; padding: 4px; border-radius: 4px; border: none;
+          background: transparent; color: var(--text-secondary); cursor: default; }
+  .sep { width: 1px; height: 16px; background: var(--border-subtle); margin: 0 4px; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px;
+          border-radius: var(--radius-sm); background: transparent; border: none;
+          color: var(--text-secondary); font-size: 12px; font-weight: 500; cursor: default; }
+  .dot-mode { width: 7px; height: 7px; border-radius: 50%; background: #3b82f6; }
+  .chev { width: 12px; height: 12px; stroke: currentColor; stroke-width: 2; fill: none; opacity: .7; }
+  .spacer { flex: 1; }
+  .hbtn.active-green { color: #4ade80; background: rgba(74,222,128,.1); }
+
+  /* empty state */
+  .empty {
+    flex: 1; background: var(--bg-chat);
+    display: flex; align-items: center; justify-content: center; text-align: center;
+  }
+  .empty-inner { padding: 0 24px; }
+  .mark-wrap { display: flex; justify-content: center; margin-bottom: 12px; }
+  .app-name { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .tagline { color: var(--text-secondary); font-size: 11px; margin-bottom: 16px; }
+  .hints { color: var(--text-placeholder); font-size: 11px; line-height: 2; }
+  .hints kbd {
+    font-family: inherit; color: var(--text-secondary);
+  }
+
+  .input-area { border-top: 1px solid var(--border-subtle); background: var(--bg-overlay);
+                padding: 8px 12px; flex-shrink: 0; }
+  .input-row { display: flex; align-items: flex-end; gap: 8px; }
+  .ibtn { display: flex; padding: 6px; border-radius: var(--radius-sm); border: none;
+          background: transparent; color: var(--text-secondary); cursor: default; margin-bottom: 2px; }
+  textarea.input {
+    flex: 1; min-height: 36px; resize: none; background: var(--bg-input);
+    border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px 12px;
+    font-size: 13px; font-family: inherit; color: var(--text-primary); outline: none;
+  }
+  textarea.input::placeholder { color: var(--text-placeholder); }
+  .send { display: flex; padding: 6px; border-radius: var(--radius-sm); border: none;
+          background: var(--accent-primary); color: #fff; cursor: default; margin-bottom: 2px; opacity: .5; }
+
+  .statusbar { height: 24px; flex-shrink: 0; background: var(--bg-overlay);
+               border-top: 1px solid var(--border-subtle); display: flex; align-items: center; padding: 0 12px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--status-success); }
+  .status-text { color: var(--text-secondary); font-size: 11px; margin-left: 8px; }
+</style>
+</head>
+<body>
+  <div class="overlay">
+    <!-- Header -->
+    <div class="header">
+      <span class="grip">
+        <svg class="icon" width="13" height="13" viewBox="0 0 24 24">
+          <circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/>
+          <circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>
+        </svg>
+      </span>
+      <button class="hbtn"><svg class="icon" width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+      <button class="hbtn"><svg class="icon" width="13" height="13" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+      <span class="sep"></span>
+      <button class="pill"><span class="dot-mode"></span>General <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+      <span class="sep"></span>
+      <button class="pill" style="color:var(--text-primary)">Sonnet 4.6 <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+      <span class="spacer"></span>
+      <button class="hbtn active-green" title="Stealth focus ON"><svg class="icon" width="14" height="14" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></button>
+      <button class="hbtn"><svg class="icon" width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="hbtn"><svg class="icon" width="14" height="14" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </div>
+
+    <!-- Empty / welcome -->
+    <div class="empty">
+      <div class="empty-inner">
+        <div class="mark-wrap">
+          <!-- InvisiQ mark (inlined from InvisiQLogo.tsx) -->
+          <svg width="56" height="56" viewBox="0 0 64 64" fill="none" style="border-radius:16px">
+            <rect width="64" height="64" rx="15" fill="#0c0c12"/>
+            <rect x="0.5" y="0.5" width="63" height="63" rx="14.5" stroke="#ffffff" stroke-opacity="0.1"/>
+            <g transform="translate(8 7) scale(2)">
+              <path d="M4 11a8 8 0 0 1 16 0v9l-2.5-1.5L15 20l-3-1.5L9 20l-2.5-1.5L4 20z" fill="#2ee5c5"/>
+              <circle cx="9.5" cy="11" r="1.5" fill="#0c0c12"/>
+              <circle cx="14.5" cy="11" r="1.5" fill="#0c0c12"/>
+            </g>
+          </svg>
+        </div>
+        <div class="app-name">InvisiQ</div>
+        <div class="tagline">Your invisible AI assistant</div>
+        <div class="hints">
+          <div><kbd>Ctrl+Shift+G</kbd> — Toggle overlay</div>
+          <div><kbd>Ctrl+Shift+S</kbd> — Capture screen</div>
+          <div><kbd>Ctrl+Shift+R</kbd> — Capture region</div>
+          <div><kbd>Escape</kbd> — Hide overlay</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-row">
+        <button class="ibtn"><svg class="icon" width="16" height="16" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></button>
+        <button class="ibtn"><svg class="icon" width="16" height="16" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg></button>
+        <button class="ibtn"><svg class="icon" width="16" height="16" viewBox="0 0 24 24"><path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/></svg></button>
+        <textarea class="input" rows="1" placeholder="Ask anything..."></textarea>
+        <button class="send"><svg class="icon" width="16" height="16" viewBox="0 0 24 24" style="stroke:#fff"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg></button>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="statusbar">
+      <span class="status-dot"></span>
+      <span class="status-text">Ready</span>
+    </div>
+  </div>
+</body>
+</html>

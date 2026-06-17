@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<!--
+  InvisiQ — overlay window reference (active chat state)
+  Pixel-faithful static replica of the real Electron overlay for Claude Design.
+  Self-contained: no build step, no external CSS/JS. Open directly in a browser.
+
+  Source of truth for colors/sizes:
+    tailwind.config.ts + src/renderer/styles/globals.css (dark theme)
+  Components replicated:
+    HeaderBar, ChatPanel, MessageBubble (user + assistant + code), InputArea, StatusBar
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InvisiQ — Overlay (Chat)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* ── InvisiQ dark theme tokens (exact RGB from globals.css) ── */
+    --bg-overlay: #0b0e14;
+    --bg-chat: #0f1219;
+    --bg-header: #12161e;
+    --bg-input: #161b24;
+    --bg-code: #090c12;
+    --bg-hover: #1c222e;
+    --bubble-user: #2563eb;
+    --bubble-ai: #161b24;
+    --text-primary: #e2e8f0;
+    --text-secondary: #64748b;
+    --text-placeholder: #475569;
+    --text-code: #cbd5e1;
+    --accent-primary: #14b8a6;  /* teal */
+    --accent-cyan: #06b6d4;
+    --accent-blue: #3b82f6;
+    --status-success: #22c55e;
+    --status-error: #ef4444;
+    --status-streaming: #6366f1;
+    --border-subtle: #1e2532;
+    --border-focus: #14b8a6;
+
+    --radius-lg: 12px;
+    --radius-md: 8px;
+    --radius-sm: 6px;
+    --shadow-overlay: 0 8px 32px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
+    --glow-teal: 0 0 20px rgba(20,184,166,.2), 0 0 40px rgba(20,184,166,.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    /* Neutral checkerboard so the rounded transparent corners read clearly.
+       Replace with your own footage/background when compositing in Claude Design. */
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background:
+      linear-gradient(135deg, #1a2030 0%, #0a0d14 100%);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── The overlay window — 420 × 600, 85% opacity, 12px radius ── */
+  .overlay {
+    width: 420px;
+    height: 600px;
+    background: rgba(11, 14, 20, 0.92);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-overlay);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 13px;
+  }
+
+  .icon { width: 14px; height: 14px; stroke: currentColor; stroke-width: 1.75;
+          fill: none; stroke-linecap: round; stroke-linejoin: round; display: block; }
+  .icon-16 { width: 16px; height: 16px; }
+  .icon-13 { width: 13px; height: 13px; }
+  .icon-10 { width: 10px; height: 10px; }
+
+  /* ── HeaderBar (h-8 = 32px) ── */
+  .header {
+    height: 32px; flex-shrink: 0;
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex; align-items: center; padding: 0 8px; gap: 0;
+  }
+  .grip { color: var(--text-placeholder); margin-right: 4px; display: flex; }
+  .hgroup { display: flex; align-items: center; gap: 2px; }
+  .hbtn {
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px; border-radius: 4px; border: none; background: transparent;
+    color: var(--text-secondary); cursor: default; transition: all .12s;
+  }
+  .hbtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .hbtn.danger:hover { color: var(--status-error); }
+  .sep { width: 1px; height: 16px; background: var(--border-subtle); margin: 0 4px; }
+  .spacer { flex: 1; }
+
+  /* mode + model pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 7px; border-radius: var(--radius-sm);
+    background: transparent; color: var(--text-secondary);
+    font-size: 12px; font-weight: 500; cursor: default; border: none;
+    transition: all .12s;
+  }
+  .pill:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .dot-mode { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-blue); }
+  .chev { width: 12px; height: 12px; stroke: currentColor; stroke-width: 2;
+          fill: none; opacity: .7; }
+
+  .hbtn.active-teal { color: var(--accent-primary); background: rgba(20,184,166,.12); }
+  .hbtn.active-green { color: #4ade80; background: rgba(74,222,128,.1); }
+
+  /* ── ChatPanel (flex-1) ── */
+  .chat {
+    flex: 1; overflow-y: auto; background: var(--bg-chat); padding: 8px 0;
+  }
+  .chat::-webkit-scrollbar { width: 6px; }
+  .chat::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+
+  .msg { margin: 8px 12px; }
+  .msg.user { display: flex; justify-content: flex-end; }
+  .bubble-user {
+    max-width: 85%;
+    background: var(--bubble-user); color: #fff;
+    padding: 8px 12px; border-radius: var(--radius-md);
+    font-size: 13px; line-height: 1.45;
+  }
+  .bubble-ai-wrap { max-width: 95%; }
+  .bubble-ai {
+    background: var(--bubble-ai);
+    border: 1px solid rgba(30,37,50,.5);
+    padding: 8px 12px; border-radius: var(--radius-md);
+    font-size: 13px; line-height: 1.5; color: var(--text-primary);
+  }
+  .bubble-ai p { margin-bottom: 8px; }
+  .bubble-ai p:last-child { margin-bottom: 0; }
+  .bubble-ai code.inline {
+    background: var(--bg-code); padding: 1px 5px; border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-code);
+  }
+
+  /* code block */
+  .codeblock {
+    margin: 8px 0; border-radius: var(--radius-sm); overflow: hidden;
+    border: 1px solid var(--border-subtle); background: var(--bg-code);
+  }
+  .code-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 10px; background: rgba(255,255,255,.02);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .code-lang { font-family: 'JetBrains Mono', monospace; font-size: 10px;
+               color: var(--text-secondary); text-transform: lowercase; }
+  .code-actions { display: flex; gap: 6px; color: var(--text-secondary); }
+  .codeblock pre {
+    margin: 0; padding: 10px 12px; overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6;
+    color: var(--text-code);
+  }
+  .tok-key { color: #c084fc; }     /* keyword */
+  .tok-fn  { color: #60a5fa; }     /* function */
+  .tok-str { color: #4ade80; }     /* string */
+  .tok-com { color: var(--text-placeholder); font-style: italic; }
+  .tok-num { color: #fbbf24; }
+
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 4px; padding: 0 4px; }
+  .action {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--text-secondary); cursor: default; background: none; border: none;
+  }
+  .action:hover { color: var(--text-primary); }
+  .tok-count { font-size: 10px; color: var(--text-placeholder); }
+
+  /* reasoning block */
+  .reasoning {
+    margin-bottom: 8px; padding: 6px 8px; border-radius: 4px;
+    border-left: 2px solid rgba(20,184,166,.4); background: rgba(22,27,36,.4);
+    color: var(--text-secondary); font-size: 11px; font-style: italic; line-height: 1.5;
+  }
+  .reasoning .label { font-style: normal; font-weight: 500; color: rgba(20,184,166,.8); }
+
+  /* ── InputArea ── */
+  .input-area {
+    border-top: 1px solid var(--border-subtle);
+    background: var(--bg-overlay); padding: 8px 12px; flex-shrink: 0;
+  }
+  .proctor-badge {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+    font-size: 11px; color: var(--accent-primary);
+  }
+  .input-row { display: flex; align-items: flex-end; gap: 8px; }
+  .ibtn {
+    display: flex; align-items: center; justify-content: center;
+    padding: 6px; border-radius: var(--radius-sm); border: none; background: transparent;
+    color: var(--text-secondary); cursor: default; transition: all .12s; margin-bottom: 2px;
+  }
+  .ibtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .ibtn.capture-on {
+    color: var(--accent-primary); background: rgba(20,184,166,.2);
+    box-shadow: var(--glow-teal);
+  }
+  textarea.input {
+    flex: 1; min-height: 36px; max-height: 100px; resize: none;
+    background: var(--bg-input);
+    border: 1px solid var(--accent-primary);
+    box-shadow: 0 0 0 1px rgba(20,184,166,.4);
+    border-radius: var(--radius-md);
+    padding: 8px 12px; font-size: 13px; font-family: inherit;
+    color: var(--text-primary); outline: none; line-height: 1.4;
+  }
+  textarea.input::placeholder { color: var(--accent-primary); opacity: .65; }
+  .send {
+    display: flex; align-items: center; justify-content: center;
+    padding: 6px; border-radius: var(--radius-sm); border: none;
+    background: var(--accent-primary); color: #fff; cursor: default;
+    margin-bottom: 2px;
+  }
+
+  /* ── StatusBar (h-6 = 24px) ── */
+  .statusbar {
+    height: 24px; flex-shrink: 0; background: var(--bg-overlay);
+    border-top: 1px solid var(--border-subtle);
+    display: flex; align-items: center; padding: 0 12px;
+  }
+  .status-left { display: flex; align-items: center; gap: 8px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--status-success); }
+  .status-text { color: var(--text-secondary); font-size: 11px; }
+  .status-tokens { color: var(--text-placeholder); font-size: 11px; }
+</style>
+</head>
+<body>
+  <div class="overlay" role="dialog" aria-label="InvisiQ overlay">
+
+    <!-- ───────── HeaderBar ───────── -->
+    <div class="header">
+      <span class="grip" aria-hidden="true">
+        <svg class="icon icon-13" viewBox="0 0 24 24">
+          <circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/>
+          <circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>
+        </svg>
+      </span>
+
+      <div class="hgroup" style="margin-right:4px">
+        <button class="hbtn" title="History">
+          <svg class="icon icon-13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </button>
+        <button class="hbtn" title="New chat">
+          <svg class="icon icon-13" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        </button>
+      </div>
+
+      <span class="sep"></span>
+
+      <!-- Mode selector -->
+      <button class="pill"><span class="dot-mode"></span>Coding
+        <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+
+      <span class="sep"></span>
+
+      <!-- Model selector -->
+      <button class="pill" style="color:var(--text-primary)">Sonnet 4.6
+        <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+
+      <span class="spacer"></span>
+
+      <!-- Stealth focus ON (green) -->
+      <button class="hbtn active-green" title="Stealth focus ON — no focus stealing">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+      </button>
+      <!-- Click-through -->
+      <button class="hbtn" title="Click-through mode">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12.586 12.586 19 19"/><path d="M3.688 3.037a.497.497 0 0 0-.651.651l6.5 16a.501.501 0 0 0 .947-.062l1.569-6.083a2 2 0 0 1 1.448-1.479l6.124-1.579a.5.5 0 0 0 .063-.947z"/></svg>
+      </button>
+      <!-- Settings -->
+      <button class="hbtn" title="Settings">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <!-- Quit -->
+      <button class="hbtn danger" title="Quit InvisiQ">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- ───────── ChatPanel ───────── -->
+    <div class="chat">
+
+      <!-- User message -->
+      <div class="msg user">
+        <div class="bubble-user">Why does my useEffect run twice on mount in React 18?</div>
+      </div>
+
+      <!-- Assistant message -->
+      <div class="msg">
+        <div class="bubble-ai-wrap">
+          <div class="bubble-ai">
+            <div class="reasoning">
+              <span class="label">💭 Reasoning</span><br />
+              The double-invoke is StrictMode in dev mounting, unmounting, then remounting to surface missing cleanup…
+            </div>
+            <p>In <strong>React 18</strong>, <code class="inline">&lt;StrictMode&gt;</code> intentionally double-invokes effects <em>in development only</em> to help you catch missing cleanup. It does <strong>not</strong> happen in production.</p>
+            <p>Return a cleanup function so the effect is safe to run twice:</p>
+            <div class="codeblock">
+              <div class="code-head">
+                <span class="code-lang">tsx</span>
+                <span class="code-actions">
+                  <svg class="icon icon-13" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </span>
+              </div>
+<pre><span class="tok-key">useEffect</span>(() => {
+  <span class="tok-key">const</span> id = <span class="tok-fn">setInterval</span>(tick, <span class="tok-num">1000</span>);
+  <span class="tok-com">// cleanup makes the double-run harmless</span>
+  <span class="tok-key">return</span> () => <span class="tok-fn">clearInterval</span>(id);
+}, []);</pre>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="action">
+              <svg class="icon icon-10" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              Copy
+            </button>
+            <button class="action">
+              <svg class="icon icon-10" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+              Paste
+            </button>
+            <span class="tok-count">812 tokens</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ───────── InputArea ───────── -->
+    <div class="input-area">
+      <!-- Proctor confirmation badge (signature feature) -->
+      <div class="proctor-badge">
+        <svg class="icon icon-13" viewBox="0 0 24 24" style="stroke:var(--accent-primary)"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Monitored app detected — you're invisible</span>
+      </div>
+
+      <div class="input-row">
+        <!-- Screenshot -->
+        <button class="ibtn" title="Capture screen">
+          <svg class="icon icon-16" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        </button>
+        <!-- Mic -->
+        <button class="ibtn" title="Voice input">
+          <svg class="icon icon-16" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+        </button>
+        <!-- Stealth capture ON (glowing teal) -->
+        <button class="ibtn capture-on" title="Stealth typing ON">
+          <svg class="icon icon-16" viewBox="0 0 24 24"><path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/></svg>
+        </button>
+
+        <textarea class="input" rows="1" placeholder="Stealth typing — type anywhere…"></textarea>
+
+        <!-- Send -->
+        <button class="send" title="Send">
+          <svg class="icon icon-16" viewBox="0 0 24 24" style="stroke:#fff"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ───────── StatusBar ───────── -->
+    <div class="statusbar">
+      <div class="status-left">
+        <span class="status-dot"></span>
+        <span class="status-text">Ready</span>
+      </div>
+      <span class="spacer"></span>
+      <span class="status-tokens">1.2k tokens · $0.004</span>
+    </div>
+
+  </div>
+</body>
+</html>
