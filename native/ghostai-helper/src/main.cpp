@@ -118,7 +118,13 @@ static std::string jsonEscapeW(const wchar_t* s, int len) {
     return out;
 }
 
-static void emitKey(const char* kind, const wchar_t* chars, int charLen) {
+// Modifier bit flags forwarded on nav/edit keys (must match CAPTURE_MOD_* in
+// src/shared/types.ts): shift extends a selection, ctrl moves/deletes by word.
+// NB: not MOD_SHIFT/MOD_CTRL — those are Win32 hotkey macros from winuser.h.
+static const int CAP_MOD_SHIFT = 1;
+static const int CAP_MOD_CTRL  = 2;
+
+static void emitKeyMods(const char* kind, const wchar_t* chars, int charLen, int mods) {
     long long seq = g_seq.fetch_add(1);
     long long epoch = g_epoch.load();
     std::string line = "{\"type\":\"key\",\"payload\":{\"seq\":";
@@ -133,8 +139,16 @@ static void emitKey(const char* kind, const wchar_t* chars, int charLen) {
         line += jsonEscapeW(chars, charLen);
         line += "\"";
     }
+    if (mods) {
+        line += ",\"mods\":";
+        line += std::to_string(mods);
+    }
     line += "}}\n";
     enqueue(std::move(line));
+}
+
+static void emitKey(const char* kind, const wchar_t* chars, int charLen) {
+    emitKeyMods(kind, chars, charLen, 0);
 }
 
 static void emitSimple(const char* type) {
@@ -278,17 +292,27 @@ static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lP
     const bool realCtrl = down(VK_RCONTROL) || (down(VK_LCONTROL) && !altGr);
     const bool winKey  = down(VK_LWIN) || down(VK_RWIN);
     const bool altReal = down(VK_LMENU);
+    const bool shiftDown = down(VK_SHIFT);
 
-    // Pass through OS/global chords (so our globalShortcuts + copy/paste survive),
-    // plus Escape (lets the hide-overlay global hotkey fire) and Tab.
-    if (winKey || realCtrl || altReal || vk == VK_ESCAPE || vk == VK_TAB) {
-        return passthrough();
+    // Nav/edit keys (arrows, home/end, backspace/delete, enter) belong to the
+    // InvisiQ input while capturing. Capture them WITH their shift/ctrl mods —
+    // shift extends a selection, ctrl moves/deletes by word — so the renderer can
+    // do full editing (select, bulk-delete, word ops). We still defer to the OS
+    // for Alt/Win-chorded nav (Alt+Left = back, Win+Arrow = snap).
+    if (const char* kind = navEditKind((int)vk)) {
+        if (winKey || altReal || altGr) {
+            return passthrough();
+        }
+        const int mods = (shiftDown ? CAP_MOD_SHIFT : 0) | (realCtrl ? CAP_MOD_CTRL : 0);
+        emitKeyMods(kind, nullptr, 0, mods);
+        return suppress();
     }
 
-    // Nav/edit keys — emit on down (+ auto-repeat), suppress.
-    if (const char* kind = navEditKind((int)vk)) {
-        emitKey(kind, nullptr, 0);
-        return suppress();
+    // Pass through remaining OS/global chords (Ctrl+C/V/X/A/Z so the foreground
+    // clipboard + our Ctrl+Shift+* globalShortcuts survive), plus Escape (lets the
+    // hide-overlay hotkey fire) and Tab.
+    if (winKey || realCtrl || altReal || vk == VK_ESCAPE || vk == VK_TAB) {
+        return passthrough();
     }
 
     // Translate printable keys via ToUnicodeEx. Flag 0x4 = do NOT mutate the

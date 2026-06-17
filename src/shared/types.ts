@@ -345,6 +345,10 @@ export type CaptureKeyKind =
   | 'home'
   | 'end';
 
+/** Modifier bit flags carried on a capture key event. */
+export const CAPTURE_MOD_SHIFT = 1;
+export const CAPTURE_MOD_CTRL = 2;
+
 /**
  * A single translated keystroke from the helper's WH_KEYBOARD_LL hook.
  * `seq` is monotonic per capture session; `epoch` identifies the session so
@@ -355,6 +359,12 @@ export interface CaptureKeyEvent {
   epoch: number;
   kind: CaptureKeyKind;
   char?: string; // present only when kind === 'char'
+  /**
+   * Modifier bitmask (CAPTURE_MOD_SHIFT | CAPTURE_MOD_CTRL) — only meaningful on
+   * nav/edit kinds, where the renderer uses it to extend selections (shift) and
+   * jump/delete by word (ctrl). Absent/0 for a plain keystroke.
+   */
+  mods?: number;
 }
 
 /** Proctor-detection snapshot pushed by the helper (confirmation only). */

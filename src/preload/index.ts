@@ -35,6 +35,7 @@ const VALID_CHANNELS = [
   'capture:key',
   'capture:state',
   'capture:failed',
+  'capture:paste',
   'proctor:detected',
   // Beta — auth + entitlement
   'auth:changed',

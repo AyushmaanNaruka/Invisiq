@@ -1,11 +1,102 @@
 import { useState, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
-import { Camera, Send, Square, X, Mic, MicOff, Keyboard, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Camera, Send, Square, X, Mic, MicOff, Keyboard, ShieldCheck, AlertTriangle, ClipboardPaste, Copy, Trash2 } from 'lucide-react';
 import { useToast } from './Toast';
 import { GhostTooltip } from './ui/GhostTooltip';
 import { useCapture } from '../hooks/useCapture';
 import type { ImageAttachment, CaptureKeyKind } from '@shared/types';
+import { CAPTURE_MOD_SHIFT, CAPTURE_MOD_CTRL } from '@shared/types';
 
 const MAX_SCREENSHOTS = 3;
+
+// ── Renderer-owned editing model for stealth capture ─────────────────────────
+// value + caret (active end of the selection) + anchor (fixed end). There is a
+// selection iff caret !== anchor. In stealth the textarea has no real OS focus,
+// so this — not the DOM — is the source of truth for text, caret, and selection.
+interface InputModel {
+  value: string;
+  caret: number;
+  anchor: number;
+}
+
+const isWordChar = (c: string): boolean => /[\w]/.test(c);
+
+/** Previous word boundary left of pos: skip trailing spaces, then the word. */
+function wordLeft(v: string, pos: number): number {
+  let i = pos;
+  while (i > 0 && !isWordChar(v[i - 1])) i--;
+  while (i > 0 && isWordChar(v[i - 1])) i--;
+  return i;
+}
+/** Next word boundary right of pos: skip spaces, then the word. */
+function wordRight(v: string, pos: number): number {
+  let i = pos;
+  const n = v.length;
+  while (i < n && !isWordChar(v[i])) i++;
+  while (i < n && isWordChar(v[i])) i++;
+  return i;
+}
+
+/**
+ * Pure reducer: apply one helper-forwarded key (with its modifier bits) against
+ * the previous model. Shift extends the selection (anchor stays put); Ctrl moves
+ * / deletes by word; an edit with a live selection replaces or removes it
+ * (this is what makes range-select + Backspace a bulk delete).
+ */
+function applyCaptureKey(
+  prev: InputModel,
+  kind: CaptureKeyKind,
+  char: string | undefined,
+  mods: number
+): InputModel {
+  const shift = (mods & CAPTURE_MOD_SHIFT) !== 0;
+  const ctrl = (mods & CAPTURE_MOD_CTRL) !== 0;
+  const v = prev.value;
+  const len = v.length;
+  const clamp = (n: number): number => Math.max(0, Math.min(n, len));
+  const caret = clamp(prev.caret);
+  const anchor = clamp(prev.anchor);
+  const lo = Math.min(caret, anchor);
+  const hi = Math.max(caret, anchor);
+  const hasSel = lo !== hi;
+  // Move the active end; Shift keeps the anchor (extend), otherwise collapse.
+  const move = (to: number): InputModel => {
+    const c = clamp(to);
+    return { value: v, caret: c, anchor: shift ? anchor : c };
+  };
+
+  switch (kind) {
+    case 'char': {
+      if (!char) return prev;
+      const nv = v.slice(0, lo) + char + v.slice(hi);
+      const c = lo + char.length;
+      return { value: nv, caret: c, anchor: c };
+    }
+    case 'backspace': {
+      if (hasSel) return { value: v.slice(0, lo) + v.slice(hi), caret: lo, anchor: lo };
+      const start = ctrl ? wordLeft(v, caret) : Math.max(0, caret - 1);
+      if (start === caret) return prev;
+      return { value: v.slice(0, start) + v.slice(caret), caret: start, anchor: start };
+    }
+    case 'delete': {
+      if (hasSel) return { value: v.slice(0, lo) + v.slice(hi), caret: lo, anchor: lo };
+      const end = ctrl ? wordRight(v, caret) : Math.min(len, caret + 1);
+      if (end === caret) return prev;
+      return { value: v.slice(0, caret) + v.slice(end), caret, anchor: caret };
+    }
+    case 'left':
+      if (hasSel && !shift && !ctrl) return move(lo); // collapse to left edge
+      return move(ctrl ? wordLeft(v, caret) : caret - 1);
+    case 'right':
+      if (hasSel && !shift && !ctrl) return move(hi); // collapse to right edge
+      return move(ctrl ? wordRight(v, caret) : caret + 1);
+    case 'home':
+      return move(0);
+    case 'end':
+      return move(len);
+    default:
+      return prev;
+  }
+}
 
 interface InputAreaProps {
   isStreaming: boolean;
@@ -44,22 +135,21 @@ export default function InputArea({
   injectedText,
   onInjectedTextConsumed,
 }: InputAreaProps): JSX.Element {
-  // Cursor-aware input model: in stealth capture the textarea never holds real
-  // OS focus, so the DOM caret is meaningless — we are the source of truth for
-  // both the value and the caret position.
-  // Single source of truth: value + caret held together so updates stay pure
-  // (no nested setState). In stealth capture the textarea never holds real OS
-  // focus, so the DOM caret is meaningless — this model drives everything.
-  const [model, setModel] = useState<{ value: string; caret: number }>({ value: '', caret: 0 });
+  // Single source of truth: value + caret (active end) + anchor (fixed end of a
+  // selection), held together so updates stay pure. In stealth capture the
+  // textarea never holds real OS focus, so the DOM caret is meaningless — this
+  // model drives everything, including selection (see applyCaptureKey).
+  const [model, setModel] = useState<InputModel>({ value: '', caret: 0, anchor: 0 });
   const text = model.value;
-  const caret = model.caret;
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = externalInputRef || internalRef;
   const { showToast } = useToast();
 
   // ── Central text editing (used by both normal typing and capture keys) ──
+  // Collapses any selection at the new caret (anchor === caret).
   const setValue = useCallback((value: string, nextCaret?: number) => {
-    setModel({ value, caret: Math.max(0, Math.min(nextCaret ?? value.length, value.length)) });
+    const c = Math.max(0, Math.min(nextCaret ?? value.length, value.length));
+    setModel({ value, caret: c, anchor: c });
   }, []);
 
   // Auto-resize textarea
@@ -78,7 +168,7 @@ export default function InputArea({
       if (newText) {
         setModel((prev) => {
           const merged = prev.value ? `${prev.value} ${newText}` : newText;
-          return { value: merged, caret: merged.length };
+          return { value: merged, caret: merged.length, anchor: merged.length };
         });
       }
       consumedLenRef.current = transcript.length;
@@ -118,51 +208,76 @@ export default function InputArea({
     handleSendRef.current = handleSend;
   }, [handleSend]);
 
-  const onCaptureKey = useCallback((kind: CaptureKeyKind, char?: string) => {
+  const onCaptureKey = useCallback((kind: CaptureKeyKind, char?: string, mods = 0) => {
     if (kind === 'enter') {
-      handleSendRef.current();
+      // Shift+Enter inserts a newline (replacing any selection); plain Enter sends.
+      if (mods & CAPTURE_MOD_SHIFT) {
+        setModel((prev) => applyCaptureKey(prev, 'char', '\n', 0));
+      } else {
+        handleSendRef.current();
+      }
       return;
     }
-    // Pure reducer over the combined {value, caret} model — no nested setState.
-    setModel((prev) => {
-      const value = prev.value;
-      const pos = Math.max(0, Math.min(prev.caret, value.length));
-      switch (kind) {
-        case 'char':
-          if (!char) return prev;
-          return { value: value.slice(0, pos) + char + value.slice(pos), caret: pos + char.length };
-        case 'backspace':
-          return pos > 0 ? { value: value.slice(0, pos - 1) + value.slice(pos), caret: pos - 1 } : prev;
-        case 'delete':
-          return { value: value.slice(0, pos) + value.slice(pos + 1), caret: pos };
-        case 'left':
-          return { value, caret: Math.max(0, pos - 1) };
-        case 'right':
-          return { value, caret: Math.min(value.length, pos + 1) };
-        case 'home':
-          return { value, caret: 0 };
-        case 'end':
-          return { value, caret: value.length };
-        default:
-          return prev;
-      }
-    });
+    setModel((prev) => applyCaptureKey(prev, kind, char, mods));
   }, []);
 
-  const capture = useCapture(onCaptureKey);
+  // ── Paste into the renderer-owned model ──
+  // In stealth the overlay is never the foreground window, so neither a DOM paste
+  // event nor a passed-through Ctrl+V ever reaches this textarea. We read the
+  // clipboard through IPC and splice it in at the tracked caret ourselves. Driven
+  // by both the Paste button (mouse — safe on a NOACTIVATE window) and a global
+  // Ctrl+V that main forwards as 'capture:paste' while capture is active.
+  const pasteFromClipboard = useCallback(async () => {
+    try {
+      const res = await window.ghostAPI.clipboard.read();
+      const clip = res?.text;
+      if (!clip) return;
+      // Reuse the char reducer so the paste replaces any active selection.
+      setModel((prev) => applyCaptureKey(prev, 'char', clip, 0));
+    } catch {
+      showToast('error', 'Could not read clipboard');
+    }
+  }, [showToast]);
 
-  // Keep the DOM selection in sync with our model caret so that, when a caret is
-  // rendered, it sits in the right place after each programmatic edit.
+  // Copy the current selection (or the whole input if nothing is selected) to the
+  // clipboard. A mouse click on the overlay is safe — it never activates the
+  // WS_EX_NOACTIVATE window — so this works even while Ctrl+C stays with the
+  // foreground app (the copy-the-question-off-screen flow).
+  const copyInput = useCallback(async () => {
+    const lo = Math.min(model.caret, model.anchor);
+    const hi = Math.max(model.caret, model.anchor);
+    const toCopy = lo !== hi ? model.value.slice(lo, hi) : model.value;
+    if (!toCopy) return;
+    try {
+      await window.ghostAPI.clipboard.copy(toCopy);
+      showToast('success', lo !== hi ? 'Selection copied' : 'Copied');
+    } catch {
+      showToast('error', 'Copy failed');
+    }
+  }, [model, showToast]);
+
+  // Bulk delete: wipe the whole field in one action.
+  const clearInput = useCallback(() => {
+    setModel({ value: '', caret: 0, anchor: 0 });
+  }, []);
+
+  const capture = useCapture(onCaptureKey, pasteFromClipboard);
+
+  // Keep the DOM selection in sync with our model so the rendered caret AND the
+  // highlighted selection match after every programmatic edit. Direction is set
+  // so Shift-extending leftward shows the selection growing the right way.
   useLayoutEffect(() => {
     const el = textareaRef.current;
     if (el && document.activeElement === el) {
       try {
-        el.setSelectionRange(caret, caret);
+        const start = Math.min(model.caret, model.anchor);
+        const end = Math.max(model.caret, model.anchor);
+        el.setSelectionRange(start, end, model.caret < model.anchor ? 'backward' : 'forward');
       } catch {
         /* selection not supported in this state */
       }
     }
-  }, [caret, text, textareaRef]);
+  }, [model, textareaRef]);
 
   // When capture activates (e.g. via the focus-input hotkey), DOM-focus the
   // textarea. This does NOT activate the OS window (it stays WS_EX_NOACTIVATE) —
@@ -240,7 +355,7 @@ export default function InputArea({
       <div className="flex items-end gap-2">
         {/* Screenshot button */}
         <GhostTooltip
-          content={atMaxScreenshots ? `Max ${MAX_SCREENSHOTS} screenshots` : 'Capture screen (Ctrl+Alt+S)'}
+          content={atMaxScreenshots ? `Max ${MAX_SCREENSHOTS} screenshots` : 'Capture screen (Ctrl+Shift+S)'}
           placement="top"
         >
           <button
@@ -294,11 +409,63 @@ export default function InputArea({
           </button>
         </GhostTooltip>
 
+        {/* Paste from clipboard — in stealth the window is never foreground, so
+            browser-native Ctrl+V can't reach the input; this reads the clipboard
+            via IPC and inserts at the caret. (Ctrl+V also works during capture.) */}
+        <GhostTooltip content="Paste from clipboard (Ctrl+V while stealth typing)" placement="top">
+          <button
+            onMouseDown={(e) => e.preventDefault()} // keep textarea focus (caret stays live)
+            onClick={() => void pasteFromClipboard()}
+            disabled={isStreaming}
+            className="p-1.5 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary disabled:opacity-50 transition-colors shrink-0 mb-0.5"
+          >
+            <ClipboardPaste size={16} />
+          </button>
+        </GhostTooltip>
+
+        {/* Copy + Clear — only when there's text. Keyboard Ctrl+C/Ctrl+X stay with
+            the foreground app (so you can copy a question off-screen); these give
+            an in-overlay way to copy the draft or bulk-delete the whole field. */}
+        {text.length > 0 && (
+          <>
+            <GhostTooltip content="Copy input (selection, else all)" placement="top">
+              <button
+                onMouseDown={(e) => e.preventDefault()} // keep textarea focus (caret stays live)
+                onClick={() => void copyInput()}
+                className="p-1.5 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors shrink-0 mb-0.5"
+              >
+                <Copy size={16} />
+              </button>
+            </GhostTooltip>
+            <GhostTooltip content="Clear input" placement="top">
+              <button
+                onMouseDown={(e) => e.preventDefault()} // keep textarea focus (caret stays live)
+                onClick={clearInput}
+                disabled={isStreaming}
+                className="p-1.5 rounded hover:bg-bg-hover text-text-secondary hover:text-status-error disabled:opacity-50 transition-colors shrink-0 mb-0.5"
+              >
+                <Trash2 size={16} />
+              </button>
+            </GhostTooltip>
+          </>
+        )}
+
         {/* Text input */}
         <textarea
           ref={textareaRef}
           value={text}
           onChange={(e) => setValue(e.target.value, e.target.selectionStart ?? e.target.value.length)}
+          onSelect={(e) => {
+            // In focusable (non-stealth) mode the user can mouse/keyboard-select
+            // natively; mirror that into our model so Copy/Clear act on it. In
+            // stealth the helper drives selection and WE set the DOM range, so
+            // skip to avoid a feedback loop.
+            if (capture.active) return;
+            const t = e.currentTarget;
+            const s = t.selectionStart ?? 0;
+            const en = t.selectionEnd ?? s;
+            setModel((prev) => (prev.anchor === s && prev.caret === en ? prev : { value: prev.value, anchor: s, caret: en }));
+          }}
           onKeyDown={handleKeyDown}
           onFocus={() => { if (!capture.active) void capture.enter(); }}
           placeholder={

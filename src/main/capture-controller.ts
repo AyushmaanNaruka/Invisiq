@@ -16,6 +16,7 @@
  */
 
 import { randomBytes } from 'node:crypto';
+import { globalShortcut } from 'electron';
 import { getOverlayWindow, hideOverlay } from './overlay';
 import {
   startAgent,
@@ -56,6 +57,38 @@ function notify(channel: string, payload?: unknown): void {
 
 function notifyCaptureState(): void {
   notify('capture:state', { active: captureActive, epoch, tier });
+}
+
+// ── Paste-into-capture shortcut ───────────────────────────────────────────────
+// In stealth the overlay is WS_EX_NOACTIVATE (never foreground), so neither a DOM
+// paste event nor the helper's pass-through Ctrl+V reaches the textarea. While
+// capture is active we grab Ctrl+V system-wide and forward a 'capture:paste' to the
+// renderer, which reads the clipboard via IPC and inserts at the caret. This is
+// consistent with capture's model (all keys belong to InvisiQ while typing) and is
+// scoped to the session — released the moment capture exits. Fail-soft: if the
+// grab fails, the Paste button in InputArea remains the reliable path.
+const PASTE_ACCELERATOR = 'CommandOrControl+V';
+
+function registerPasteShortcut(): void {
+  try {
+    if (globalShortcut.isRegistered(PASTE_ACCELERATOR)) return;
+    const ok = globalShortcut.register(PASTE_ACCELERATOR, () => {
+      if (captureActive) notify('capture:paste');
+    });
+    if (!ok) logger.warn('[capture] could not grab Ctrl+V for paste — use the Paste button');
+  } catch (err) {
+    logger.warn('[capture] paste shortcut register threw:', err);
+  }
+}
+
+function unregisterPasteShortcut(): void {
+  try {
+    if (globalShortcut.isRegistered(PASTE_ACCELERATOR)) {
+      globalShortcut.unregister(PASTE_ACCELERATOR);
+    }
+  } catch {
+    /* best effort */
+  }
 }
 
 // ── Helper response handling ────────────────────────────────────────────────
@@ -191,6 +224,7 @@ export function enterCapture(): { active: boolean; epoch: number; tier: CaptureT
 
   epoch += 1;
   captureActive = true;
+  registerPasteShortcut();
 
   if (isHelperConnected()) {
     tier = 'helper';
@@ -213,6 +247,7 @@ export async function exitCapture(): Promise<{ active: boolean }> {
   if (!captureActive) return { active: false };
 
   stopHeartbeat();
+  unregisterPasteShortcut();
 
   if (tier === 'helper') {
     sendCommand({ type: 'set_capture', payload: { active: false, epoch } });
@@ -267,6 +302,7 @@ export function isCaptureActive(): boolean {
  */
 export function cleanupCaptureController(): void {
   stopHeartbeat();
+  unregisterPasteShortcut();
   if (unsubscribeResponses) {
     unsubscribeResponses();
     unsubscribeResponses = null;

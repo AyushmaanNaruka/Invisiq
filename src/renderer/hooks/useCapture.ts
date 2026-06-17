@@ -18,7 +18,7 @@ import type { CaptureKeyEvent, CaptureKeyKind, CaptureTier, ProctorDetection } f
  */
 
 export interface CaptureKeyHandler {
-  (kind: CaptureKeyKind, char?: string): void;
+  (kind: CaptureKeyKind, char?: string, mods?: number): void;
 }
 
 export interface UseCapture {
@@ -34,18 +34,22 @@ export interface UseCapture {
   panic(): Promise<void>;
 }
 
-export function useCapture(onKey: CaptureKeyHandler): UseCapture {
+export function useCapture(onKey: CaptureKeyHandler, onPaste?: () => void): UseCapture {
   const [active, setActive] = useState(false);
   const [tier, setTier] = useState<CaptureTier>('none');
   const [epoch, setEpoch] = useState(0);
   const [proctor, setProctor] = useState<ProctorDetection>({ detected: false, names: [] });
   const [degraded, setDegraded] = useState(false);
 
-  // Keep the latest handler in a ref so the IPC subscription doesn't re-bind.
+  // Keep the latest handlers in refs so the IPC subscription doesn't re-bind.
   const onKeyRef = useRef(onKey);
   useEffect(() => {
     onKeyRef.current = onKey;
   }, [onKey]);
+  const onPasteRef = useRef(onPaste);
+  useEffect(() => {
+    onPasteRef.current = onPaste;
+  }, [onPaste]);
 
   // Track the current epoch + last applied seq to reject stale/out-of-order keys.
   const epochRef = useRef(0);
@@ -94,7 +98,7 @@ export function useCapture(onKey: CaptureKeyHandler): UseCapture {
       if (e.epoch !== epochRef.current) return;
       if (e.seq <= lastSeqRef.current) return; // out-of-order / duplicate guard
       lastSeqRef.current = e.seq;
-      onKeyRef.current(e.kind, e.char);
+      onKeyRef.current(e.kind, e.char, e.mods);
     });
 
     // Legacy uiohook fallback tier (no seq/epoch — append-only semantics).
@@ -114,6 +118,11 @@ export function useCapture(onKey: CaptureKeyHandler): UseCapture {
       setDegraded(true);
     });
 
+    // Ctrl+V while capture is active (grabbed globally in main) → paste request.
+    const offPaste = window.ghostAPI.on('capture:paste', () => {
+      onPasteRef.current?.();
+    });
+
     return () => {
       offState();
       offKey();
@@ -123,6 +132,7 @@ export function useCapture(onKey: CaptureKeyHandler): UseCapture {
       offEnter();
       offProctor();
       offFailed();
+      offPaste();
     };
   }, []);
 
