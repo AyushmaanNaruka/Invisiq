@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import MessageBubble from './MessageBubble';
-import { InvisiQMark } from './ui/InvisiQLogo';
+import { InvisiQGhost } from './ui/InvisiQLogo';
 import { fadeInUp } from './ui/animations';
 import type { ChatMessage } from '@shared/types';
 
@@ -70,7 +70,7 @@ export default function ChatPanel({ messages, isStreaming, streamingMessageId }:
           className="text-center px-6"
         >
           <div className="flex justify-center mb-3">
-            <InvisiQMark size={56} className="rounded-2xl" />
+            <InvisiQGhost size={56} />
           </div>
           <h1 className="text-text-primary text-lg font-semibold mb-1.5">InvisiQ</h1>
           <p className="text-text-secondary text-xs mb-4">
