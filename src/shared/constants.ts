@@ -16,6 +16,15 @@ export const SUPABASE_ANON_KEY =
 export const CURRENT_TOS_VERSION = '2026-06-08';
 
 // ══════════════════════════════════════
+//  AUTO-UPDATE FEED
+// ══════════════════════════════════════
+// Public releases page — manual-download fallback when the in-app updater feed
+// is unreachable (offline, rate-limited, or pre-publish). Must stay in sync with
+// publish.owner/repo in electron-builder.yml. Releases MUST be public.
+export const RELEASES_LATEST_URL =
+  'https://github.com/Ghost-AI-Interview/ghostai/releases/latest';
+
+// ══════════════════════════════════════
 //  DEFAULT HOTKEYS
 // ══════════════════════════════════════
 

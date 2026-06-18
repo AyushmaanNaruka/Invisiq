@@ -39,7 +39,12 @@ export default function UpdateNotification(): null {
 
     const cleanupError = window.ghostAPI.on('update:error', (data: unknown) => {
       const { message } = data as { message: string };
-      showToast('error', 'Update check failed');
+      showToast('error', 'Update check failed', {
+        label: 'Get it manually',
+        onClick: () => {
+          window.ghostAPI.update.openReleases();
+        },
+      });
       console.error('[Update] Error:', message);
     });
 

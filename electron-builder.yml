@@ -31,18 +31,25 @@ win:
   icon: assets/invisiq-icon-512.png
   executableName: RuntimeBroker
   legalTrademarks: "© Microsoft Corporation. All rights reserved."
+  # NSIS (not portable): electron-updater cannot self-update a portable build —
+  # it has no install location to replace and electron-builder emits no
+  # latest.yml for it. NSIS produces the installer + latest.yml + .blockmap the
+  # updater feed needs. Per-user install (perMachine:false) → no UAC prompt.
   target:
-    - target: portable
+    - target: nsis
       arch:
         - x64
 nsis:
-  oneClick: false
-  perMachine: false
-  allowToChangeInstallationDirectory: true
-  createDesktopShortcut: false
-  createStartMenuShortcut: false
+  oneClick: true # silent Squirrel-style install; auto-update installs run silent regardless
+  perMachine: false # install to %LOCALAPPDATA%, no admin prompt
+  allowToChangeInstallationDirectory: false # ignored under oneClick anyway
+  createDesktopShortcut: false # stealth: no desktop footprint
+  createStartMenuShortcut: true # the only launcher; named "Runtime Broker" (disguise-consistent)
   deleteAppDataOnUninstall: true
+  artifactName: ${productName} Setup ${version}.${ext}
+# Auto-update feed. Releases MUST be public (no GH token shipped in the client)
+# for the updater to read latest.yml. Source repo: Ghost-AI-Interview/ghostai.
 publish:
   provider: github
-  owner: Nezeon
-  repo: GhostAI
+  owner: Ghost-AI-Interview
+  repo: ghostai

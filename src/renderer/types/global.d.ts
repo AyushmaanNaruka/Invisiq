@@ -132,6 +132,7 @@ declare global {
         download(): Promise<void>;
         install(): Promise<void>;
         versionStatus(): Promise<VersionGateStatus>;
+        openReleases(): Promise<void>;
       };
       /** Phase 4: System audio capture */
       audio: {

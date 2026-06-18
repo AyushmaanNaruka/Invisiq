@@ -251,6 +251,8 @@ const ghostAPI = {
       ipcRenderer.invoke('update:install'),
     versionStatus: () =>
       ipcRenderer.invoke('update:version-status'),
+    openReleases: () =>
+      ipcRenderer.invoke('update:open-releases'),
   },
 
   // ══════════════════════════════════════

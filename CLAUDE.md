@@ -342,6 +342,7 @@ modes:list            modes:save            modes:delete
 app:get-info          app:quit              app:open-data-folder
 monitors:get-all      monitors:move-overlay
 update:check          update:download       update:install
+update:version-status update:open-releases
 audio:start-system-capture   audio:stop-system-capture   audio:capture-status
 companion:start  companion:stop  companion:status  companion:devices
 template:list  template:save  template:delete

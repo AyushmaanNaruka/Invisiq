@@ -1,6 +1,6 @@
 import { autoUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
-import { BrowserWindow, app } from 'electron';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@shared/constants';
+import { BrowserWindow, app, shell } from 'electron';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, RELEASES_LATEST_URL } from '@shared/constants';
 import type { VersionGateStatus } from '@shared/types';
 
 let overlayRef: BrowserWindow | null = null;
@@ -175,4 +175,16 @@ export function downloadUpdate(): void {
 
 export function installUpdate(): void {
   autoUpdater.quitAndInstall(false, true);
+}
+
+/**
+ * Manual-download fallback. Opens the public releases page in the default
+ * browser. This is the safety net for the forced-update screen so a killed /
+ * below-floor build is never a dead end when the in-app feed is unreachable
+ * (offline, GitHub rate-limit, or pre-publish).
+ */
+export function openReleasesPage(): void {
+  shell.openExternal(RELEASES_LATEST_URL).catch((error) => {
+    console.error('[Updater] Failed to open releases page:', (error as Error).message);
+  });
 }
