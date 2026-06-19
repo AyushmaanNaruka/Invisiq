@@ -70,7 +70,12 @@ nsis:
   #   assets/installerSidebar.bmp  → 164x314 welcome/finish art
   #   assets/installerHeader.bmp   → 150x57  inner-page header band
   # All three are produced by `npm run gen:installer-assets`.
-  artifactName: ${productName} Setup ${version}.${ext}
+  # Version-LESS installer filename so the website can link to a permanent URL:
+  #   https://github.com/Ghost-AI-Interview/invisiq-releases/releases/latest/download/InvisiQ-Setup.exe
+  # GitHub's /releases/latest/download/<name> redirect only works if <name> is
+  # CONSTANT across releases. electron-updater reads the filename from latest.yml
+  # (not the URL), so a constant name does NOT break auto-update or blockmaps.
+  artifactName: InvisiQ-Setup.${ext}
 # Auto-update feed. Releases MUST be public (no GH token shipped in the client)
 # for the updater to read latest.yml. Source (ghostai) stays PRIVATE to protect
 # the stealth method; only release artifacts go to the dedicated PUBLIC repo below.
