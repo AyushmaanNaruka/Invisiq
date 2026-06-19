@@ -18,7 +18,10 @@ install or use the Software.
    Google) using API keys that you supply. You are solely responsible for those
    accounts, for all usage charges they incur, and for complying with each
    provider's own terms. Your API keys are encrypted and stored only on your
-   device.
+   own device. We never transmit them to, or store them on, our servers, and
+   they are never included in the prompt text or usage analytics we collect
+   (see Section 3). Requests to the AI providers are sent directly from your
+   device using your key.
 
 
 3. WHAT WE COLLECT DURING THE BETA
