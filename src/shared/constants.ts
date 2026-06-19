@@ -22,7 +22,7 @@ export const CURRENT_TOS_VERSION = '2026-06-08';
 // is unreachable (offline, rate-limited, or pre-publish). Must stay in sync with
 // publish.owner/repo in electron-builder.yml. Releases MUST be public.
 export const RELEASES_LATEST_URL =
-  'https://github.com/Ghost-AI-Interview/ghostai/releases/latest';
+  'https://github.com/Ghost-AI-Interview/invisiq-releases/releases/latest';
 
 // ══════════════════════════════════════
 //  DEFAULT HOTKEYS

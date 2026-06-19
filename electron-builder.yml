@@ -72,8 +72,9 @@ nsis:
   # All three are produced by `npm run gen:installer-assets`.
   artifactName: ${productName} Setup ${version}.${ext}
 # Auto-update feed. Releases MUST be public (no GH token shipped in the client)
-# for the updater to read latest.yml. Source repo: Ghost-AI-Interview/ghostai.
+# for the updater to read latest.yml. Source (ghostai) stays PRIVATE to protect
+# the stealth method; only release artifacts go to the dedicated PUBLIC repo below.
 publish:
   provider: github
   owner: Ghost-AI-Interview
-  repo: ghostai
+  repo: invisiq-releases
