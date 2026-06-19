@@ -5,6 +5,8 @@
 > **License:** MIT
 > **Last Updated:** February 20, 2026
 
+> ⚠️ **HISTORICAL SNAPSHOT — frozen ~June 3, 2026 (Phase 4).** This is a large point-in-time export and is **superseded** by `CLAUDE.md` (the single source of truth) and the per-topic docs in `/docs`. It predates Phase 5 — the **beta launch** (Google auth, server-clocked 14-day trial, analytics + prompt capture, T&C gate, remote kill-switch / version floor), **Model B default-on stealth**, **cloud-only** (Ollama removed), the **Alt→Shift hotkey** migration, real **NSIS auto-update**, and the **single universal mode** collapse (modes + templates removed). Treat anything here that conflicts with CLAUDE.md as out of date.
+
 ---
 
 ## Table of Contents

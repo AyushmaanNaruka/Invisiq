@@ -139,12 +139,6 @@ export interface Mode {
   isBuiltIn: boolean;
 }
 
-export interface CustomMode extends Mode {
-  isBuiltIn: false;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // ══════════════════════════════════════
 //  AUDIO
 // ══════════════════════════════════════
@@ -195,41 +189,6 @@ export interface CodeDetectionResult {
   language?: string;
   problemTitle?: string;
   timestamp: string;
-}
-
-// ══════════════════════════════════════
-//  PHASE 4: TEMPLATES
-// ══════════════════════════════════════
-
-export type TemplateCategory =
-  | 'coding'
-  | 'writing'
-  | 'analysis'
-  | 'meeting'
-  | 'solve'
-  | 'research'
-  | 'debugging'
-  | 'custom';
-
-export interface TemplateVariable {
-  name: string;
-  label: string;
-  placeholder: string;
-  required: boolean;
-}
-
-export interface PromptTemplate {
-  id: string;
-  name: string;
-  description: string;
-  category: TemplateCategory;
-  prompt: string;
-  variables: TemplateVariable[];
-  isBuiltIn: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  usageCount: number;
-  tags: string[];
 }
 
 // ══════════════════════════════════════
@@ -471,8 +430,6 @@ export interface AppSettings {
     codeDetectionIntervalMs: number;
   };
 
-  customModes: CustomMode[];
-
   audio: {
     engine: SpeechEngine;
     language: string;
@@ -495,12 +452,6 @@ export interface AppSettings {
     requirePairing: boolean;
     pairedDevices: CompanionDevice[];
     autoStart: boolean;
-  };
-
-  // Phase 4: Prompt templates
-  templates: {
-    customTemplates: PromptTemplate[];
-    recentIds: string[];
   };
 
   // Phase 4: Local memory

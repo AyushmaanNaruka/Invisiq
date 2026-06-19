@@ -2,6 +2,13 @@
 
 > **Your AI copilot that sees everything, but is seen by no one.**
 
+> ⚠️ **HISTORICAL DESIGN SPEC — frozen ~June 3, 2026.** This PRD captures the original product vision and is preserved for reference. It does **not** reflect several shipped changes. For current behavior, trust **CLAUDE.md** and **docs/InvisiQ-API-Contract.md**. Notable deltas since this was written:
+> - **Single universal mode** — the four modes (General/Coding/Meeting/Solve), custom modes, and the prompt-template library were **removed**; one intent-adaptive prompt replaces them.
+> - **Cloud-only (BYOK)** — the Ollama / local-LLM provider was **removed permanently**. Providers: OpenAI, Anthropic, Google Gemini.
+> - **Beta is gated & monetized** — Google sign-in, a server-clocked 14-day trial (fail-closed), analytics + typed-prompt capture (T&C-gated), and a remote kill-switch / version floor. "Zero telemetry" no longer applies during the beta. See `docs/InvisiQ-Beta-Launch-Plan.md`.
+> - **Model B default-on stealth** — suppressing out-of-process capture helper + logical-focus typing (CLAUDE.md §1c).
+> - **Hotkeys** migrated from Alt to the **Shift** modifier.
+
 ---
 
 | Field | Value |

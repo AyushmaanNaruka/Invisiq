@@ -15,11 +15,14 @@
 
 ### Brand vs. disguise (do not "fix" these)
 
-"InvisiQ" is the **user-facing brand** — use it in UI, docs, system prompts, and any text a user sees. It is **deliberately NOT** used for the build/process identity, which is disguised so the app hides from Task Manager and proctoring tools. Leave these as-is:
+"InvisiQ" is the **user-facing brand** — use it in UI, docs, system prompts, and any text a user sees. The disguise that hides the app from proctoring tools lives in the **process image name + data dir**, NOT in the installer/Start-Menu label. The split (intentional — do not "reconcile" it):
 
-- `package.json` → `name: runtimebroker`, `author: Microsoft Corporation`
-- `electron-builder.yml` → `productName: Runtime Broker`, `executableName: RuntimeBroker`, `appId: com.ghostai.app`, `author/copyright: Microsoft Corporation`
-- `src/main/store.ts` → `RuntimeBroker` data directory + the legacy `ghostai` migration path
+- **User-facing (productName: InvisiQ):** installer heading ("InvisiQ Setup"), installer filename, Start Menu + search label, uninstaller / Installed Apps entry. `electron-builder.yml` → `productName: InvisiQ`, `copyright/legalTrademarks/author: InvisiQ`. This is intentional — do NOT revert to "Runtime Broker." (Trade-off: Task Manager's *Processes-tab* friendly name now reads "InvisiQ" too; that's accepted. The *Details-tab* image name + proctoring-scanned process stay `RuntimeBroker.exe`.)
+- **Disguised (the parts proctoring actually scans / that hold user data) — leave as-is:**
+  - `electron-builder.yml` → `executableName: RuntimeBroker` (the .exe / process image name proctoring tools enumerate), `appId: com.ghostai.app` (stable updater/NSIS upgrade identity)
+  - `package.json` → `name: runtimebroker`
+  - `src/main/stealth.ts` → `app.setName('RuntimeBroker')` + `setAppUserModelId('Microsoft.Windows.RuntimeBroker')`
+  - `src/main/store.ts` → `RuntimeBroker` data directory + the legacy `ghostai` migration path. **userData is derived from `app.setName`/`package.json name`, NOT from `productName`** — so the productName rename needed no data migration.
 
 Two more **stable identifiers** that look like the brand but must not be renamed:
 - `src/main/crypto.ts` → `APP_SALT = 'ghostai-v1-...'` — renaming this makes every saved API key undecryptable.
@@ -33,11 +36,15 @@ InvisiQ is an Electron desktop app that creates an **invisible overlay window** 
 
 1. Is **completely invisible** to all screen capture, screen sharing, and recording software (Zoom, Teams, Meet, OBS, Snipping Tool, proctoring tools)
 2. Captures the user's screen content via screenshots
-3. Sends screenshots + questions to AI vision models (OpenAI, Anthropic, Google)
+3. Sends screenshots + questions to cloud AI vision models (OpenAI, Anthropic, Google) — **cloud-only, BYOK**; the local-LLM/Ollama path was removed permanently
 4. Displays AI responses in a chat interface with markdown + code highlighting
 5. All controlled via global keyboard shortcuts that work from any application
 
 The core mechanism is Windows' `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` API, exposed in Electron as `win.setContentProtection(true)`.
+
+**Single universal mode.** There is no user-facing mode picker or template library. InvisiQ uses ONE intent-adaptive system prompt (`UNIVERSAL_MODE` in `src/shared/constants.ts`); the model infers what's needed (answer-first for questions, algorithm-first for code, talking points for meetings) from the message + screenshot. See §1d.
+
+**Beta is gated & monetized.** The shipping beta requires Google sign-in, enforces a server-clocked 14-day trial (fail-closed), captures analytics + prompts (disclosed via a T&C gate), and honors a remote kill-switch + minimum-version floor. See "Beta Launch — Auth, Trial, Analytics & Kill-Switch" below. This is Act 1 of a two-act plan (BYOK beta → own AI backend); see `docs/InvisiQ-Beta-Launch-Plan.md`.
 
 ---
 
@@ -51,6 +58,11 @@ All project documentation lives in the `/docs` directory. **Read the relevant do
 | `docs/InvisiQ-Wireframes.md` | UI mockups, design system, component hierarchy, animations | Working on any UI component |
 | `docs/InvisiQ-API-Contract.md` | IPC channels, AI provider interfaces, data models, types | Working on IPC, AI integration, or data layer |
 | `docs/InvisiQ-Planning.md` | Market research, architecture decisions, Claude Code commands | Understanding why decisions were made |
+| `docs/InvisiQ-Beta-Launch-Plan.md` | Two-act monetization plan, Supabase backend, trial/auth/analytics/kill-switch design | Working on backend, auth, entitlement, or telemetry |
+| `docs/RELEASE.md` | Build, sign, and publish the auto-update (NSIS) release | Cutting a release |
+| `docs/TESTING.md` | Stealth matrix, benchmarks, manual checklists | Verifying stealth or pre-release QA |
+
+> **Note:** `InvisiQ-PRD.md`, `InvisiQ-Wireframes.md`, `InvisiQ-Planning.md`, and the root `documentation.md` are **historical design specs** (frozen ~June 3, 2026). They carry a status banner and predate the single-mode collapse, Ollama removal, and the beta-launch track. Trust this file (CLAUDE.md) and the API contract for current behavior.
 
 ---
 
@@ -66,9 +78,10 @@ All project documentation lives in the `/docs` directory. **Read the relevant do
 | AI (Anthropic) | @anthropic-ai/sdk | latest |
 | AI (Google) | @google/generative-ai | latest |
 | OCR | tesseract.js | 5.x |
-| AI (Ollama) | Native fetch (NDJSON) | — |
+| Backend (Beta) | Supabase (Postgres + Edge Functions) | — |
+| Auth (Beta) | Google OAuth (via Supabase) | — |
 | Storage | electron-store | latest (with encryption) |
-| Auto-Update | electron-updater | latest |
+| Auto-Update | electron-updater (NSIS feed) | latest |
 | Markdown | react-markdown + rehype-highlight | latest |
 | Code Highlight | highlight.js | latest |
 | Bundler | Vite | 5.x |
@@ -80,134 +93,108 @@ All project documentation lives in the `/docs` directory. **Read the relevant do
 
 ```
 ghostai/
-├── CLAUDE.md                        ← YOU ARE HERE
-├── package.json
+├── CLAUDE.md                        ← YOU ARE HERE (single source of truth)
+├── package.json                     # name: runtimebroker (disguise — do not "fix")
 ├── electron-builder.yml
-├── tsconfig.json
-├── tsconfig.node.json
-├── vite.config.ts
-├── tailwind.config.ts
-├── postcss.config.js
+├── tsconfig.json / tsconfig.node.json / tsconfig.web.json
+├── vite.config.ts / tailwind.config.ts / postcss.config.js
 │
-├── docs/                             # Project documentation
-│   ├── InvisiQ-PRD.md
-│   ├── InvisiQ-Wireframes.md
-│   ├── InvisiQ-API-Contract.md
-│   └── InvisiQ-Planning.md
+├── docs/                             # See "Documentation Reference" above
+│   ├── InvisiQ-API-Contract.md       # IPC + provider contract (kept current)
+│   ├── InvisiQ-Beta-Launch-Plan.md   # Two-act monetization + backend design
+│   ├── RELEASE.md                    # Release/publish runbook
+│   ├── TESTING.md                    # Stealth matrix + QA checklists
+│   ├── TUTORIAL.md                   # End-user usage guide
+│   ├── InvisiQ-PRD.md                # ⚠ historical design spec
+│   ├── InvisiQ-Wireframes.md         # ⚠ historical design spec
+│   └── InvisiQ-Planning.md           # ⚠ historical design spec
 │
 ├── src/
 │   ├── main/                         # Electron Main Process (Node.js)
-│   │   ├── index.ts                  # App entry, lifecycle, window creation
-│   │   ├── overlay.ts                # BrowserWindow config, content protection
+│   │   ├── index.ts                  # App entry, lifecycle, window creation, stealth default-on
+│   │   ├── overlay.ts                # BrowserWindow config, content protection, stealth-focus
 │   │   ├── hotkeys.ts                # globalShortcut registration
-│   │   ├── screenshot.ts             # desktopCapturer, full + region capture
+│   │   ├── screenshot.ts             # desktopCapturer: full / silent / region / per-monitor / snip+crop
 │   │   ├── region-selector.ts        # Temporary full-screen selection window
 │   │   ├── stealth.ts                # Process disguise, stealth watchdog, alt-tab hiding
 │   │   ├── invisible-input.ts        # Legacy WH_KEYBOARD_LL hook (uiohook-napi) — capture fallback tier
 │   │   ├── capture-controller.ts     # Model B capture session: epoch, heartbeat, degradation ladder
 │   │   ├── resilience-controller.ts  # Spawns + pipes to ghostai_helper.exe (named pipe, JSON)
-│   │   ├── store.ts                  # electron-store with AES-256 encryption + schema backfill
+│   │   ├── crypto.ts                 # AES-256-GCM; v1 machine key + v2 entitlement-bound key
+│   │   ├── store.ts                  # electron-store with encryption + schema backfill
 │   │   ├── ipc-handlers.ts           # All ipcMain.handle() registrations
-│   │   ├── conversations.ts          # Filesystem-based conversation CRUD (Phase 2)
-│   │   ├── clipboard.ts              # Smart paste via PowerShell SendKeys (Phase 2)
-│   │   ├── clipboard-monitor.ts      # Clipboard polling monitor (Phase 2)
-│   │   ├── monitors.ts              # Multi-monitor detection + management (Phase 3)
-│   │   ├── updater.ts               # electron-updater auto-update (Phase 3)
-│   │   └── tray.ts                  # Optional system tray icon (Phase 3)
+│   │   ├── conversations.ts          # Filesystem-based conversation CRUD
+│   │   ├── clipboard.ts              # Smart paste via PowerShell SendKeys
+│   │   ├── clipboard-monitor.ts      # Clipboard polling monitor
+│   │   ├── monitors.ts               # Multi-monitor detection + management
+│   │   ├── audio-capture.ts          # System-audio loopback (electron-audio-loopback / WASAPI)
+│   │   ├── companion-server.ts       # HTTP + WebSocket companion server (QR pairing)
+│   │   ├── memory.ts                 # TF-IDF MemoryStore (local RAG)
+│   │   ├── export-service.ts         # Conversation export: JSON / MD / TXT / PDF
+│   │   ├── updater.ts                # electron-updater (NSIS feed) + version-gate
+│   │   ├── tray.ts                   # Optional system tray icon (default off)
+│   │   ├── auth.ts                   # Beta: Google OAuth via Supabase
+│   │   ├── entitlement.ts            # Beta: server-clocked 14-day trial (fail-closed)
+│   │   └── analytics.ts              # Beta: event + prompt capture (T&C-gated, server-redacted)
 │   │
 │   ├── preload/
 │   │   └── index.ts                  # contextBridge — exposes ghostAPI to renderer
 │   │
 │   ├── renderer/                     # React Frontend
-│   │   ├── index.html
-│   │   ├── main.tsx                  # React entry point
-│   │   ├── App.tsx                   # Root component, routing
+│   │   ├── index.html / main.tsx / App.tsx
 │   │   │
 │   │   ├── components/
-│   │   │   ├── HeaderBar.tsx         # Drag handle, mode/model selectors, settings
-│   │   │   ├── ChatPanel.tsx         # Message list, scroll, keyboard nav, welcome screen
-│   │   │   ├── MessageBubble.tsx     # Single message with markdown + copy/paste
-│   │   │   ├── CodeBlock.tsx         # Syntax highlighted code + copy/paste buttons
-│   │   │   ├── InputArea.tsx         # Text input, send/stop, screenshot, mic
-│   │   │   ├── StatusBar.tsx         # Connection dot, token count, status
-│   │   │   ├── Settings.tsx          # Slide-in panel with 5 tab components
-│   │   │   ├── SettingsHotkeys.tsx   # Hotkey recording + conflict detection (Phase 2)
-│   │   │   ├── SettingsDisplay.tsx   # Theme, opacity, font size, window size (Phase 2)
-│   │   │   ├── SettingsPrivacy.tsx   # Toggles, process name, clear data (Phase 2)
-│   │   │   ├── SettingsAudio.tsx     # Speech engine, language, auto-transcript (Phase 2)
-│   │   │   ├── TranscriptPanel.tsx   # Live speech transcript with timer (Phase 2)
-│   │   │   ├── ModeSelector.tsx      # Dropdown: built-in + custom modes
-│   │   │   ├── ModelSelector.tsx     # Dropdown: grouped by provider
-│   │   │   ├── OpacityControl.tsx    # Slider for window opacity
-│   │   │   ├── CustomModeEditor.tsx  # Modal for creating/editing custom modes (Phase 2)
-│   │   │   ├── ConversationHistory.tsx # Slide-in history panel with search (Phase 2)
-│   │   │   ├── Toast.tsx             # Toast notification system (Phase 2)
-│   │   │   ├── RegionOverlay.tsx     # Full-screen region selection UI
-│   │   │   ├── OnboardingFlow.tsx    # First-launch 3-step wizard (Phase 3)
-│   │   │   ├── OnboardingApiKey.tsx  # Onboarding step 1: API key setup (Phase 3)
-│   │   │   ├── OnboardingHotkeys.tsx # Onboarding step 2: shortcut reference (Phase 3)
-│   │   │   ├── OnboardingStealthTest.tsx # Onboarding step 3: stealth test (Phase 3)
-│   │   │   └── UpdateNotification.tsx # Auto-update toast notifications (Phase 3)
+│   │   │   ├── HeaderBar.tsx         # Drag handle, MODEL selector, passthrough, settings (NO mode picker)
+│   │   │   ├── ChatPanel.tsx / MessageBubble.tsx / CodeBlock.tsx
+│   │   │   ├── InputArea.tsx         # Text input, send/stop, screenshot, mic, capture-aware editor
+│   │   │   ├── StatusBar.tsx / OpacityControl.tsx / ModelSelector.tsx / Toast.tsx
+│   │   │   ├── ConversationHistory.tsx / TranscriptPanel.tsx
+│   │   │   ├── InlineRegionSelector.tsx  # Canvas-based in-overlay snipping
+│   │   │   ├── MeetingPanel.tsx / MemoryPanel.tsx / CodeDetectionCard.tsx
+│   │   │   ├── Settings.tsx          # Slide-in panel, 8-section icon sidebar
+│   │   │   ├── SettingsHotkeys / SettingsDisplay / SettingsPrivacy / SettingsAudio
+│   │   │   ├── SettingsMemory / SettingsCompanion / SettingsResilience
+│   │   │   ├── OnboardingFlow / OnboardingApiKey / OnboardingHotkeys / OnboardingStealthTest
+│   │   │   ├── LoginScreen.tsx / LockScreen.tsx        # Beta: auth + trial-locked gates
+│   │   │   ├── TosGate.tsx / TrialBanner.tsx           # Beta: T&C gate + trial countdown
+│   │   │   ├── ForcedUpdate.tsx / UpdateNotification.tsx
+│   │   │   └── ui/                   # GhostButton/Input/Card/Tooltip/Badge/Divider + animations
+│   │   │           # REMOVED: ModeSelector, CustomModeEditor, TemplateLibrary (single-mode collapse)
 │   │   │
 │   │   ├── hooks/
-│   │   │   ├── useAI.ts              # AI chat logic, streaming, abort
-│   │   │   ├── useScreenshot.ts      # Screenshot state, auto-attach
-│   │   │   ├── useSettings.ts        # Settings read/write via IPC
-│   │   │   ├── useHotkeys.ts         # Listen for hotkey events from main
-│   │   │   ├── useConversation.ts    # Message history, persistence, auto-save (Phase 2)
-│   │   │   ├── useConversationHistory.ts # Conversation list, search, export (Phase 2)
-│   │   │   ├── useAudioTranscription.ts  # Speech-to-text hook (Phase 2)
-│   │   │   ├── useTokenCost.ts       # Token/cost tracking per request/conversation/session (Phase 3)
-│   │   │   ├── useWindowSize.ts      # Responsive breakpoints: compact/normal/expanded (Phase 3)
-│   │   │   ├── useInternalKeyboard.ts # Ctrl+, Ctrl+L, Ctrl+K shortcuts (Phase 3)
-│   │   │   └── useCapture.ts          # Model B stealth typing: capture state + key events (seq/epoch)
+│   │   │   ├── useAI.ts / useScreenshot.ts / useSettings.ts / useHotkeys.ts
+│   │   │   ├── useConversation.ts / useConversationHistory.ts
+│   │   │   ├── useAudioTranscription.ts / useLiveTranscription.ts / useMeetingAssistant.ts
+│   │   │   ├── useCodeDetection.ts / useMemory.ts / useClickThrough.ts
+│   │   │   ├── useTokenCost.ts / useWindowSize.ts / useInternalKeyboard.ts (Ctrl+, / Ctrl+K / Ctrl+L)
+│   │   │   ├── useCapture.ts         # Model B stealth typing: capture state + key events (seq/epoch)
+│   │   │   └── useAuth.ts / useEntitlement.ts / useUpdateGate.ts   # Beta gates
+│   │   │           # REMOVED: useTemplates (single-mode collapse)
 │   │   │
 │   │   ├── services/
 │   │   │   ├── ai-providers/
-│   │   │   │   ├── types.ts          # AIProvider interface, ChatMessage, etc.
-│   │   │   │   ├── provider-manager.ts # Provider registry, model lookup
-│   │   │   │   ├── openai.ts         # OpenAI adapter (lazy-loaded)
-│   │   │   │   ├── anthropic.ts      # Anthropic adapter (lazy-loaded)
-│   │   │   │   ├── gemini.ts         # Google Gemini adapter (lazy-loaded)
-│   │   │   │   └── ollama.ts         # Ollama local LLM adapter (Phase 3)
-│   │   │   ├── speech.ts             # SpeechService: Web Speech + Whisper (Phase 2)
-│   │   │   └── ocr-service.ts        # Tesseract.js wrapper
+│   │   │   │   ├── types.ts / provider-manager.ts / index.ts
+│   │   │   │   ├── openai.ts / anthropic.ts / gemini.ts   # all lazy-loaded
+│   │   │   │   │       # REMOVED: ollama.ts (local LLM removed permanently — cloud-only)
+│   │   │   └── speech.ts             # SpeechService: Web Speech + Whisper (OCR is tesseract.js, used in hooks)
 │   │   │
-│   │   ├── styles/
-│   │   │   └── globals.css           # Tailwind directives + custom CSS + animations
-│   │   │
-│   │   └── types/
-│   │       └── global.d.ts           # Window.ghostAPI + SpeechRecognition types
+│   │   ├── styles/globals.css
+│   │   └── types/global.d.ts         # Window.ghostAPI + SpeechRecognition types
 │   │
 │   └── shared/                       # Types shared between main + renderer
-│       ├── types.ts                  # AppSettings, ChatMessage, SpeechEngine, etc.
-│       ├── constants.ts              # Default hotkeys, modes, colors, audio defaults
+│       ├── types.ts                  # AppSettings, ChatMessage, Mode, Auth/Entitlement/VersionGate, capture types
+│       ├── constants.ts              # Default hotkeys, UNIVERSAL_MODE, models, Supabase config, IPC whitelist
 │       ├── errors.ts                 # InvisiQError enum + helpers
-│       └── logger.ts                 # Production-safe logger (Phase 3)
+│       └── logger.ts                 # Production-safe logger
 │
-├── assets/
-│   └── icons/                        # App icons (256x256, 128x128, etc.)
+├── assets/icons/                     # App icons
 │
-├── native/                           # Standalone Win32 C++ helpers (NOT node addons)
-│   └── ghostai-helper/               # Model B suppressing keyboard hook (out-of-process)
-│       ├── CMakeLists.txt            # MSVC build (signing-ready, parametrized publisher)
-│       ├── src/main.cpp              # Pipe server + WH_KEYBOARD_LL + ToUnicodeEx + watchdog
-│       ├── res/app.manifest          # asInvoker manifest
-│       ├── res/version.rc.in         # VERSIONINFO template (CMake-configured)
-│       └── dist/ghostai_helper.exe   # Build output → electron-builder extraResources
+├── native/ghostai-helper/            # Standalone Win32 C++ helper (Model B suppressing hook, out-of-process)
+│   ├── CMakeLists.txt / src/main.cpp / res/app.manifest / res/version.rc.in
+│   └── dist/ghostai_helper.exe       # Build output → electron-builder extraResources
 │
-├── scripts/
-│   ├── build.js                      # Custom build scripts
-│   └── verify-build.ts              # Pre-build security/stealth verification (Phase 3)
-│
-├── docs/
-│   ├── InvisiQ-PRD.md
-│   ├── InvisiQ-Wireframes.md
-│   ├── InvisiQ-API-Contract.md
-│   ├── InvisiQ-Planning.md
-│   └── TESTING.md                    # Stealth matrix, benchmarks, checklists (Phase 3)
-│
-└── CHANGELOG.md                      # Version history (Phase 3)
+├── scripts/                          # build.js, verify-build.ts, test helpers
+└── CHANGELOG.md
 ```
 
 ---
@@ -260,7 +247,17 @@ Typing flows through three pieces:
 
 Build: `npm run build:helper` (MSVC via CMake, g++ fallback) → `native/ghostai-helper/dist/ghostai_helper.exe`, packed via electron-builder `extraResources`. Signing is wired but cert-deferred; version-info publisher is parametrized (see `native/ghostai-helper/README.md` for the disguise-vs-honest-cert decision).
 
-When adding control keys, extend the helper's `LowLevelKeyboardProc` (`navEditKind`/translation), the `CaptureKeyKind` union in `src/shared/types.ts`, and the renderer's `onCaptureKey` reducer.
+When adding control keys, extend the helper's `LowLevelKeyboardProc` (`navEditKind`/translation), the `CaptureKeyKind` union in `src/shared/types.ts`, and the renderer's `applyCaptureKey` reducer in `InputArea.tsx`.
+
+### 1d. Single Universal Mode (no mode picker, no templates)
+
+InvisiQ has exactly **one** mode. There is no user-facing mode dropdown and no template library — that friction was removed in favor of the ChatGPT/Claude-style single input. The model infers intent from the message + screenshot.
+
+- The one prompt lives in `UNIVERSAL_SYSTEM_PROMPT` / `UNIVERSAL_MODE` in `src/shared/constants.ts`. `BUILT_IN_MODES = [UNIVERSAL_MODE]` is kept so metadata/analytics call sites stay valid.
+- **Tune behavior by editing that string — it is config, not architecture.** It is injected at a single point in `App.tsx` `handleSend` (`systemPrompt: UNIVERSAL_MODE.systemPrompt`).
+- Meeting-transcript auto-context is gated on `settings.audio.autoIncludeTranscript` (NOT a "meeting" mode, which no longer exists); the meeting panel auto-opens on `settings.meeting.enableSystemAudio`.
+- **Removed:** `ModeSelector`, `CustomModeEditor`, `TemplateLibrary`, `useTemplates`, `template-store.ts`, `built-in-templates.ts`, the `modes:*` and `template:*` IPC, the `Ctrl+T` shortcut, and the `CustomMode`/`PromptTemplate` types + `customModes`/`templates` settings fields. The `activeMode` field is retained (always `'universal'`) for conversation/analytics metadata.
+- **Do NOT re-introduce a mode picker.** The intended next step for "specialization" is an admin/org-level standardized prompt pushed to a fleet — built on this same single injection point — not user-pickable modes.
 
 ### 2. Electron Security Model
 
@@ -301,6 +298,8 @@ The overlay must be hidden before capturing, otherwise we get a blank spot where
 
 ### 4. AI Provider Abstraction
 
+**Cloud-only, BYOK.** Three providers ship: OpenAI, Anthropic, Google Gemini. The Ollama/local-LLM adapter was removed permanently (no `ollama.ts`, no local endpoint in `AI_API_DOMAINS`). A vestigial `'ollama'` `ProviderID` may still appear in types — do not build on it. AI calls run in the **renderer** (HTTP), never the main process.
+
 All AI providers implement the same interface (see `src/renderer/services/ai-providers/types.ts`):
 
 ```typescript
@@ -326,48 +325,61 @@ interface AIProvider {
 
 All IPC channels follow this pattern: `{domain}:{action}`
 
+Invoke channels (`ipcRenderer.invoke` → `ipcMain.handle`):
 ```
-overlay:toggle        overlay:hide          overlay:show
-overlay:set-passthrough
-screenshot:capture-full   screenshot:capture-region
-screenshot:capture-for-snip   screenshot:crop-region
-store:get             store:set             store:set-api-key
-hotkeys:register-all  hotkeys:update        hotkeys:triggered
-clipboard:copy        clipboard:smart-paste
-clipboard:start-monitor   clipboard:stop-monitor  clipboard:monitor-status
-conversation:save     conversation:load     conversation:list
-conversation:delete   conversation:search   conversation:export
-conversation:delete-all
-modes:list            modes:save            modes:delete
-app:get-info          app:quit              app:open-data-folder
-monitors:get-all      monitors:move-overlay
-update:check          update:download       update:install
-update:version-status update:open-releases
-audio:start-system-capture   audio:stop-system-capture   audio:capture-status
-companion:start  companion:stop  companion:status  companion:devices
-template:list  template:save  template:delete
+# Beta gating
+auth:login            auth:logout           auth:status
+entitlement:status    entitlement:refresh
+analytics:track       analytics:capture-prompt   analytics:delete-my-data
+tos:accept            tos:status
+# Overlay / window
+overlay:toggle  overlay:hide  overlay:show  overlay:set-opacity
+overlay:set-position  overlay:set-size  overlay:get-bounds  overlay:set-passthrough
+overlay:set-stealth-focus  overlay:stealth-focus-status
+overlay:request-focus  overlay:release-focus
+# Screenshot / monitors
+screenshot:capture-full  screenshot:capture-silent  screenshot:capture-region
+screenshot:capture-monitors  screenshot:capture-for-snip  screenshot:crop-region
+monitors:get-all  monitors:move-overlay
+# Store / hotkeys / clipboard / app
+store:get  store:set  store:get-all  store:set-api-key  store:remove-api-key
+store:get-api-key  store:clear-all
+hotkeys:register-all  hotkeys:update
+clipboard:copy  clipboard:read  clipboard:smart-paste
+clipboard:start-monitor  clipboard:stop-monitor  clipboard:monitor-status
+app:get-info  app:quit  app:open-data-folder
+# Conversation / export / memory
+conversation:save  conversation:load  conversation:list  conversation:delete
+conversation:search  conversation:export  conversation:delete-all
 export:conversation  export:save-dialog
-memory:search  memory:add  memory:delete  memory:list
-memory:clear-all  memory:stats  memory:extract
+memory:search  memory:add  memory:delete  memory:list  memory:clear-all  memory:stats  memory:extract
+# Update / audio / companion / resilience
+update:check  update:download  update:install  update:version-status  update:open-releases
+audio:start-system-capture  audio:stop-system-capture  audio:capture-status
+companion:start  companion:stop  companion:status  companion:devices
+resilience:start-agent  resilience:stop-agent  resilience:send-command  resilience:status
+# Stealth capture
 invisible-input:arm  invisible-input:disarm  invisible-input:toggle  invisible-input:status
-capture:enter  capture:exit  capture:status  capture:panic  capture:proctor-status
+capture:enter  capture:exit  capture:status  capture:panic  capture:proctor-status  capture:paste
 ```
+> **Removed:** `modes:*` and `template:*` (single-mode collapse).
 
 Renderer event channels (main → renderer):
 ```
 hotkeys:triggered     overlay:visibility-changed
 screenshot:captured   app:error             clipboard:changed
 monitors:changed
-update:checking       update:available      update:not-available
-update:progress       update:downloaded     update:error
+update:checking  update:available  update:not-available  update:progress  update:downloaded  update:error
 audio:chunk
 companion:message  companion:device-connected  companion:device-disconnected
+resilience:agent-status-changed  resilience:agent-response
+overlay:stealth-focus-changed  overlay:clipboard-input-requested
 invisible-input:status  invisible-input:char  invisible-input:enter
 invisible-input:backspace  invisible-input:delete
 capture:key  capture:state  capture:failed  proctor:detected
 ```
 
-Full IPC contract is in `docs/InvisiQ-API-Contract.md` Section 2.
+Full IPC contract is in `docs/InvisiQ-API-Contract.md`.
 
 ---
 
@@ -514,6 +526,7 @@ overlayWindow.setPosition(screenW - 440, screenH - 620);
 
 ## Global Hotkey Defaults
 
+Global shortcuts (default to **Shift** modifier — migrated off Alt; all customizable in Settings → Hotkeys):
 ```
 Ctrl+Shift+G  →  Toggle overlay visibility
 Ctrl+Shift+S  →  Capture full screen → send to AI
@@ -522,12 +535,19 @@ Ctrl+Shift+A  →  Focus text input
 Ctrl+Shift+C  →  Copy last AI response
 Ctrl+Shift+V  →  Paste last AI response to active app
 Ctrl+Shift+N  →  New conversation
+Ctrl+Shift+P  →  Toggle click-through (passthrough) overlay
+Ctrl+Shift+]  →  Next model        Ctrl+Shift+[  →  Previous model
 Ctrl+Shift+I  →  Toggle stealth typing / capture mode (Model B)
 Ctrl+Shift+Q  →  Panic — exit capture, uninstall hook, hide overlay
 Escape        →  Hide overlay immediately (also exits capture)
 ```
 
-Registered via `globalShortcut.register()` in `src/main/hotkeys.ts`. All customizable via settings.
+Internal (renderer-only) shortcuts via `useInternalKeyboard`:
+```
+Ctrl+,  →  Toggle Settings    Ctrl+K  →  Conversation history search    Ctrl+L  →  Clear chat (double-press)
+```
+
+Defaults live in `DEFAULT_HOTKEYS` (`src/shared/constants.ts`), registered via `globalShortcut.register()` in `src/main/hotkeys.ts`. (`Ctrl+T` template shortcut was removed.)
 
 ---
 
@@ -542,7 +562,8 @@ User sends message
 useAI hook builds ChatRequest
     │
     ├── Attaches conversation history (multi-turn context)
-    ├── Attaches system prompt from active mode
+    ├── Attaches the single UNIVERSAL_MODE system prompt
+    ├── Prepends memory (RAG) facts + meeting transcript when enabled
     ├── Attaches screenshot base64 if present
     │
     ▼
@@ -568,7 +589,6 @@ Stream ends → yield final ChatResponse with usage stats
 OpenAI:     content: [{ type: "image_url", image_url: { url: "data:image/png;base64,..." } }]
 Anthropic:  content: [{ type: "image", source: { type: "base64", media_type: "image/png", data: "..." } }]
 Gemini:     parts: [{ inline_data: { mime_type: "image/png", data: "..." } }]
-Ollama:     images: ["base64string"]  (no data URI prefix, NDJSON streaming not SSE)
 ```
 
 Full API formats in `docs/InvisiQ-API-Contract.md` Sections 4-6.
@@ -690,6 +710,26 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 
 ---
 
+## Beta Launch — Auth, Trial, Analytics & Kill-Switch
+
+The shipping beta is **gated and instrumented** (Act 1 of the two-act plan: BYOK beta → own AI backend). Full design: `docs/InvisiQ-Beta-Launch-Plan.md`. Backend: Supabase project `hlpxesuuqypxnubswbzh` (`SUPABASE_URL` / `SUPABASE_ANON_KEY` in `constants.ts`; the anon key is client-safe / RLS-protected — service-role & signing secrets NEVER ship).
+
+**App-start gate flow (in `App.tsx`):** Login (Google OAuth) → T&C gate (if `tosAcceptedVersion !== CURRENT_TOS_VERSION`) → entitlement check → forced-update check → main UI. Locked/expired/offline → `LockScreen`; below version floor or killed → `ForcedUpdate`.
+
+| Concern | Main module | Hook | Notes |
+|---|---|---|---|
+| Auth | `auth.ts` | `useAuth` | Google OAuth via Supabase; `AuthStatus` |
+| Trial | `entitlement.ts` | `useEntitlement` | **Server-clocked** 14-day trial, **fail-closed** (offline ⇒ locked). `EntitlementStatus` |
+| Analytics | `analytics.ts` | — | `analytics:track` events + `analytics:capture-prompt` (typed prompt text only — never screenshots/OCR); server redacts PII; beta prompt rows purged after 30 days; `analytics:delete-my-data` |
+| T&C | (in `analytics.ts`/store) | — | `CURRENT_TOS_VERSION` in `constants.ts`; each prompt row stamped with accepted version |
+| Kill-switch / version floor | `updater.ts` | `useUpdateGate` | `VersionGateStatus`: remote `killed` or `below-floor` ⇒ block use |
+
+**Crypto coupling (do not break):** `crypto.ts` has two schemes — v1 machine-only key (legacy) and **v2 entitlement-bound key** (machineId + server fragment). `FRAGMENT_SECRET` must NEVER rotate or all v2-encrypted API keys become undecryptable. `APP_SALT` likewise must never change.
+
+**Auto-update is real:** NSIS feed via `electron-updater`, pulling GitHub Releases from `publish.repo: GhostAI`. `RELEASES_LATEST_URL` is the manual-download fallback. See `docs/RELEASE.md`.
+
+---
+
 ## Development Phases
 
 ### Phase 1 — Core MVP (COMPLETE)
@@ -741,8 +781,8 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 - [x] Overlay position validation against connected displays
 - [x] 3-step onboarding wizard: API key setup, hotkey reference, stealth test
 
-**Sprint 10:** Ollama Local AI + Light Theme + Cost Tracking
-- [x] Ollama AIProvider: NDJSON streaming, /api/tags discovery, vision support
+**Sprint 10:** ~~Ollama Local AI~~ + Light Theme + Cost Tracking
+- [x] ~~Ollama AIProvider~~ — **removed permanently** in the beta track (cloud-only, BYOK)
 - [x] Light theme via RGB triplet CSS variables + Tailwind opacity compatibility
 - [x] Per-request, per-conversation, per-session token & cost tracking in StatusBar
 
@@ -785,14 +825,11 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 - [x] `CodeDetectionCard` — dismissible platform notification with "Switch to Coding mode" CTA
 - [x] SettingsAudio expanded: system audio source, meeting mode controls
 
-**Sprint 16:** Companion Mode + Templates + Export
+**Sprint 16:** Companion Mode + ~~Templates~~ + Export
 - [x] `companion-server.ts` — HTTP + WebSocket (`ws`) server on `127.0.0.1:3847`, sequential port scan
 - [x] One-time QR pairing token → persistent device ID; QR rendered via `qrcode` npm package
 - [x] `SettingsCompanion` — start/stop server, QR display, connected devices list, auto-start toggle
-- [x] `template-store.ts` — CRUD for `PromptTemplate` in electron-store
-- [x] 20 built-in templates across 8 categories (coding, writing, analysis, meeting, solve, research, debugging, custom)
-- [x] `TemplateLibrary` modal — searchable/filterable grid + `VariableDialog` for `{{variable}}` substitution
-- [x] Ctrl+T global shortcut to open template library
+- [x] ~~`template-store.ts` / `TemplateLibrary` / 20 built-in templates / Ctrl+T~~ — **removed entirely** (single-mode collapse, see §1d)
 - [x] `export-service.ts` — JSON/MD/TXT/PDF export; PDF via hidden `BrowserWindow` + `printToPDF()`
 
 **Sprint 17:** Memory (RAG) + Settings Reorganization + Polish
@@ -800,13 +837,20 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 - [x] `useMemory` hook + `buildContextPrefix()` — injects relevant facts into AI prompts
 - [x] `SettingsMemory` — enable/auto-extract toggles, context/limit sliders, stats, clear-all
 - [x] `MemoryPanel` — searchable slide-in browser with add/delete, pagination
-- [x] Settings restructured to 8-section left icon sidebar (api-keys, hotkeys, display, privacy, audio, memory, companion, templates)
-- [x] Phase 4 IPC channels documented; CLAUDE.md updated
+- [x] Settings: 8-section left icon sidebar — now **api-keys, hotkeys, display, privacy, audio, memory, companion, resilience** (templates tab removed)
 
-### Phase 5 — Future Enhancements
-- Plugin system
-- Voice-to-voice conversation mode
-- Multi-window support
+### Phase 5 — Beta Launch + Stealth Hardening (COMPLETE)
+- [x] **Model B default-on stealth** — suppressing out-of-process capture helper, logical-focus capture, degradation ladder (§1c)
+- [x] **Beta backend** — Supabase foundation, Google OAuth auth, server-clocked 14-day trial, analytics + full prompt capture, T&C gate, remote kill-switch + version floor (see Beta Launch section)
+- [x] **Cloud-only** — local LLM / Ollama removed permanently
+- [x] **Hotkeys** — migrated Alt → Shift modifier
+- [x] **Real auto-update** — NSIS feed + forced-update path
+- [x] **Single universal mode** — modes collapsed to one adaptive prompt; templates removed (§1d)
+
+### Phase 6 — Future / Act 2
+- Own AI backend (managed inference; remove BYOK requirement)
+- Admin/org-level standardized prompt pushed to a fleet (the real "specialization" hook)
+- Plugin system; voice-to-voice mode; multi-window support
 
 ---
 
@@ -833,9 +877,9 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 #   Components: ChatPanel, MessageBubble, CodeBlock, InputArea.
 
 # "Add settings panel"
-# → Read docs/InvisiQ-Wireframes.md Section 6.
-#   Four tabs: API Keys, Hotkeys, Display, Privacy.
-#   Slide-in from right. Store via IPC → electron-store.
+# → Slide-in from right, 8-section icon sidebar:
+#   api-keys, hotkeys, display, privacy, audio, memory, companion, resilience.
+#   Store via IPC → electron-store. (Wireframes.md Section 6 is historical — 4 tabs.)
 ```
 
 ---
@@ -885,5 +929,5 @@ npm install @types/uuid --save-dev
 
 ---
 
-*Last updated: June 3, 2026 (Phase 5 — Model B default-on stealth: suppressing out-of-process capture helper, logical-focus capture mode, degradation ladder)*
+*Last updated: June 18, 2026 — Phase 5 complete: Beta Launch (Supabase auth/trial/analytics/T&C/kill-switch), cloud-only (Ollama removed), Alt→Shift hotkeys, real NSIS auto-update, and the single universal mode collapse (modes + templates removed, §1d). Model B default-on stealth (§1c) remains current.*
 *This file should be updated whenever major architecture decisions change.*

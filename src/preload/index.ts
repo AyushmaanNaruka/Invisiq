@@ -196,18 +196,6 @@ const ghostAPI = {
   },
 
   // ══════════════════════════════════════
-  //  MODES
-  // ══════════════════════════════════════
-  modes: {
-    list: () =>
-      ipcRenderer.invoke('modes:list'),
-    save: (mode: unknown) =>
-      ipcRenderer.invoke('modes:save', { mode }),
-    delete: (id: string) =>
-      ipcRenderer.invoke('modes:delete', { id }),
-  },
-
-  // ══════════════════════════════════════
   //  CONVERSATION
   // ══════════════════════════════════════
   conversation: {
@@ -279,18 +267,6 @@ const ghostAPI = {
       ipcRenderer.invoke('companion:status'),
     devices: () =>
       ipcRenderer.invoke('companion:devices'),
-  },
-
-  // ══════════════════════════════════════
-  //  PHASE 4: TEMPLATES
-  // ══════════════════════════════════════
-  template: {
-    list: () =>
-      ipcRenderer.invoke('template:list'),
-    save: (template: unknown) =>
-      ipcRenderer.invoke('template:save', { template }),
-    delete: (id: string) =>
-      ipcRenderer.invoke('template:delete', { id }),
   },
 
   // ══════════════════════════════════════

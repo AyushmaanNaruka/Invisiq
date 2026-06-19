@@ -9,12 +9,9 @@ import type {
   AppInfo,
   Conversation,
   ConversationMeta,
-  Mode,
-  CustomMode,
   RegionCropRequest,
   AudioCaptureSource,
   CompanionDevice,
-  PromptTemplate,
   ExportFormat,
   MemoryFact,
   MemorySearchResult,
@@ -108,11 +105,6 @@ declare global {
         stopMonitor(): Promise<{ success: boolean }>;
         monitorStatus(): Promise<{ running: boolean }>;
       };
-      modes: {
-        list(): Promise<{ builtIn: Mode[]; custom: CustomMode[] }>;
-        save(mode: CustomMode): Promise<{ success: boolean }>;
-        delete(id: string): Promise<{ success: boolean }>;
-      };
       conversation: {
         save(conversation: Conversation): Promise<{ success: boolean }>;
         load(id: string): Promise<Conversation | null>;
@@ -149,12 +141,6 @@ declare global {
         stop(): Promise<void>;
         status(): Promise<{ running: boolean; connectedDevices: CompanionDevice[]; port: number }>;
         devices(): Promise<CompanionDevice[]>;
-      };
-      /** Phase 4: Prompt templates */
-      template: {
-        list(): Promise<{ builtIn: PromptTemplate[]; custom: PromptTemplate[] }>;
-        save(template: PromptTemplate): Promise<{ success: boolean }>;
-        delete(id: string): Promise<{ success: boolean }>;
       };
       /** Phase 4: Conversation export */
       export: {

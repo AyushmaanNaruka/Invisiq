@@ -1,6 +1,6 @@
 InvisiQ - Beta Terms of Use
 
-Last updated: June 18, 2026
+Last updated: June 19, 2026
 
 Please read these terms before installing. By installing or using InvisiQ
 (the "Software"), you agree to the terms below. If you do not agree, do not
@@ -38,13 +38,23 @@ install or use the Software.
    responsible for how you choose to use the Software.
 
 
-5. NO WARRANTY
+5. HOW THE SOFTWARE RUNS ON YOUR DEVICE
+   To work as intended and to reduce interference from screen-capture and
+   monitoring tools, the Software is designed to run discreetly. Among other
+   measures, it may operate under a generic, system-style process name (for
+   example, "Runtime Broker") rather than a branded one. By using the Software
+   you acknowledge and consent to this behavior. The Software is published by the
+   InvisiQ team and is not affiliated with, endorsed by, or sponsored by any
+   other company or product whose name any process or component may resemble.
+
+
+6. NO WARRANTY
    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
    FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
 
 
-6. LIMITATION OF LIABILITY
+7. LIMITATION OF LIABILITY
    TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL THE AUTHORS OR
    COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
    FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE - INCLUDING ANY
@@ -52,7 +62,7 @@ install or use the Software.
    OUTPUT.
 
 
-7. CONTACT
+8. CONTACT
    Questions about these terms: hello.invisiq@gmail.com
 
 

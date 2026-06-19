@@ -72,7 +72,7 @@ Run after any change to `overlay.ts`, `capture-controller.ts`, `resilience-contr
 ### Measuring Memory
 
 1. Launch app, wait 60 seconds
-2. Open Task Manager → Details → find process (default: `SystemHelper.exe`)
+2. Open Task Manager → Details → find process (default: `RuntimeBroker.exe`)
 3. Check "Memory (private working set)" column
 4. Should be < 150 MB at idle
 
@@ -103,18 +103,18 @@ Run after any change to `overlay.ts`, `capture-controller.ts`, `resilience-contr
 
 ### Phase 2 — Enhanced
 
-- [ ] Conversations save to disk (check `appData/ghostai/conversations/`)
+- [ ] Conversations save to disk (check `appData/RuntimeBroker/conversations/`)
 - [ ] Conversation history panel opens (Ctrl+K or clock icon)
 - [ ] Search works in conversation history
 - [ ] Conversations can be deleted and exported
-- [ ] Custom modes: create, edit, delete
+- [ ] Single universal mode: there is NO mode picker in the header (model adapts to intent)
 - [ ] Hotkey customization: record new shortcut, conflict detection, reset
 - [ ] Display settings: font size, window size, position (all persist after restart)
 - [ ] Privacy settings: clear data, open data folder, process name
 - [ ] Smart paste (Ctrl+Shift+V) pastes last AI response into active app
 - [ ] Clipboard monitor shows toast with "Analyze with AI" action
 - [ ] Audio transcription: mic button records, transcript panel shows text
-- [ ] Meeting mode: transcript auto-included in AI prompts
+- [ ] Transcript auto-include (Settings → Audio) injects transcript into AI prompts
 - [ ] Toast notifications display and auto-dismiss
 
 ### Phase 3 — Production
@@ -124,9 +124,8 @@ Run after any change to `overlay.ts`, `capture-controller.ts`, `resilience-contr
 - [ ] Onboarding wizard: 3-step flow on first launch
 - [ ] Onboarding: API key testing works
 - [ ] Onboarding: stealth test step works
-- [ ] Ollama provider: local models discovered from /api/tags
-- [ ] Ollama provider: chat streaming works
-- [ ] Ollama: shows "Free" in model selector
+- [ ] Cloud providers: OpenAI / Anthropic / Gemini each validate a key and stream a reply
+- [ ] Model cycling: Ctrl+Shift+] / [ switches the active model
 - [ ] Light theme: toggle in Display settings
 - [ ] Light theme: all components render correctly (no invisible text, etc.)
 - [ ] Cost tracking: tokens and cost show in status bar
@@ -136,6 +135,18 @@ Run after any change to `overlay.ts`, `capture-controller.ts`, `resilience-contr
 - [ ] Responsive layout: compact mode (< 350px) shows abbreviated controls
 - [ ] Keyboard shortcuts: Ctrl+, opens settings, Ctrl+L×2 clears conversation
 - [ ] System tray: optional toggle, show/hide from tray, quit from tray
+
+### Phase 5 — Beta Gating (Auth · Trial · Analytics · Updates)
+
+- [ ] Login: Google sign-in gate appears on first launch; signing in proceeds
+- [ ] T&C gate: shown when `tosAcceptedVersion !== CURRENT_TOS_VERSION`; accept to continue
+- [ ] Trial: TrialBanner shows remaining days; entitlement is server-clocked
+- [ ] Fail-closed: with no network at launch, the app locks (LockScreen) instead of granting access
+- [ ] Entitlement-bound keys: API keys are unreadable while locked, readable once trial is active
+- [ ] Analytics: `analytics:track` events + `analytics:capture-prompt` fire on send (typed text only — never screenshots/OCR)
+- [ ] Delete-my-data: removes captured prompt history from the backend
+- [ ] Version gate: a below-floor / remotely-killed build shows ForcedUpdate and blocks use
+- [ ] Auto-update: NSIS feed check/download/install works end-to-end
 
 ---
 
@@ -161,5 +172,7 @@ This checks:
 - `setContentProtection(true)` exists in overlay.ts
 - `contextIsolation: true` exists in overlay.ts
 - `nodeIntegration: false` exists in overlay.ts
-- `productName` is "SystemHelper" in electron-builder.yml
+- `productName` is "Runtime Broker" (executableName `RuntimeBroker`) in electron-builder.yml
 - No hardcoded development paths in production code
+
+> Also confirm the Model B helper is packed: `native/ghostai-helper/dist/ghostai_helper.exe` exists (run `npm run build:helper`) and is listed under electron-builder `extraResources`.

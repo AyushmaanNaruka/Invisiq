@@ -2,6 +2,8 @@
 
 > A complete guide to installing, configuring, and using InvisiQ effectively.
 
+> **What's new (June 2026):** InvisiQ is now **cloud-only** (bring your own OpenAI / Anthropic / Google key — the local Ollama option was removed), uses a **single universal mode** (no mode picker, no templates), and the beta requires a **Google sign-in + 14-day trial** with a one-time **Terms & Conditions** acceptance. Global hotkeys now use the **Shift** modifier (e.g. `Ctrl+Shift+G`).
+
 ---
 
 ## Table of Contents
@@ -11,12 +13,12 @@
 3. [Setting Up AI Providers](#3-setting-up-ai-providers)
 4. [Basic Usage](#4-basic-usage)
 5. [Screenshot & Vision](#5-screenshot--vision)
-6. [Smart Modes](#6-smart-modes)
+6. [How InvisiQ Answers (Single Universal Mode)](#6-how-invisiq-answers-single-universal-mode)
 7. [Keyboard Shortcuts](#7-keyboard-shortcuts)
 8. [Smart Paste & Clipboard](#8-smart-paste--clipboard)
-9. [Voice Input & Meeting Mode](#9-voice-input--meeting-mode)
+9. [Voice Input & Meeting Assistant](#9-voice-input--meeting-assistant)
 10. [Conversation History & Memory](#10-conversation-history--memory)
-11. [Templates](#11-templates)
+11. [Accounts, Trial & Privacy (Beta)](#11-accounts-trial--privacy-beta)
 12. [Settings Reference](#12-settings-reference)
 13. [Resilience Mode](#13-resilience-mode)
 14. [Troubleshooting](#14-troubleshooting)
@@ -59,12 +61,11 @@ The portable `.exe` will be in the `release/` folder.
 
 ## 2. First Launch & Onboarding
 
-On first launch, InvisiQ shows a **3-step onboarding wizard**:
+On first launch, InvisiQ asks you to **sign in with Google** and accept the **Terms & Conditions** (which disclose that typed prompts and usage analytics are logged during the beta). After that, your **14-day trial** starts and a **3-step onboarding wizard** appears:
 
 ### Step 1: API Key Setup
 - Enter an API key for at least one provider (OpenAI, Anthropic, or Google)
-- Or skip if you plan to use Ollama (free, local)
-- Keys are validated in real-time and stored with AES-256-GCM encryption
+- Keys are validated in real-time and stored with AES-256-GCM encryption (entitlement-bound — decryptable only while your trial is active)
 
 ### Step 2: Hotkey Reference
 - Overview of all keyboard shortcuts
@@ -93,43 +94,9 @@ On first launch, InvisiQ shows a **3-step onboarding wizard**:
 1. Open Settings (`Ctrl+,` or gear icon)
 2. Go to **API Keys** tab
 3. Paste your key → it's validated automatically
-4. Select a model from the header dropdown
+4. Select a model from the header dropdown (or cycle with `Ctrl+Shift+]` / `[`)
 
-### Ollama (Free, Local)
-
-Ollama runs AI models entirely on your machine — no API key, no cost, no internet needed.
-
-1. **Install Ollama:** Download from [ollama.com](https://ollama.com)
-2. **Pull a model:**
-   ```bash
-   # For coding problems + general questions (recommended)
-   ollama pull qwen2.5-coder:7b
-
-   # For aptitude, reasoning, math + coding
-   ollama pull qwen2.5:7b
-   ```
-3. Ollama starts automatically on `localhost:11434`
-4. In InvisiQ, models appear in the dropdown under "Ollama" — select one
-
-#### Recommended Ollama Models by Hardware
-
-| VRAM | Best Model | Size | Strengths |
-|:-----|:-----------|:-----|:----------|
-| 4 GB | `moondream` | 1.7 GB | Fast, lightweight vision |
-| 6 GB | `qwen2.5-coder:7b` | 4.4 GB | Best for coding |
-| 6 GB | `qwen2.5:7b` | 4.4 GB | Best all-rounder |
-| 8 GB+ | `qwen2.5-coder:14b` | 8 GB | Superior coding |
-
-> **Important:** Don't use models larger than your VRAM. They'll fall back to CPU and run extremely slowly.
-
-#### Ollama + Screenshots
-
-When you send a screenshot to an Ollama model, InvisiQ automatically:
-1. Uses **Tesseract.js OCR** to extract all text from the image
-2. Sends the **extracted text** (not the image) to the model
-3. The model processes it as a coding/text problem and gives a proper solution
-
-This is necessary because Ollama vision models tend to *describe* images ("I see a coding window...") instead of *reading the text* in them.
+> **Cloud-only.** InvisiQ no longer supports local models (Ollama). All three providers are cloud APIs and require your own key (BYOK). Screenshots are sent to the provider's vision model directly.
 
 ---
 
@@ -183,28 +150,18 @@ This is necessary because Ollama vision models tend to *describe* images ("I see
 
 ---
 
-## 6. Smart Modes
+## 6. How InvisiQ Answers (Single Universal Mode)
 
-Modes change the AI's system prompt to optimize responses for different tasks.
+InvisiQ no longer has a mode picker or templates. There is **one universal, intent-adaptive prompt** — just type or attach a screenshot and send. The model reads what's on screen and in your message and responds in the right shape automatically:
 
-### Built-in Modes
+| What you give it | How InvisiQ responds |
+|:-----------------|:---------------------|
+| A question / MCQ / assessment item | Answer first, then a tight explanation |
+| Code or an algorithm problem / error | Approach + Big-O, then the full runnable solution |
+| A meeting / call / transcript on screen | 2–3 concise talking points + action items |
+| Anything else | A direct, well-structured general answer |
 
-| Mode | When to Use | What the AI Focuses On |
-|:-----|:------------|:----------------------|
-| **General** | Everyday questions | Clear, concise, accurate answers |
-| **Coding** | Programming problems | Solution → Big-O analysis → edge cases → code |
-| **Meeting** | During calls/meetings | Summaries, action items, talking points |
-| **Solve** | Tests/assessments | Direct answer first, explanation second |
-
-### Switching Modes
-- Click the mode indicator in the header bar
-- Select from built-in or custom modes
-
-### Creating Custom Modes
-1. Click the mode dropdown → **"Create Custom Mode"**
-2. Enter a name, pick a color, and write a system prompt
-3. The system prompt tells the AI how to behave
-4. Example: "You are a data science expert. Always include Python code examples with pandas and matplotlib."
+There is nothing to switch — the same input handles every task, like ChatGPT or Claude. (Behavior is defined by a single prompt in the app's source, `UNIVERSAL_SYSTEM_PROMPT`; there's no UI for it.)
 
 ---
 
@@ -221,8 +178,13 @@ Modes change the AI's system prompt to optimize responses for different tasks.
 | `Ctrl+Shift+C` | Copy last AI response |
 | `Ctrl+Shift+V` | Paste last AI response into active app |
 | `Ctrl+Shift+N` | Start new conversation |
-| `Ctrl+T` | Open template library |
-| `Escape` | Hide overlay immediately |
+| `Ctrl+Shift+P` | Toggle click-through (passthrough) |
+| `Ctrl+Shift+]` / `[` | Next / previous model |
+| `Ctrl+Shift+I` | Toggle stealth typing / capture mode |
+| `Ctrl+Shift+Q` | Panic — exit capture, uninstall hook, hide overlay |
+| `Escape` | Hide overlay immediately (also exits capture) |
+
+> Global hotkeys use the **Shift** modifier (migrated from Alt). All are customizable in Settings → Hotkeys.
 
 ### Internal Shortcuts (When overlay has focus)
 
@@ -267,7 +229,7 @@ Modes change the AI's system prompt to optimize responses for different tasks.
 
 ---
 
-## 9. Voice Input & Meeting Mode
+## 9. Voice Input & Meeting Assistant
 
 ### Voice Input
 1. Click the **microphone icon** in the input area
@@ -280,12 +242,12 @@ Modes change the AI's system prompt to optimize responses for different tasks.
 - **OpenAI Whisper** — Paid, higher accuracy, requires OpenAI key
 - Configure in Settings → **Audio** tab
 
-### Meeting Mode
-1. Switch to **Meeting** mode from the header dropdown
-2. Enable the transcript panel (click the transcript icon)
-3. Start recording — your speech is transcribed in real-time
-4. Meeting transcript is automatically injected into AI prompts for context
-5. Ask questions like "Summarize what was discussed" and the AI has full context
+### Meeting Assistant
+There is no separate "meeting mode" — turn it on in **Settings → Audio**:
+1. Enable **"Auto-include transcript"** so the live transcript is injected into your prompts for context
+2. Enable **system audio capture** to open the Meeting panel automatically
+3. Start recording — your speech (and optionally system audio) is transcribed in real-time
+4. Ask questions like "Summarize what was discussed" — the universal prompt sees the transcript and responds with talking points/action items
 
 ### Live Meeting Assistant (Advanced)
 - Detects questions in conversation using interrogative heuristics
@@ -306,7 +268,7 @@ Modes change the AI's system prompt to optimize responses for different tasks.
 ### Auto-Save
 - Conversations save automatically (debounced 500ms)
 - Titles are generated from the first message
-- Mode and model are restored when loading a past conversation
+- The model is restored when loading a past conversation
 
 ### Memory System (RAG)
 InvisiQ remembers key facts across conversations:
@@ -321,28 +283,23 @@ Configure in Settings → **Memory** tab.
 
 ---
 
-## 11. Templates
+## 11. Accounts, Trial & Privacy (Beta)
 
-InvisiQ includes 20+ built-in prompt templates across 8 categories.
+> Templates were removed — the single universal mode handles every task, so there's nothing to fill in or pick. Just type and send.
 
-### Using Templates
-1. Press `Ctrl+T` or click the template icon
-2. Browse by category: Coding, Writing, Analysis, Meeting, Solve, Research, Debugging, Custom
-3. Click a template to use it
-4. If the template has `{{variables}}`, a dialog asks you to fill them in
-5. The filled template is inserted into the chat input
+### Sign-in & trial
+- The beta requires a **Google sign-in** and runs on a **server-clocked 14-day trial**. The remaining days show in the banner at the top of the overlay.
+- The trial is **fail-closed**: if the app can't reach the server to verify your trial (e.g. you're offline), it locks until it can re-verify. Your API keys are tied to the trial and become readable again once it's active.
+- When the trial ends, you'll see a lock screen.
 
-### Examples
-- **"Explain Code"**: Paste code → get explanation with Big-O analysis
-- **"Code Review"**: Paste code → get review with improvements
-- **"Meeting Summary"**: Paste transcript → get structured summary
-- **"Solve Answer"**: Paste question → get direct answer + explanation
+### What's collected (and what isn't)
+- **Collected:** usage events and the **text you type** as prompts — to improve the product. This is disclosed in the Terms & Conditions you accept on first run, and each prompt is stamped with the T&C version you accepted.
+- **Never collected:** your screenshots or any OCR'd text from them; your API keys.
+- Server-side, personal data is redacted and beta prompt rows are **purged after 30 days**.
+- **Delete your data:** Settings includes a "delete my data" action (`analytics:delete-my-data`) that removes your captured prompt history from the backend.
 
-### Custom Templates
-1. Open Template Library → click **"Create Template"**
-2. Enter name, category, and template text
-3. Use `{{variable_name}}` for placeholders
-4. Save → template appears in your library
+### Forced updates / kill-switch
+- InvisiQ auto-updates from GitHub Releases. If your version is below the minimum supported floor (or a build is remotely disabled), you'll be prompted to update before continuing.
 
 ---
 
@@ -359,7 +316,6 @@ Access via gear icon or `Ctrl+,`. Settings are organized into tabs:
 | **Audio** | Speech engine, language, auto-transcript, meeting audio |
 | **Memory** | Enable/disable, auto-extract, context limit, clear all |
 | **Companion** | Start/stop companion server, QR pairing, connected devices |
-| **Templates** | Browse, create, edit, delete prompt templates |
 | **Resilience** | Start/stop native helper, auto-start, status monitoring |
 
 ---
@@ -400,11 +356,6 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 - Make sure you're on Windows 10 v2004+ (the API doesn't exist on older versions)
 - Some very old screen capture software may use deprecated APIs — use modern tools
 
-### Ollama model describes images instead of reading them
-- This is expected behavior — Ollama vision models are weak at OCR
-- InvisiQ automatically uses Tesseract.js to extract text from screenshots
-- If OCR isn't working, check that `tesseract.js` is installed (`npm install tesseract.js`)
-
 ### Build fails with `spawn EPERM`
 - Your antivirus (especially CrowdStrike) is blocking electron-builder
 - Try running the build command as Administrator
@@ -418,7 +369,7 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 
 ### API key validation fails
 - Check that you have a valid key with credits/balance
-- For Ollama, ensure the server is running (`ollama list` to verify)
+- Make sure your trial is active (keys are entitlement-bound and unreadable while locked)
 - For Google Gemini, use an API key from AI Studio (not Cloud Console)
 
 ### Shortcuts not working
@@ -442,19 +393,19 @@ A: Yes. It uses Windows' native `WDA_EXCLUDEFROMCAPTURE` flag, which excludes th
 A: Currently Windows only. macOS support is on the roadmap.
 
 **Q: Is my data sent anywhere?**
-A: Your data goes only to the AI provider you choose (OpenAI, Anthropic, Google, or Ollama). There is zero telemetry, zero analytics, and no intermediary servers. With Ollama, everything stays on your machine.
+A: Your prompts and screenshots go to the AI provider you choose (OpenAI, Anthropic, or Google) — InvisiQ is cloud-only (BYOK). **During the beta**, InvisiQ also sends usage analytics and the **text you type** to its own backend to improve the product; this is disclosed in the Terms & Conditions you accept on first run. Screenshots and OCR text are never uploaded to that backend, and beta prompt data is purged after 30 days. You can delete your captured prompt data from Settings.
 
 **Q: Are my API keys safe?**
-A: Yes. Keys are encrypted with AES-256-GCM using a PBKDF2-derived key tied to your machine's hardware ID. They're never stored in plaintext.
+A: Yes. Keys are encrypted with AES-256-GCM. During the beta they're additionally **entitlement-bound** (tied to your machine + your active trial), so they're only decryptable while your trial is valid. They're never stored in plaintext.
 
 **Q: Can I use it completely offline?**
-A: Yes, with Ollama. Pull a model while online, then InvisiQ + Ollama work fully offline.
+A: No. InvisiQ is cloud-only and the beta also verifies your trial with the server at launch (fail-closed), so an internet connection is required.
 
 **Q: Why does it disguise as Runtime Broker?**
 A: Runtime Broker is a legitimate Windows system process that always runs. Using this name makes InvisiQ blend in with normal system processes in Task Manager.
 
-**Q: How much VRAM do I need for Ollama?**
-A: 4GB minimum (for `moondream`), 6GB recommended (for `qwen2.5-coder:7b`). Don't use models larger than your VRAM — they'll be very slow.
+**Q: Do I have to sign in?**
+A: Yes — the beta requires a Google sign-in and runs on a 14-day trial. This is Act 1 of the plan; a managed backend (no BYOK) is the future direction.
 
 **Q: Can I use multiple providers at once?**
 A: You can have keys for all providers entered simultaneously, but only one model is active per conversation. Switch between them anytime from the header dropdown.

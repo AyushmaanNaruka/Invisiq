@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "lint": "eslint src/ --ext .ts,.tsx",
     "build:helper": "node scripts/build-helper.js",
+    "gen:installer-assets": "electron scripts/gen-installer-assets.cjs sidebar && electron scripts/gen-installer-assets.cjs header",
     "verify": "npx ts-node scripts/verify-build.ts",
     "package": "npm run build:helper && electron-vite build && electron-builder --win",
     "package:dir": "npm run build:helper && electron-vite build && electron-builder --win --dir",

@@ -4,7 +4,6 @@ interface KeyboardActions {
   toggleSettings: () => void;
   clearConversation: () => void;
   focusSearch: () => void;
-  openTemplateLibrary?: () => void;
 }
 
 export function useInternalKeyboard(actions: KeyboardActions): void {
@@ -40,13 +39,6 @@ export function useInternalKeyboard(actions: KeyboardActions): void {
       if (e.ctrlKey && e.key === 'k') {
         e.preventDefault();
         actionsRef.current.focusSearch();
-        return;
-      }
-
-      // Ctrl+T → open Template Library
-      if (e.ctrlKey && e.key === 't') {
-        e.preventDefault();
-        actionsRef.current.openTemplateLibrary?.();
         return;
       }
     }

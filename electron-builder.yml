@@ -1,9 +1,21 @@
+# NAMING / DISGUISE SPLIT (intentional — see CLAUDE.md "Brand vs. disguise"):
+#   productName: InvisiQ      → user-facing surfaces only: installer heading
+#                               ("InvisiQ Setup"), installer filename, Start Menu
+#                               + search label, uninstaller / Installed Apps entry.
+#   executableName: RuntimeBroker (below) → the actual .exe / PROCESS IMAGE NAME.
+#                               This is what proctoring tools enumerate, so it stays
+#                               disguised. Do NOT rename it to InvisiQ.
+#   app.setName('RuntimeBroker') (stealth.ts) + package.json name=runtimebroker →
+#                               drive userData (stored keys/login). Unchanged, so
+#                               renaming productName needs NO data migration.
+# Trade-off accepted: Task Manager's *friendly* (Processes-tab) name now reads
+# "InvisiQ"; the Details-tab image name + proctoring-scanned process stay RuntimeBroker.exe.
 appId: com.ghostai.app
-productName: Runtime Broker
-copyright: "© Microsoft Corporation. All rights reserved."
+productName: InvisiQ
+copyright: "© 2026 InvisiQ. All rights reserved."
 extraMetadata:
   author:
-    name: Microsoft Corporation
+    name: InvisiQ
 directories:
   buildResources: assets
   output: release
@@ -29,8 +41,8 @@ extraResources:
     to: ghostai_helper.exe
 win:
   icon: assets/invisiq-icon-512.png
-  executableName: RuntimeBroker
-  legalTrademarks: "© Microsoft Corporation. All rights reserved."
+  executableName: RuntimeBroker # PROCESS IMAGE NAME — stays disguised (proctoring scans this). Do not rename.
+  legalTrademarks: "© 2026 InvisiQ. All rights reserved."
   # NSIS (not portable): electron-updater cannot self-update a portable build —
   # it has no install location to replace and electron-builder emits no
   # latest.yml for it. NSIS produces the installer + latest.yml + .blockmap the
@@ -40,12 +52,24 @@ win:
       arch:
         - x64
 nsis:
-  oneClick: true # silent Squirrel-style install; auto-update installs run silent regardless
-  perMachine: false # install to %LOCALAPPDATA%, no admin prompt
-  allowToChangeInstallationDirectory: false # ignored under oneClick anyway
+  # Assisted (multi-page) installer — the only way NSIS can show a license/T&C
+  # page AND branded welcome/finish graphics. Auto-update installs still run
+  # SILENTLY because electron-updater always invokes the installer with /S, so
+  # the wizard never appears during background updates.
+  oneClick: false
+  perMachine: false # install to %LOCALAPPDATA%, no admin/UAC prompt
+  allowElevation: false # never prompt for admin — keep it per-user + frictionless
+  allowToChangeInstallationDirectory: false # keep the disguise install path stable
+  runAfterFinish: true # finish page offers to launch InvisiQ
   createDesktopShortcut: false # stealth: no desktop footprint
-  createStartMenuShortcut: true # the only launcher; named "Runtime Broker" (disguise-consistent)
+  createStartMenuShortcut: true # the only launcher; labeled "InvisiQ" (= productName) for discoverability
   deleteAppDataOnUninstall: true
+  # The following are AUTO-DETECTED from buildResources (assets/) by their magic
+  # filenames — no explicit path needed (and avoids path-resolution ambiguity):
+  #   assets/license.txt           → Beta Terms of Use, shown as a must-accept page
+  #   assets/installerSidebar.bmp  → 164x314 welcome/finish art
+  #   assets/installerHeader.bmp   → 150x57  inner-page header band
+  # All three are produced by `npm run gen:installer-assets`.
   artifactName: ${productName} Setup ${version}.${ext}
 # Auto-update feed. Releases MUST be public (no GH token shipped in the client)
 # for the updater to read latest.yml. Source repo: Ghost-AI-Interview/ghostai.

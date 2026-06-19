@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react';
-import { Eye, EyeOff, Check, CircleAlert, LoaderCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff, Check, CircleAlert, LoaderCircle, ArrowUpRight } from 'lucide-react';
 import { providerManager } from '../services/ai-providers/provider-manager';
+import { staggerContainer, staggerItem } from './ui/animations';
 import type { ProviderID } from '@shared/types';
 
 interface OnboardingApiKeyProps {
-  onContinue: () => void;
+  /** Notifies the shell whenever at least one provider is connected (for the rail badge). */
+  onConnectedChange?: (connected: boolean) => void;
 }
 
 interface KeyState {
@@ -14,23 +17,27 @@ interface KeyState {
   error?: string;
 }
 
-const PROVIDERS: { id: ProviderID; name: string; placeholder: string; color: string }[] = [
-  { id: 'openai', name: 'OpenAI', placeholder: 'sk-proj-...', color: '#10A37F' },
-  { id: 'anthropic', name: 'Anthropic', placeholder: 'sk-ant-...', color: '#D4A574' },
-  { id: 'gemini', name: 'Google Gemini', placeholder: 'AIza...', color: '#4285F4' },
+const PROVIDERS: {
+  id: ProviderID;
+  name: string;
+  placeholder: string;
+  color: string;
+  keyUrl: string;
+}[] = [
+  { id: 'openai', name: 'OpenAI', placeholder: 'sk-proj-…', color: '#10A37F', keyUrl: 'platform.openai.com' },
+  { id: 'anthropic', name: 'Anthropic', placeholder: 'sk-ant-…', color: '#D4A574', keyUrl: 'console.anthropic.com' },
+  { id: 'gemini', name: 'Google Gemini', placeholder: 'AIza…', color: '#4285F4', keyUrl: 'aistudio.google.com' },
 ];
 
-export default function OnboardingApiKey({ onContinue }: OnboardingApiKeyProps): JSX.Element {
+export default function OnboardingApiKey({ onConnectedChange }: OnboardingApiKeyProps): JSX.Element {
   const [keys, setKeys] = useState<Record<ProviderID, KeyState>>({
     openai: { value: '', masked: true, status: 'idle' },
     anthropic: { value: '', masked: true, status: 'idle' },
     gemini: { value: '', masked: true, status: 'idle' },
-    // Onboarding only collects cloud-provider keys (see PROVIDERS); ollama uses a
-    // server URL, not a key. Present here only to satisfy Record<ProviderID, …>.
+    // Onboarding only collects cloud-provider keys (see PROVIDERS); the vestigial
+    // 'ollama' id is present only to satisfy Record<ProviderID, …>.
     ollama: { value: '', masked: true, status: 'idle' },
   });
-
-  const hasAnyKey = Object.values(keys).some((k) => k.status === 'valid');
 
   const handleKeyChange = useCallback((provider: ProviderID, value: string) => {
     setKeys((prev) => ({
@@ -43,10 +50,7 @@ export default function OnboardingApiKey({ onContinue }: OnboardingApiKeyProps):
     const key = keys[provider].value.trim();
     if (!key) return;
 
-    setKeys((prev) => ({
-      ...prev,
-      [provider]: { ...prev[provider], status: 'testing' },
-    }));
+    setKeys((prev) => ({ ...prev, [provider]: { ...prev[provider], status: 'testing' } }));
 
     try {
       const p = await providerManager.resolveProvider(provider);
@@ -63,10 +67,11 @@ export default function OnboardingApiKey({ onContinue }: OnboardingApiKeyProps):
 
       if (result.valid) {
         await window.ghostAPI.store.setApiKey(provider, key);
-        setKeys((prev) => ({
-          ...prev,
-          [provider]: { ...prev[provider], status: 'valid', error: undefined },
-        }));
+        setKeys((prev) => {
+          const next = { ...prev, [provider]: { ...prev[provider], status: 'valid' as const, error: undefined } };
+          onConnectedChange?.(Object.values(next).some((k) => k.status === 'valid'));
+          return next;
+        });
       } else {
         setKeys((prev) => ({
           ...prev,
@@ -79,103 +84,121 @@ export default function OnboardingApiKey({ onContinue }: OnboardingApiKeyProps):
         [provider]: { ...prev[provider], status: 'invalid', error: 'Connection failed' },
       }));
     }
-  }, [keys]);
+  }, [keys, onConnectedChange]);
 
   const toggleMask = useCallback((provider: ProviderID) => {
-    setKeys((prev) => ({
-      ...prev,
-      [provider]: { ...prev[provider], masked: !prev[provider].masked },
-    }));
+    setKeys((prev) => ({ ...prev, [provider]: { ...prev[provider], masked: !prev[provider].masked } }));
   }, []);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-6 py-4">
-        <h2 className="text-text-primary text-lg font-semibold mb-1">Connect an AI Provider</h2>
-        <p className="text-text-secondary text-xs mb-5">
-          Add at least one API key to get started. You can add more later in Settings.
+    <div className="flex h-full flex-col">
+      <div>
+        <h2 className="text-2xl font-semibold text-text-primary">Connect your intelligence</h2>
+        <p className="mt-1.5 text-sm text-text-secondary">
+          InvisiQ runs on your own API key — your keys are encrypted on-device and never leave it.
+          Add one to start; you can add the rest later in Settings.
         </p>
+      </div>
 
-        <div className="space-y-4">
-          {PROVIDERS.map(({ id, name, placeholder, color }) => {
-            const keyState = keys[id];
-            return (
-              <div
-                key={id}
-                className="rounded-lg border border-border-subtle p-3 space-y-2"
-                style={{ borderLeftWidth: '3px', borderLeftColor: color }}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-text-primary text-sm font-medium">{name}</span>
-                  {keyState.status === 'valid' && (
-                    <span className="flex items-center gap-1 text-status-success text-xs">
-                      <Check size={12} /> Connected
-                    </span>
-                  )}
-                  {keyState.status === 'invalid' && (
-                    <span className="flex items-center gap-1 text-status-error text-xs">
-                      <CircleAlert size={12} /> Invalid
-                    </span>
-                  )}
+      <motion.div
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+        className="mt-5 space-y-3"
+      >
+        {PROVIDERS.map(({ id, name, placeholder, color, keyUrl }) => {
+          const keyState = keys[id];
+          const connected = keyState.status === 'valid';
+          return (
+            <motion.div
+              key={id}
+              variants={staggerItem}
+              className="group relative overflow-hidden rounded-xl border border-border-subtle bg-surface-glass/[0.03] p-3.5 transition-colors hover:border-border-subtle/80"
+            >
+              {/* provider color spine */}
+              <span
+                className="absolute inset-y-0 left-0 w-[3px] rounded-full"
+                style={{ background: color, opacity: connected ? 1 : 0.45 }}
+              />
+              <div className="flex items-center justify-between pl-1.5">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: color, boxShadow: connected ? `0 0 8px ${color}` : 'none' }}
+                  />
+                  <span className="text-sm font-medium text-text-primary">{name}</span>
+                  <span className="hidden items-center gap-0.5 text-[10px] text-text-placeholder sm:inline-flex">
+                    {keyUrl}
+                    <ArrowUpRight size={10} />
+                  </span>
                 </div>
+                {connected && (
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-1 rounded-full bg-status-success/10 px-2 py-0.5 text-[11px] font-medium text-status-success"
+                  >
+                    <Check size={11} /> Connected
+                  </motion.span>
+                )}
+                {keyState.status === 'invalid' && (
+                  <span className="flex items-center gap-1 text-[11px] font-medium text-status-error">
+                    <CircleAlert size={11} /> Invalid
+                  </span>
+                )}
+              </div>
 
-                <div className="relative">
+              <div className="mt-2.5 flex items-center gap-2 pl-1.5">
+                <div className="relative flex-1">
                   <input
                     type={keyState.masked ? 'password' : 'text'}
                     value={keyState.value}
                     onChange={(e) => handleKeyChange(id, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleTestKey(id);
+                    }}
                     placeholder={placeholder}
-                    className="w-full bg-bg-input border border-border-subtle rounded-md px-3 py-2 pr-10 text-xs text-text-primary placeholder:text-text-placeholder focus:outline-none focus:border-border-focus transition-colors"
+                    spellCheck={false}
+                    className="w-full rounded-lg border border-border-subtle bg-bg-input px-3 py-2 pr-9 text-sm text-text-primary placeholder:text-text-placeholder focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-accent-primary/20"
                   />
                   <button
+                    type="button"
                     onClick={() => toggleMask(id)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                    className="no-drag absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                    tabIndex={-1}
                   >
                     {keyState.masked ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                 </div>
-
-                {keyState.error && (
-                  <p className="text-status-error text-[10px]">{keyState.error}</p>
-                )}
-
                 <button
+                  type="button"
                   onClick={() => handleTestKey(id)}
                   disabled={!keyState.value.trim() || keyState.status === 'testing'}
-                  className="px-3 py-1 text-xs font-medium rounded bg-bg-hover text-text-primary hover:bg-border-subtle disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                  className="no-drag flex h-[38px] min-w-[84px] items-center justify-center gap-1.5 rounded-lg border border-border-subtle bg-bg-hover px-3 text-xs font-medium text-text-primary transition-colors hover:border-accent-primary/50 hover:text-accent-primary disabled:opacity-40"
                 >
                   {keyState.status === 'testing' ? (
-                    <>
-                      <LoaderCircle size={12} className="animate-spin" /> Testing...
-                    </>
+                    <LoaderCircle size={13} className="animate-spin" />
+                  ) : connected ? (
+                    'Re-test'
                   ) : (
-                    'Test Key'
+                    'Connect'
                   )}
                 </button>
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      <div className="px-6 py-4 border-t border-border-subtle flex items-center justify-between">
-        <button
-          onClick={onContinue}
-          className="text-text-secondary text-xs hover:text-text-primary transition-colors"
-        >
-          Skip for now
-        </button>
-        <button
-          onClick={onContinue}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            hasAnyKey
-              ? 'bg-accent-primary text-white hover:bg-accent-primary/80'
-              : 'bg-bg-hover text-text-secondary'
-          }`}
-        >
-          Continue
-        </button>
-      </div>
+              {keyState.error && (
+                <p className="mt-1.5 pl-1.5 text-[11px] text-status-error">{keyState.error}</p>
+              )}
+            </motion.div>
+          );
+        })}
+      </motion.div>
+
+      <p className="mt-4 text-[11px] leading-relaxed text-text-placeholder">
+        During the beta, the <span className="text-text-secondary">text</span> of prompts you send is
+        stored to improve InvisiQ — never your screenshots or screen contents. You can wipe it
+        anytime in Settings → Privacy.
+      </p>
     </div>
   );
 }

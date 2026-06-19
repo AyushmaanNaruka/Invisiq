@@ -1,6 +1,8 @@
 # 👻 InvisiQ — Invisible AI Desktop Assistant
 ## Research & Development Plan
 
+> ⚠️ **HISTORICAL DESIGN SPEC — frozen ~June 3, 2026.** This is the original market-research and architecture-rationale document, kept for context on *why* early decisions were made. Several of those decisions have since changed. For current architecture and direction, trust **CLAUDE.md** and **docs/InvisiQ-Beta-Launch-Plan.md**. Notably: the local-LLM (Ollama) path was **removed** (cloud-only, BYOK); the multi-mode + template model collapsed to a **single universal mode**; and the product now ships as a **gated, monetized beta** (auth + trial + analytics + kill-switch) — Act 1 of a two-act plan toward a managed AI backend.
+
 ---
 
 ## 1. Market Research: What Exists Today

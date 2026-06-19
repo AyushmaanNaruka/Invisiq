@@ -7,7 +7,6 @@ import TranscriptPanel from './components/TranscriptPanel';
 import StatusBar from './components/StatusBar';
 import Settings from './components/Settings';
 import ConversationHistory from './components/ConversationHistory';
-import CustomModeEditor from './components/CustomModeEditor';
 import OnboardingFlow from './components/OnboardingFlow';
 import LoginScreen from './components/LoginScreen';
 import LockScreen from './components/LockScreen';
@@ -18,7 +17,6 @@ import UpdateNotification from './components/UpdateNotification';
 import InlineRegionSelector from './components/InlineRegionSelector';
 import MeetingPanel from './components/MeetingPanel';
 import MemoryPanel from './components/MemoryPanel';
-import TemplateLibrary from './components/TemplateLibrary';
 import CodeDetectionCard from './components/CodeDetectionCard';
 import { ToastProvider, useToast } from './components/Toast';
 import { useConversation } from './hooks/useConversation';
@@ -39,8 +37,8 @@ import { useMemory } from './hooks/useMemory';
 import { useTokenCost } from './hooks/useTokenCost';
 import { useInternalKeyboard } from './hooks/useInternalKeyboard';
 import { useWindowSize } from './hooks/useWindowSize';
-import { BUILT_IN_MODES, CURRENT_TOS_VERSION } from '@shared/constants';
-import type { ProviderID, CustomMode } from '@shared/types';
+import { UNIVERSAL_MODE, CURRENT_TOS_VERSION } from '@shared/constants';
+import type { ProviderID } from '@shared/types';
 
 // Initialize AI providers
 import './services/ai-providers/index';
@@ -222,12 +220,12 @@ function AppInner(): JSX.Element {
 
   const [meetingPanelOpen, setMeetingPanelOpen] = useState(false);
 
-  // Auto-open meeting panel when in meeting mode with system audio enabled
+  // Auto-open meeting panel when system audio capture is enabled
   useEffect(() => {
-    if (settings.activeMode === 'meeting' && settings.meeting?.enableSystemAudio) {
+    if (settings.meeting?.enableSystemAudio) {
       setMeetingPanelOpen(true);
     }
-  }, [settings.activeMode, settings.meeting?.enableSystemAudio]);
+  }, [settings.meeting?.enableSystemAudio]);
 
   const handleUseQuestion = useCallback(
     (questionText: string) => {
@@ -251,7 +249,6 @@ function AppInner(): JSX.Element {
       refreshHistory();
       setHistoryOpen(true);
     },
-    openTemplateLibrary: () => setTemplateLibraryOpen((prev) => !prev),
   });
 
   // Phase 4: memory (RAG)
@@ -259,10 +256,7 @@ function AppInner(): JSX.Element {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [modeEditorOpen, setModeEditorOpen] = useState(false);
   const [memoryPanelOpen, setMemoryPanelOpen] = useState(false);
-  const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
-  const [editingMode, setEditingMode] = useState<CustomMode | undefined>(undefined);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [availableProviders, setAvailableProviders] = useState<Set<ProviderID>>(new Set());
   const [injectedInputText, setInjectedInputText] = useState<string | null>(null);
@@ -358,45 +352,6 @@ function AppInner(): JSX.Element {
     setHistoryOpen(true);
   }, [refreshHistory]);
 
-  // ── Custom mode editor ──────────────────────────────────
-
-  const handleCreateMode = useCallback(() => {
-    setEditingMode(undefined);
-    setModeEditorOpen(true);
-  }, []);
-
-  const handleEditMode = useCallback((mode: CustomMode) => {
-    setEditingMode(mode);
-    setModeEditorOpen(true);
-  }, []);
-
-  const handleSaveMode = useCallback(
-    async (mode: CustomMode) => {
-      await window.ghostAPI.modes.save(mode);
-      // Refresh settings to pick up new customModes array
-      const updated = await window.ghostAPI.store.getAll();
-      await updateSetting('customModes', (updated as { customModes: CustomMode[] }).customModes || []);
-      setModeEditorOpen(false);
-      setEditingMode(undefined);
-    },
-    [updateSetting]
-  );
-
-  const handleDeleteMode = useCallback(
-    async (id: string) => {
-      await window.ghostAPI.modes.delete(id);
-      const updated = await window.ghostAPI.store.getAll();
-      await updateSetting('customModes', (updated as { customModes: CustomMode[] }).customModes || []);
-      // If deleted mode was active, switch to 'general'
-      if (settings.activeMode === id) {
-        await updateSetting('activeMode', 'general');
-      }
-      setModeEditorOpen(false);
-      setEditingMode(undefined);
-    },
-    [updateSetting, settings.activeMode]
-  );
-
   // ── Send message ─────────────────────────────────────────
 
   const handleSend = useCallback(
@@ -406,13 +361,11 @@ function AppInner(): JSX.Element {
         ? pendingScreenshots.map((img) => ({ ...img }))
         : undefined;
 
-      // Meeting mode auto-context: prepend transcript for AI but show original text in chat
+      // Auto-context: when transcription is active and the user opted in, prepend
+      // the live transcript for the AI but show the original text in chat. Gated on
+      // the audio setting (not a mode) since InvisiQ has a single universal mode.
       let aiText = text;
-      if (
-        settings.activeMode === 'meeting' &&
-        settings.audio?.autoIncludeTranscript &&
-        transcript.trim()
-      ) {
+      if (settings.audio?.autoIncludeTranscript && transcript.trim()) {
         aiText = `[Current meeting transcript:\n${transcript.trim()}]\n\n${text}`;
       }
 
@@ -452,14 +405,10 @@ function AppInner(): JSX.Element {
       const assistantMsg = addAssistantMessage();
       setStreamingMessageId(assistantMsg.id);
 
-      // Get current mode's system prompt (check both built-in and custom modes)
-      const currentMode =
-        BUILT_IN_MODES.find((m) => m.id === settings.activeMode) ||
-        settings.customModes.find((m) => m.id === settings.activeMode);
-
+      // InvisiQ has a single universal, intent-adaptive system prompt.
       await sendMessage(aiText, [...getContextMessages(), { id: '', role: 'user', content: aiText, images, timestamp: '' }], {
         model: settings.activeModel,
-        systemPrompt: currentMode?.systemPrompt,
+        systemPrompt: UNIVERSAL_MODE.systemPrompt,
         images,
         onToken: (token) => {
           appendToMessage(assistantMsg.id, token);
@@ -499,7 +448,6 @@ function AppInner(): JSX.Element {
       getContextMessages,
       settings.activeMode,
       settings.activeModel,
-      settings.customModes,
       settings.audio?.autoIncludeTranscript,
       settings.memory?.enabled,
       settings.memory?.autoExtract,
@@ -623,20 +571,15 @@ function AppInner(): JSX.Element {
     <div className="flex flex-col h-screen w-screen bg-bg-overlay rounded-lg overflow-hidden select-none">
       <TrialBanner daysLeft={entitlement.daysLeft} />
       <HeaderBar
-        activeMode={settings.activeMode}
         activeModel={settings.activeModel}
         opacity={settings.display.opacity}
         availableProviders={availableProviders}
-        customModes={settings.customModes}
         compact={compact}
-        onModeChange={(mode) => updateSetting('activeMode', mode)}
         onModelChange={(model) => updateSetting('activeModel', model)}
         onOpacityChange={handleOpacityChange}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenHistory={handleOpenHistory}
         onNewConversation={handleNewConversation}
-        onCreateMode={handleCreateMode}
-        onEditMode={handleEditMode}
         onClose={handleClose}
         isPassthrough={isPassthrough}
         onTogglePassthrough={togglePassthrough}
@@ -678,12 +621,7 @@ function AppInner(): JSX.Element {
         {codeDetection && (
           <CodeDetectionCard
             detection={codeDetection}
-            activeMode={settings.activeMode}
             onDismiss={dismissCodeDetection}
-            onSwitchToCoding={() => {
-              updateSetting('activeMode', 'coding');
-              dismissCodeDetection();
-            }}
           />
         )}
       </AnimatePresence>
@@ -721,19 +659,6 @@ function AppInner(): JSX.Element {
         onClose={() => setMemoryPanelOpen(false)}
       />
 
-      {/* Phase 4: Template library */}
-      <AnimatePresence>
-        {templateLibraryOpen && (
-          <TemplateLibrary
-            isOpen={templateLibraryOpen}
-            onClose={() => setTemplateLibraryOpen(false)}
-            onApply={(prompt) => {
-              setInjectedInputText(prompt);
-            }}
-          />
-        )}
-      </AnimatePresence>
-
       <Settings
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -742,6 +667,8 @@ function AppInner(): JSX.Element {
         compact={compact}
         isStealthFocus={isStealthFocus}
         onToggleStealthFocus={handleToggleStealthFocus}
+        accountEmail={authStatus.email}
+        onLogout={authLogoutFn}
       />
 
       <ConversationHistory
@@ -757,17 +684,6 @@ function AppInner(): JSX.Element {
         onDeleteConversation={handleDeleteHistoryConversation}
         onExportConversation={exportHistoryConversation}
         onDeleteAll={deleteAllConversations}
-      />
-
-      <CustomModeEditor
-        mode={editingMode}
-        isOpen={modeEditorOpen}
-        onSave={handleSaveMode}
-        onDelete={editingMode ? handleDeleteMode : undefined}
-        onClose={() => {
-          setModeEditorOpen(false);
-          setEditingMode(undefined);
-        }}
       />
 
       {/* Phase 4: Inline region selector — rendered over all chat content */}

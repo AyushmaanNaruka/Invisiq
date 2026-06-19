@@ -1,45 +1,34 @@
 import { GripVertical, Settings, X, Clock, Plus, MousePointer, MousePointerBan } from 'lucide-react';
-import ModeSelector from './ModeSelector';
 import ModelSelector from './ModelSelector';
 import OpacityControl from './OpacityControl';
 import { GhostTooltip } from './ui/GhostTooltip';
-import type { ProviderID, CustomMode } from '@shared/types';
+import type { ProviderID } from '@shared/types';
 
 interface HeaderBarProps {
-  activeMode: string;
   activeModel: string;
   opacity: number;
   availableProviders: Set<ProviderID>;
-  customModes: CustomMode[];
   compact?: boolean;
-  onModeChange: (modeId: string) => void;
   onModelChange: (modelId: string) => void;
   onOpacityChange: (opacity: number) => void;
   onOpenSettings: () => void;
   onOpenHistory: () => void;
   onNewConversation: () => void;
-  onCreateMode: () => void;
-  onEditMode: (mode: CustomMode) => void;
   onClose: () => void;
   isPassthrough?: boolean;
   onTogglePassthrough?: () => void;
 }
 
 export default function HeaderBar({
-  activeMode,
   activeModel,
   opacity,
   availableProviders,
-  customModes,
   compact = false,
-  onModeChange,
   onModelChange,
   onOpacityChange,
   onOpenSettings,
   onOpenHistory,
   onNewConversation,
-  onCreateMode,
-  onEditMode,
   onClose,
   isPassthrough = false,
   onTogglePassthrough,
@@ -73,19 +62,6 @@ export default function HeaderBar({
           </button>
         </GhostTooltip>
       </div>
-
-      {/* Separator */}
-      <div className="w-px h-4 bg-border-subtle mx-1" />
-
-      {/* Mode selector */}
-      <ModeSelector
-        activeMode={activeMode}
-        customModes={customModes}
-        compact={compact}
-        onModeChange={onModeChange}
-        onCreateMode={onCreateMode}
-        onEditMode={onEditMode}
-      />
 
       {/* Separator */}
       <div className="w-px h-4 bg-border-subtle mx-1" />

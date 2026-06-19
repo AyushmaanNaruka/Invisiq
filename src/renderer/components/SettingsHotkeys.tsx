@@ -29,7 +29,6 @@ const INTERNAL_SHORTCUTS: { label: string; shortcut: string }[] = [
   { label: 'Open Settings', shortcut: 'Ctrl+,' },
   { label: 'Conversation History', shortcut: 'Ctrl+K' },
   { label: 'Clear Chat (double-press)', shortcut: 'Ctrl+L' },
-  { label: 'Template Library', shortcut: 'Ctrl+T' },
 ];
 
 const ACTIONS = Object.keys(HOTKEY_LABELS) as HotkeyAction[];

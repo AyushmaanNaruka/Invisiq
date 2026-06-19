@@ -1,15 +1,17 @@
 # InvisiQ — API Contract & Interface Specification
 
-> Complete specification of all internal IPC channels, AI provider interfaces, data models, and external API integrations.
+> Specification of internal IPC channels, AI provider interfaces, data models, and external API integrations.
 
 ---
 
 | Field | Value |
 |---|---|
-| **Version** | 1.0.0 |
-| **Date** | February 18, 2026 |
+| **Version** | 2.0.0 |
+| **Date** | February 18, 2026 (core) · channel inventory refreshed June 18, 2026 |
 | **Author** | Ayushmaan Singh Naruka |
-| **Related Documents** | InvisiQ-PRD.md, InvisiQ-Wireframes.md |
+| **Related Documents** | CLAUDE.md (current behavior), InvisiQ-Beta-Launch-Plan.md |
+
+> ⚠️ **Partial-staleness notice (June 18, 2026).** The per-channel specs in §2 and the OpenAI/Anthropic/Gemini adapter contracts (§3–§6) remain accurate, but this document predates several shipped subsystems — **beta gating** (auth / entitlement / analytics / T&C), **Model B stealth capture**, **memory (RAG)**, **companion**, **resilience**, **audio**, and **export** — and the **single-mode collapse** (modes/templates removed). For the authoritative, complete channel list see **§2.0 below** and the IPC section of **CLAUDE.md**. The **Ollama** provider was removed permanently (cloud-only); ignore any local-LLM references.
 
 ---
 
@@ -83,6 +85,56 @@
 ---
 
 ## 2. IPC Contract (Main ↔ Renderer)
+
+### 2.0 Current Channel Inventory (authoritative)
+
+The complete set of channels registered in `src/main/ipc-handlers.ts` / exposed in `src/preload/index.ts` as of June 18, 2026. The detailed specs in §2.1+ cover the overlay/screenshot/hotkey/store/clipboard/app subset; the remaining domains follow the same `{ success, data?, error? }` invoke convention.
+
+**Invoke (`ipcRenderer.invoke` → `ipcMain.handle`):**
+```
+# Beta gating (Supabase)
+auth:login  auth:logout  auth:status
+entitlement:status  entitlement:refresh
+analytics:track  analytics:capture-prompt  analytics:delete-my-data
+tos:accept  tos:status
+# Overlay / window
+overlay:toggle  overlay:hide  overlay:show  overlay:set-opacity
+overlay:set-position  overlay:set-size  overlay:get-bounds  overlay:set-passthrough
+overlay:set-stealth-focus  overlay:stealth-focus-status  overlay:request-focus  overlay:release-focus
+# Screenshot / monitors
+screenshot:capture-full  screenshot:capture-silent  screenshot:capture-region
+screenshot:capture-monitors  screenshot:capture-for-snip  screenshot:crop-region
+monitors:get-all  monitors:move-overlay
+# Store / hotkeys / clipboard / app
+store:get  store:set  store:get-all  store:set-api-key  store:remove-api-key  store:get-api-key  store:clear-all
+hotkeys:register-all  hotkeys:update
+clipboard:copy  clipboard:read  clipboard:smart-paste  clipboard:start-monitor  clipboard:stop-monitor  clipboard:monitor-status
+app:get-info  app:quit  app:open-data-folder
+# Conversation / export / memory
+conversation:save  conversation:load  conversation:list  conversation:delete  conversation:search  conversation:export  conversation:delete-all
+export:conversation  export:save-dialog
+memory:search  memory:add  memory:delete  memory:list  memory:clear-all  memory:stats  memory:extract
+# Update / audio / companion / resilience
+update:check  update:download  update:install  update:version-status  update:open-releases
+audio:start-system-capture  audio:stop-system-capture  audio:capture-status
+companion:start  companion:stop  companion:status  companion:devices
+resilience:start-agent  resilience:stop-agent  resilience:send-command  resilience:status
+# Stealth capture (Model B)
+invisible-input:arm  invisible-input:disarm  invisible-input:toggle  invisible-input:status
+capture:enter  capture:exit  capture:status  capture:panic  capture:proctor-status  capture:paste
+```
+> **Removed:** `modes:*` and `template:*` (single-mode collapse — see CLAUDE.md §1d).
+
+**Events (main → renderer):**
+```
+hotkeys:triggered  overlay:visibility-changed  screenshot:captured  app:error  clipboard:changed  monitors:changed
+update:checking  update:available  update:not-available  update:progress  update:downloaded  update:error
+audio:chunk  companion:message  companion:device-connected  companion:device-disconnected
+resilience:agent-status-changed  resilience:agent-response
+overlay:stealth-focus-changed  overlay:clipboard-input-requested
+invisible-input:status  invisible-input:char  invisible-input:enter  invisible-input:backspace  invisible-input:delete
+capture:key  capture:state  capture:failed  proctor:detected
+```
 
 ### 2.1 Overlay Management
 
@@ -795,18 +847,18 @@ POST https://api.anthropic.com/v1/messages
 ```typescript
 const GEMINI_MODELS: ModelConfig[] = [
   {
-    id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
+    id: 'gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
     provider: 'gemini',
     supportsVision: true,
     maxContextTokens: 1048576,
-    maxOutputTokens: 8192,
-    costPer1MInput: 0.075,
-    costPer1MOutput: 0.30,
+    maxOutputTokens: 65536,
+    costPer1MInput: 0.30,
+    costPer1MOutput: 2.50,
     speed: 'fast',
   },
   {
-    id: 'gemini-2.5-pro-preview-06-05',
+    id: 'gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     provider: 'gemini',
     supportsVision: true,
@@ -823,7 +875,7 @@ const GEMINI_MODELS: ModelConfig[] = [
 
 ```typescript
 // Text-only request (using Google GenAI SDK format)
-POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key={api_key}&alt=sse
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key={api_key}&alt=sse
 Headers:
   Content-Type: application/json
 
@@ -847,7 +899,7 @@ Body:
 
 ```typescript
 // Vision request (with screenshot)
-POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key={api_key}&alt=sse
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key={api_key}&alt=sse
 
 Body:
 {

@@ -381,6 +381,84 @@ html, body {
 }
 
 /* ══════════════════════════════════════
+   ONBOARDING — cinematic ambient backdrop
+   (full-canvas welcome flow; teal-on-navy, premium)
+   ══════════════════════════════════════ */
+
+@keyframes auroraDrift {
+  0%   { transform: translate3d(-6%, -4%, 0) scale(1.05); }
+  50%  { transform: translate3d(6%, 4%, 0) scale(1.15); }
+  100% { transform: translate3d(-6%, -4%, 0) scale(1.05); }
+}
+
+@keyframes orbFloat {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -18px, 0); }
+}
+
+@keyframes gridPan {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 -48px; }
+}
+
+@keyframes hairlineSweep {
+  0%   { transform: translateX(-120%); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+
+@keyframes caretBlink {
+  0%, 49%  { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* A slowly drifting teal/purple aurora wash behind the onboarding panel. */
+.onb-aurora {
+  background:
+    radial-gradient(42% 55% at 22% 18%, rgba(20, 184, 166, 0.20) 0%, transparent 70%),
+    radial-gradient(38% 48% at 82% 78%, rgba(139, 92, 246, 0.16) 0%, transparent 72%),
+    radial-gradient(30% 40% at 60% 0%, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
+  animation: auroraDrift 18s ease-in-out infinite;
+  will-change: transform;
+}
+
+.onb-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 75%);
+  animation: gridPan 14s linear infinite;
+}
+
+.onb-orb {
+  border-radius: 9999px;
+  filter: blur(48px);
+  animation: orbFloat 9s ease-in-out infinite;
+  will-change: transform;
+}
+
+.onb-hairline::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(20, 184, 166, 0.7), transparent);
+  animation: hairlineSweep 2.8s ease-in-out infinite;
+}
+
+.onb-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: rgb(var(--accent-primary));
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  border-radius: 2px;
+  animation: caretBlink 1s steps(1) infinite;
+}
+
+/* ══════════════════════════════════════
    FOCUS VISIBLE (KEYBOARD NAVIGATION)
    ══════════════════════════════════════ */
 

@@ -1,12 +1,13 @@
 /**
  * CodeDetectionCard — Phase 4 / Sprint 15
  *
- * Dismissible notification card shown when a coding platform is detected on screen.
- * Offers a "Switch to Coding mode" CTA.
+ * Dismissible notification card shown when a coding platform is detected on
+ * screen. A passive heads-up only — InvisiQ has a single universal mode, so
+ * there is no mode to switch to; the model already adapts to code on screen.
  */
 
 import { motion } from 'framer-motion';
-import { Code, X, ArrowRight } from 'lucide-react';
+import { Code, X } from 'lucide-react';
 import { scaleIn } from './ui/animations';
 import type { CodeDetectionResult, CodePlatform } from '@shared/types';
 
@@ -33,20 +34,15 @@ const PLATFORM_COLORS: Partial<Record<CodePlatform, string>> = {
 
 interface CodeDetectionCardProps {
   detection: CodeDetectionResult;
-  activeMode: string;
   onDismiss: () => void;
-  onSwitchToCoding: () => void;
 }
 
 export default function CodeDetectionCard({
   detection,
-  activeMode,
   onDismiss,
-  onSwitchToCoding,
 }: CodeDetectionCardProps): JSX.Element {
   const label = PLATFORM_LABELS[detection.platform] ?? 'Coding Platform';
   const colorClass = PLATFORM_COLORS[detection.platform] ?? PLATFORM_COLORS['generic-ide']!;
-  const alreadyCoding = activeMode === 'coding';
 
   return (
     <motion.div
@@ -67,16 +63,6 @@ export default function CodeDetectionCard({
           )}
         </p>
       </div>
-
-      {!alreadyCoding && (
-        <button
-          onClick={onSwitchToCoding}
-          className="flex items-center gap-1 text-[10px] font-medium whitespace-nowrap hover:opacity-80 transition-opacity"
-        >
-          Coding mode
-          <ArrowRight size={10} strokeWidth={2} />
-        </button>
-      )}
 
       <button
         onClick={onDismiss}

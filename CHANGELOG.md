@@ -4,6 +4,40 @@ All notable changes to InvisiQ are documented here.
 
 ---
 
+## [Unreleased] — Single Universal Mode
+
+### One mode, no templates (UX simplification)
+- Removed the user-facing **mode picker** and the entire **template library**. InvisiQ now uses a single intent-adaptive system prompt (`UNIVERSAL_MODE` in `src/shared/constants.ts`) — the model infers intent (answer-first for questions, algorithm-first for code, talking points for meetings) from the message + screenshot, ChatGPT/Claude-style.
+- Tune behavior by editing `UNIVERSAL_SYSTEM_PROMPT`; it is injected at a single point in `App.tsx`.
+- Meeting-transcript auto-context is now gated on `settings.audio.autoIncludeTranscript` (the `meeting` mode no longer exists); the meeting panel auto-opens on `settings.meeting.enableSystemAudio`.
+- **Removed:** `ModeSelector`, `CustomModeEditor`, `TemplateLibrary`, `useTemplates`, `template-store.ts`, `built-in-templates.ts`, the `modes:*` and `template:*` IPC, the `Ctrl+T` shortcut, the Templates settings tab, and the `CustomMode`/`PromptTemplate` types + `customModes`/`templates` settings fields.
+- `activeMode` is retained (always `'universal'`) for conversation/analytics metadata. Typecheck + production build verified green.
+
+---
+
+## [2.0.0] — Beta Launch (Auth · Trial · Analytics · Kill-Switch)
+
+> Act 1 of the two-act plan (BYOK beta → own AI backend). See `docs/InvisiQ-Beta-Launch-Plan.md`.
+
+### Accounts & trial gating
+- **Google sign-in** (OAuth via Supabase) — `auth.ts` / `useAuth`; `LoginScreen` gates the app.
+- **Server-clocked 14-day trial**, **fail-closed** — `entitlement.ts` / `useEntitlement`. Offline or expired ⇒ `LockScreen`; API keys are entitlement-bound and become undecryptable when locked (crypto v2: machineId + server fragment).
+- **T&C gate** — `TosGate` blocks use until the current `CURRENT_TOS_VERSION` is accepted; each captured prompt is stamped with the accepted version.
+
+### Telemetry (disclosed)
+- `analytics:track` events + `analytics:capture-prompt` (typed prompt text only — never screenshots/OCR). Server redacts PII; beta prompt rows purged after 30 days. `analytics:delete-my-data` honors deletion.
+
+### Remote control & updates
+- **Kill-switch + minimum-version floor** — `VersionGateStatus` via `updater.ts` / `useUpdateGate`; `ForcedUpdate` blocks killed or below-floor builds.
+- **Real auto-update** — `electron-updater` NSIS feed from GitHub Releases (`update:check|download|install|version-status|open-releases`).
+
+### Platform changes
+- **Cloud-only / BYOK** — the **Ollama / local-LLM provider was removed permanently** (no `ollama.ts`, no local endpoint in `AI_API_DOMAINS`). Providers: OpenAI, Anthropic, Google Gemini (Gemini refreshed to 2.5 Flash + Pro).
+- **Hotkeys migrated Alt → Shift** modifier (e.g. `Ctrl+Shift+G/S/R/...`); added click-through toggle (`Ctrl+Shift+P`) and model cycling (`Ctrl+Shift+]` / `Ctrl+Shift+[`).
+- New backend module set: `auth.ts`, `entitlement.ts`, `analytics.ts`; new UI: `LoginScreen`, `LockScreen`, `TosGate`, `TrialBanner`, `ForcedUpdate`.
+
+---
+
 ## [1.3.0] — Model B: Default-On Stealth
 
 ### Stealth is now the default (fail-safe)

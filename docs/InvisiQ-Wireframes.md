@@ -2,6 +2,12 @@
 
 > Visual specification for every screen, state, and interaction in the application.
 
+> ⚠️ **HISTORICAL DESIGN SPEC — frozen ~June 3, 2026.** These mockups predate major UI changes and are kept for reference only. The design-system colors/animations still broadly apply, but several screens shown here **no longer exist or have moved**. For current UI, trust **CLAUDE.md** and the actual components in `src/renderer/components/`. Key deltas:
+> - **No mode picker, no template library** — the header has a model selector only; `ModeSelector`, `CustomModeEditor`, and `TemplateLibrary` were removed (single universal mode).
+> - **Settings is an 8-section icon sidebar** — api-keys, hotkeys, display, privacy, audio, memory, companion, resilience (the old "4 tabs" and the Templates tab are gone).
+> - **New beta screens** — `LoginScreen`, `TosGate`, `TrialBanner`, `LockScreen`, `ForcedUpdate` gate the app at startup.
+> - **New panels** — `MeetingPanel`, `MemoryPanel`, `CodeDetectionCard`, `InlineRegionSelector`, plus the Model B capture-aware input (glowing border + caret).
+
 ---
 
 | Field | Value |

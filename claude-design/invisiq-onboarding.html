@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<!--
+  InvisiQ — Onboarding preview (review artifact)
+  A browser-faithful, CLICKABLE preview of the real React onboarding flow
+  (src/renderer/components/OnboardingFlow.tsx). Open in any browser to review or
+  share. The shipping version animates with framer-motion + a live window resize;
+  this static clone mirrors the layout, colors, type, and step-by-step UX.
+  Canvas = 760×640, exactly the size the real overlay grows to during setup.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>InvisiQ — Onboarding Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg-overlay:#0b0e14;--bg-input:#161b24;--bg-code:#090c12;--bg-hover:#1c222e;
+    --surface:rgba(255,255,255,.03);--text-primary:#e2e8f0;--text-secondary:#64748b;
+    --text-placeholder:#475569;--accent:#14b8a6;--accent-purple:#8b5cf6;
+    --border:#1e2532;--success:#22c55e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{min-height:100vh;display:flex;align-items:center;justify-content:center;gap:28px;
+    flex-wrap:wrap;background:#05070b;font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;padding:32px}
+  .frame{width:760px;height:640px;position:relative;overflow:hidden;border-radius:14px;
+    display:flex;background:var(--bg-overlay);color:var(--text-primary);
+    box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 40px rgba(20,184,166,.06)}
+
+  /* ambient */
+  .aurora{position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(42% 55% at 22% 18%,rgba(20,184,166,.20)0%,transparent 70%),
+      radial-gradient(38% 48% at 82% 78%,rgba(139,92,246,.16)0%,transparent 72%),
+      radial-gradient(30% 40% at 60% 0%,rgba(6,182,212,.12)0%,transparent 70%);
+    animation:aurora 18s ease-in-out infinite}
+  @keyframes aurora{0%,100%{transform:translate(-6%,-4%) scale(1.05)}50%{transform:translate(6%,4%) scale(1.15)}}
+  .grid{position:absolute;inset:0;opacity:.6;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.035)1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.035)1px,transparent 1px);
+    background-size:48px 48px;-webkit-mask-image:radial-gradient(circle at 50% 40%,#000,transparent 75%)}
+  .orb{position:absolute;border-radius:50%;filter:blur(48px);pointer-events:none}
+
+  /* rail */
+  .rail{position:relative;z-index:2;width:232px;flex-shrink:0;display:flex;flex-direction:column;
+    justify-content:space-between;border-right:1px solid var(--border);
+    background:rgba(255,255,255,.03);backdrop-filter:blur(20px);padding:24px 20px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .mk{border-radius:9px;box-shadow:0 0 18px rgba(20,184,166,.3)}
+  .brand b{font-size:16px;font-weight:600;letter-spacing:-.3px}
+  .blurb{margin-top:8px;font-size:11px;line-height:1.5;color:var(--text-secondary)}
+  nav{margin-top:28px;display:flex;flex-direction:column;gap:4px}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:9px;
+    cursor:pointer;transition:background .15s}
+  .nav-item:hover{background:rgba(28,34,46,.4)}
+  .nav-item.active{background:rgba(20,184,166,.1)}
+  .nav-ic{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--border);background:var(--bg-input);color:var(--text-placeholder);flex-shrink:0}
+  .nav-item.active .nav-ic{background:var(--accent);border-color:var(--accent);color:var(--bg-overlay)}
+  .nav-item.done .nav-ic{background:rgba(20,184,166,.15);border-color:rgba(20,184,166,.4);color:var(--accent)}
+  .nav-lb{font-size:12px;font-weight:500;color:var(--text-placeholder)}
+  .nav-item.active .nav-lb{color:var(--text-primary)}
+  .nav-item.done .nav-lb{color:var(--text-secondary)}
+  .rail-foot{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-placeholder)}
+
+  /* content */
+  .content{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;min-width:0}
+  .body{flex:1;overflow-y:auto;padding:40px 32px 16px}
+  .foot{display:flex;align-items:center;justify-content:space-between;
+    border-top:1px solid var(--border);background:rgba(255,255,255,.02);
+    backdrop-filter:blur(20px);padding:16px 32px}
+  .h2{font-size:24px;font-weight:600;letter-spacing:-.4px}
+  .sub{margin-top:6px;font-size:13px;line-height:1.5;color:var(--text-secondary);max-width:440px}
+  .grad{background:linear-gradient(135deg,#14b8a6,#06b6d4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;border:none;border-radius:11px;
+    background:var(--accent);color:var(--bg-overlay);font-size:13px;font-weight:600;
+    padding:10px 20px;cursor:pointer;box-shadow:0 0 20px rgba(20,184,166,.2);transition:filter .15s}
+  .btn:hover{filter:brightness(1.1)}
+  .link{background:none;border:none;color:var(--text-secondary);font-size:12px;cursor:pointer;font-weight:500}
+  .link:hover{color:var(--text-primary)}
+  .link.dim{color:var(--text-placeholder)}
+
+  /* cards */
+  .card{border:1px solid var(--border);background:var(--surface);border-radius:13px;padding:14px}
+  .row{display:flex;align-items:center;gap:14px}
+  .pchip{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    background:rgba(20,184,166,.1);color:var(--accent);flex-shrink:0}
+  kbd{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;background:var(--bg-code);
+    border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text-primary)}
+
+  .center{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .ic{stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round;display:block}
+  .hint{font-size:12px;color:var(--text-secondary)}
+  .caption{margin-top:18px;font-size:12px;color:var(--text-placeholder);text-align:center;width:760px}
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="aurora"></div><div class="grid"></div>
+    <div class="orb" style="left:-64px;top:96px;width:224px;height:224px;background:rgba(20,184,166,.18)"></div>
+    <div class="orb" style="right:-40px;bottom:0;width:256px;height:256px;background:rgba(139,92,246,.14)"></div>
+
+    <!-- rail -->
+    <aside class="rail">
+      <div>
+        <div class="brand"><span class="mk" id="mk32"></span><b>InvisiQ</b></div>
+        <p class="blurb">Your AI copilot that sees everything, but is seen by no one.</p>
+        <nav id="nav"></nav>
+      </div>
+      <div class="rail-foot">🛡 Encrypted on-device · BYOK · Beta</div>
+    </aside>
+
+    <!-- content -->
+    <main class="content">
+      <div class="body" id="body"></div>
+      <div class="foot">
+        <div id="foot-left" style="display:flex;gap:14px;align-items:center"></div>
+        <button class="btn" id="primary"></button>
+      </div>
+    </main>
+  </div>
+  <div class="caption">Clickable preview of the real onboarding · open-and-click to step through · 760×640 canvas</div>
+
+<script>
+const MARK = (s)=>`<svg width="${s}" height="${s}" viewBox="0 0 64 64" fill="none" style="border-radius:${s/5}px">
+  <rect width="64" height="64" rx="15" fill="#0c0c12"/><rect x=".5" y=".5" width="63" height="63" rx="14.5" stroke="#fff" stroke-opacity=".12"/>
+  <g transform="translate(8 7) scale(2)"><path d="M4 11a8 8 0 0 1 16 0v9l-2.5-1.5L15 20l-3-1.5L9 20l-2.5-1.5L4 20z" fill="#2ee5c5"/>
+  <circle cx="9.5" cy="11" r="1.5" fill="#0c0c12"/><circle cx="14.5" cy="11" r="1.5" fill="#0c0c12"/></g></svg>`;
+const I = {
+  spark:'<path d="M12 3v18M3 12h18"/><path d="M5 5l3 3M19 5l-3 3M5 19l3-3M19 19l-3-3"/>',
+  key:'<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13l8-8 3 3M16 7l2 2"/>',
+  kb:'<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
+  shield:'<path d="M12 22c5-1.5 8-4 8-9V5l-8-3-8 3v8c0 5 3 7.5 8 9z"/>',
+  rocket:'<path d="M5 13l-2 6 6-2M14 4s5 1 6 6c-3 4-9 6-9 6l-3-3s2-6 6-9z"/><circle cx="14" cy="9" r="1.5"/>',
+  check:'<path d="M5 12l5 5 9-11"/>',
+  eyeoff:'<path d="M3 3l18 18M10 5a9 9 0 0 1 11 7 18 18 0 0 1-3 4M6 6a18 18 0 0 0-4 6 18 18 0 0 0 12 7"/>',
+  zap:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  lock:'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>'
+};
+const sic=(p,s=14)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24">${p}</svg>`;
+const STEPS=[
+  {key:'welcome',label:'Welcome',icon:I.spark},
+  {key:'api',label:'Connect AI',icon:I.key},
+  {key:'hotkeys',label:'Shortcuts',icon:I.kb},
+  {key:'stealth',label:'Stealth',icon:I.shield},
+  {key:'done',label:'Ready',icon:I.rocket},
+];
+let idx=0;
+document.getElementById('mk32').innerHTML=MARK(32);
+
+const provider=(name,ph,color,connected)=>`
+  <div class="card" style="position:relative;padding-left:18px;margin-bottom:12px">
+    <span style="position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px;background:${color};opacity:${connected?1:.45}"></span>
+    <div class="row" style="justify-content:space-between">
+      <div class="row" style="gap:8px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${color};box-shadow:${connected?'0 0 8px '+color:'none'}"></span>
+        <b style="font-size:13px">${name}</b>
+      </div>
+      ${connected?'<span style="font-size:11px;color:var(--success)">✓ Connected</span>':''}
+    </div>
+    <div class="row" style="margin-top:10px;gap:8px">
+      <input placeholder="${ph}" style="flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text-primary);font-size:13px" />
+      <button class="link" style="border:1px solid var(--border);border-radius:9px;padding:9px 14px;background:var(--bg-hover);color:var(--text-primary)">${connected?'Re-test':'Connect'}</button>
+    </div>
+  </div>`;
+
+const hotkey=(keys,label,desc,icon)=>`
+  <div class="card row" style="margin-bottom:10px">
+    <span class="pchip">${sic(icon,16)}</span>
+    <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${label}</div>
+      <div style="font-size:11px;color:var(--text-secondary)">${desc}</div></div>
+    <div>${keys.split('+').map(k=>`<kbd>${k}</kbd>`).join('<span style="color:var(--text-placeholder);font-size:11px;margin:0 2px">+</span>')}</div>
+  </div>`;
+
+function bodyHTML(){
+  switch(STEPS[idx].key){
+    case 'welcome': return `<div class="center">
+      <div style="${''}">${MARK(72)}</div>
+      <h1 style="margin-top:20px;font-size:28px;font-weight:700;letter-spacing:-.6px">Welcome to <span class="grad">InvisiQ</span></h1>
+      <p class="sub" style="margin-top:8px">An AI overlay that lives on top of everything you do — and disappears from every screen but yours. Let's get you set up in under a minute.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:32px;max-width:480px">
+        ${[['Truly invisible','Hidden from Zoom, Teams, Meet, OBS & proctors.',I.eyeoff],
+           ['Instant answers','Screenshot or ask — streamed back in place.',I.zap],
+           ['Yours alone','Your keys, encrypted, never leave your device.',I.lock]]
+          .map(([t,d,ic])=>`<div class="card" style="text-align:left;padding:14px">
+            <span class="pchip" style="width:32px;height:32px">${sic(ic,15)}</span>
+            <div style="margin-top:10px;font-size:12px;font-weight:600">${t}</div>
+            <div style="margin-top:2px;font-size:10.5px;line-height:1.35;color:var(--text-secondary)">${d}</div></div>`).join('')}
+      </div></div>`;
+    case 'api': return `<h2 class="h2">Connect your intelligence</h2>
+      <p class="sub">InvisiQ runs on your own API key — encrypted on-device, never leaving it. Add one to start; add the rest later in Settings.</p>
+      <div style="margin-top:20px">
+        ${provider('OpenAI','sk-proj-…','#10A37F',true)}
+        ${provider('Anthropic','sk-ant-…','#D4A574',false)}
+        ${provider('Google Gemini','AIza…','#4285F4',false)}
+      </div>
+      <p style="margin-top:14px;font-size:11px;color:var(--text-placeholder);line-height:1.5">During the beta, the <span style="color:var(--text-secondary)">text</span> of prompts you send is stored to improve InvisiQ — never your screenshots. Wipe it anytime in Settings → Privacy.</p>`;
+    case 'hotkeys': return `<h2 class="h2">Drive it from anywhere</h2>
+      <p class="sub">Global shortcuts work from inside any app — even while the overlay is hidden. Fully remappable in Settings → Hotkeys.</p>
+      <div style="margin-top:20px">
+        ${hotkey('Ctrl+Shift+G','Toggle overlay','Summon or dismiss InvisiQ instantly',I.eyeoff)}
+        ${hotkey('Ctrl+Shift+S','Capture screen','Screenshot everything and ask the AI',I.spark)}
+        ${hotkey('Ctrl+Shift+R','Capture region','Snip just the part that matters',I.spark)}
+        ${hotkey('Ctrl+Shift+I','Stealth typing','Type from any app — keystrokes stay off-screen',I.kb)}
+        ${hotkey('Escape','Panic hide','Vanish the overlay the instant you need to',I.eyeoff)}
+      </div>`;
+    case 'stealth': return `<h2 class="h2">Prove the invisibility</h2>
+      <p class="sub">InvisiQ is already shielded from screen capture. Let's confirm it on your machine — it takes ten seconds.</p>
+      <div class="card" style="margin-top:20px;padding:18px">
+        <div class="row" style="align-items:flex-start"><span class="pchip">${sic(I.shield,16)}</span>
+          <ol style="font-size:12px;color:var(--text-secondary);line-height:1.6;list-style:none">
+            <li>1. Press <kbd>Win + Shift + S</kbd> to open Snipping Tool.</li>
+            <li>2. Drag a box over the glowing card below.</li>
+            <li>3. The card should be <span style="color:var(--text-primary)">absent</span> from your capture.</li></ol></div>
+        <div style="margin-top:16px;border:2px dashed rgba(20,184,166,.4);border-radius:12px;padding:14px;text-align:center">
+          <div style="border-radius:10px;padding:16px;background:linear-gradient(135deg,#14b8a6,#06b6d4 45%,#8b5cf6)">
+            <b style="color:#fff;font-size:13px;letter-spacing:.3px">IF YOU SEE THIS IN A SCREENSHOT, STEALTH IS OFF</b></div></div></div>
+      <div class="row" style="gap:10px;margin-top:16px">
+        <button class="link" style="flex:1;border:1px solid rgba(34,197,94,.4);background:rgba(34,197,94,.1);color:var(--success);border-radius:11px;padding:11px;font-weight:500">✓ No — it's invisible</button>
+        <button class="link" style="flex:1;border:1px solid rgba(239,68,68,.4);background:rgba(239,68,68,.1);color:#ef4444;border-radius:11px;padding:11px;font-weight:500">⚠ Yes — I can see it</button></div>`;
+    case 'done': return `<div class="center">
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(20,184,166,.15);display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(20,184,166,.3);color:var(--accent)">${sic(I.check,30)}</div>
+      <h1 style="margin-top:20px;font-size:26px;font-weight:700;letter-spacing:-.5px">You're <span class="grad">invisible</span>.</h1>
+      <p class="sub" style="margin-top:8px">InvisiQ will dock to the bottom-right of your screen. Summon it anytime with <kbd>Ctrl+Shift+G</kbd>.</p>
+      <div class="row" style="gap:10px;margin-top:28px">
+        ${[['Ctrl+Shift+G','Show / hide'],['Ctrl+Shift+S','Capture screen'],['Ctrl+Shift+I','Stealth typing']]
+          .map(([k,l])=>`<div class="card" style="text-align:left;padding:12px 14px"><kbd style="border:none;background:none;padding:0;color:var(--accent)">${k}</kbd>
+            <div style="margin-top:4px;font-size:10.5px;color:var(--text-secondary)">${l}</div></div>`).join('')}
+      </div></div>`;
+  }
+}
+function render(){
+  document.getElementById('nav').innerHTML=STEPS.map((s,i)=>{
+    const st=i<idx?'done':i===idx?'active':'';
+    return `<div class="nav-item ${st}" onclick="${i<idx?`go(${i})`:''}">
+      <span class="nav-ic">${i<idx?sic(I.check):sic(s.icon)}</span><span class="nav-lb">${s.label}</span></div>`;
+  }).join('');
+  document.getElementById('body').innerHTML=bodyHTML();
+  const key=STEPS[idx].key;
+  document.getElementById('primary').innerHTML=(key==='welcome'?'Get started':key==='done'?'Launch InvisiQ ':'Continue ')+sic(key==='done'?I.rocket:I.arrow,15);
+  let left='';
+  if(idx>0) left+=`<button class="link" onclick="go(${idx-1})">← Back</button>`;
+  if(key==='api') left+=`<button class="link dim" onclick="go(${idx+1})">Skip for now</button>`;
+  document.getElementById('foot-left').innerHTML=left;
+}
+function go(i){ if(i>=0&&i<STEPS.length){idx=i;render();} }
+document.getElementById('primary').onclick=()=>{ if(idx<STEPS.length-1) go(idx+1); else alert('→ launches the main InvisiQ overlay (this is a preview)'); };
+render();
+</script>
+</body>
+</html>

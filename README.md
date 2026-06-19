@@ -13,7 +13,6 @@
   <a href="#"><img src="https://img.shields.io/badge/OpenAI-supported-412991?style=flat-square&logo=openai&logoColor=white" alt="OpenAI" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Anthropic-supported-D97757?style=flat-square&logo=anthropic&logoColor=white" alt="Anthropic" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Google%20Gemini-supported-4285F4?style=flat-square&logo=googlegemini&logoColor=white" alt="Gemini" /></a>
-  <a href="#"><img src="https://img.shields.io/badge/Ollama-supported-ffffff?style=flat-square&logo=ollama&logoColor=black" alt="Ollama" /></a>
 </p>
 
 <p align="center">
@@ -33,7 +32,9 @@
 
 InvisiQ is a desktop overlay that sits on top of every application on your screen — **completely invisible to all screen capture, screen sharing, recording software, and proctoring tools**. It uses Windows' native `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` API to make the overlay window undetectable.
 
-Capture your screen, ask questions, get real-time AI responses with streaming — all through a sleek interface controlled entirely by keyboard shortcuts. Connect cloud AI providers with your own API keys, or run fully local with Ollama. Zero cloud dependency. Everything stays on your machine.
+Capture your screen, ask questions, get real-time AI responses with streaming — all through a sleek interface controlled entirely by keyboard shortcuts. Bring your own API key for **OpenAI, Anthropic, or Google Gemini** (cloud-only). Conversations, settings, and API keys stay encrypted on your machine.
+
+> **Beta note:** the shipping beta requires a Google sign-in and runs on a 14-day trial. It captures usage analytics and your typed prompts (disclosed and accepted via an in-app T&C gate) to improve the product — screenshots and OCR text are never uploaded, and prompt data is purged after 30 days. This is Act 1 of a two-act plan (BYOK beta → managed AI backend).
 
 <br/>
 
@@ -49,8 +50,8 @@ The window is **excluded from all capture APIs** at the OS level. Snipping Tool,
 </td>
 <td width="50%" valign="top">
 
-### 🤖 Multi-Provider AI
-Connect to **OpenAI**, **Anthropic Claude**, **Google Gemini**, or run fully local with **Ollama**. Switch models mid-conversation. Stream responses token-by-token. Ollama models are always free.
+### 🤖 Multi-Provider AI (BYOK)
+Connect to **OpenAI**, **Anthropic Claude**, or **Google Gemini** with your own API keys. Switch models mid-conversation (`Ctrl+Shift+]` / `[`). Stream responses token-by-token. Cloud-only — the local-LLM/Ollama path was removed.
 
 </td>
 </tr>
@@ -58,7 +59,7 @@ Connect to **OpenAI**, **Anthropic Claude**, **Google Gemini**, or run fully loc
 <td width="50%" valign="top">
 
 ### 📸 Screen Capture + Vision
-Full-screen or region capture with a crosshair selector. Screenshots are sent to AI vision models. For Ollama, **OCR auto-extracts text** from screenshots so models read code instead of describing images.
+Full-screen, per-monitor, or in-overlay region capture. Screenshots are sent to the provider's vision model. The overlay hides itself during capture so it never appears in the shot.
 
 </td>
 <td width="50%" valign="top">
@@ -99,8 +100,8 @@ Full dark and light color palettes via CSS custom properties. Toggle in Display 
 <tr>
 <td width="50%" valign="top">
 
-### 🧠 Smart Modes
-Four built-in modes: **General**, **Coding**, **Meeting**, and **Solve**. Create custom modes with personalized system prompts and colors. 20+ built-in prompt templates across 8 categories.
+### 🧠 Single Universal Mode
+No mode picker, no templates, no friction. One intent-adaptive prompt reads your message + screenshot and responds in the right shape — answer-first for questions, algorithm-first for code, talking points for meetings — like ChatGPT/Claude.
 
 </td>
 <td width="50%" valign="top">
@@ -127,8 +128,8 @@ Dual engine speech recognition: **Web Speech API** + **Whisper**. Live meeting a
 <tr>
 <td width="50%" valign="top">
 
-### 💰 Cost Tracking
-Per-request, per-conversation, and per-session token and cost tracking. Status bar shows real-time cost. Ollama models always show "Free".
+### 💰 Cost Tracking & Trial
+Per-request, per-conversation, and per-session token and cost tracking in the status bar. Beta runs on a server-clocked 14-day trial with a countdown banner; Google sign-in required.
 
 </td>
 <td width="50%" valign="top">
@@ -151,13 +152,10 @@ Single portable `.exe` — no installer needed. Just download, double-click, and
 | **OpenAI** | o3-mini (Reasoning) | No | 200K | Slow |
 | **Anthropic** | Claude Sonnet 4 | Yes | 200K | Medium |
 | **Anthropic** | Claude Haiku 4.5 | Yes | 200K | Fast |
-| **Google** | Gemini 2.0 Flash | Yes | 1M | Fast |
+| **Google** | Gemini 2.5 Flash | Yes | 1M | Fast |
 | **Google** | Gemini 2.5 Pro | Yes | 1M | Medium |
-| **Ollama** | qwen2.5-coder:7b | Via OCR | Varies | Local |
-| **Ollama** | qwen2.5:7b | Via OCR | Varies | Local |
-| **Ollama** | *Any local model* | Via OCR | Varies | Local |
 
-> Ollama models are discovered dynamically via `/api/tags`. Screenshots are OCR-processed so text/code is extracted and sent as context — no vision API required.
+> Cloud-only, bring-your-own-key. The Ollama / local-LLM path was removed permanently. Model list lives in `src/shared/constants.ts`.
 
 <br/>
 
@@ -221,19 +219,19 @@ Single portable `.exe` — no installer needed. Just download, double-click, and
 ║                            │  │  │ GPT-4o │ │ Claude   │         │ │  ║
 ║                            │  │  └───┬────┘ └────┬─────┘         │ │  ║
 ║                            │  │      │           │               │ │  ║
-║                            │  │  ┌───┴────┐ ┌────┴─────┐         │ │  ║
-║                            │  │  │ Gemini │ │ Ollama   │         │ │  ║
-║                            │  │  │ Flash  │ │ (Local)  │         │ │  ║
-║                            │  │  └───┬────┘ └────┬─────┘         │ │  ║
-║                            │  │      │           │               │ │  ║
-║                            │  └──────┼───────────┼───────────────┘ │  ║
-║                            │         │           │                  │  ║
-║                            └─────────┼───────────┼──────────────────┘  ║
-║                                      │           │                     ║
-╚══════════════════════════════════════╪═══════════╪═════════════════════╝
-                                       │           │
-                              Cloud APIs     localhost:11434
-                              (HTTPS)        (Ollama Server)
+║                            │  │  ┌───┴────┐                     │ │  ║
+║                            │  │  │ Google │   (cloud-only, BYOK) │ │  ║
+║                            │  │  │ Gemini │                     │ │  ║
+║                            │  │  └───┬────┘                     │ │  ║
+║                            │  │      │                          │ │  ║
+║                            │  └──────┼──────────────────────────┘ │  ║
+║                            │         │                            │  ║
+║                            └─────────┼────────────────────────────┘  ║
+║                                      │                               ║
+╚══════════════════════════════════════╪═══════════════════════════════╝
+                                       │
+                              Cloud APIs (HTTPS)
+                       OpenAI · Anthropic · Google Gemini
 ```
 
 ### Screenshot Capture Flow
@@ -263,27 +261,18 @@ User presses Ctrl+Shift+S
 └────────┬────────┘
          │
          ▼
-    Is provider Ollama?
-     /          \
-   Yes           No
-    │             │
-    ▼             ▼
-┌──────────┐  ┌──────────────┐
-│ OCR text │  │ Send image   │
-│ extract  │  │ to vision    │
-│ via      │  │ API directly │
-│ Tesseract│  └──────┬───────┘
-└────┬─────┘         │
-     │               │
-     ▼               │
-┌──────────┐         │
-│ Send OCR │         │
-│ text as  │         │
-│ context  │         │
-│ (no img) │         │
-└────┬─────┘         │
-     │               │
-     ▼               ▼
+┌──────────────────────┐
+│  Resize ≤1920px wide │
+│  → base64            │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│  Send image to the   │
+│  provider vision API │
+└──────────┬───────────┘
+           │
+           ▼
 ┌──────────────────────┐
 │  AI streams response │
 │  → rendered in chat  │
@@ -343,10 +332,11 @@ User presses Ctrl+Shift+S
 └──────────────┘          └──────────────┘          └──────────────┘
 
 Channels: {domain}:{action}
-  overlay:*   screenshot:*   store:*   hotkeys:*
-  clipboard:* conversation:* modes:*   app:*
-  monitors:*  update:*       audio:*   companion:*
-  template:*  memory:*       export:*  resilience:*
+  overlay:*   screenshot:*   store:*       hotkeys:*
+  clipboard:* conversation:* app:*         monitors:*
+  update:*    audio:*        companion:*   memory:*
+  export:*    resilience:*   capture:*     invisible-input:*
+  auth:*      entitlement:*  analytics:*   tos:*
 ```
 
 <br/>
@@ -370,11 +360,12 @@ Channels: {domain}:{action}
 | Native | C++ (Detours + Win32) | API hooking, named pipes, process hiding |
 | Styling | TailwindCSS 3 + Framer Motion 11 | Utility-first theming + animations |
 | Build | electron-vite 5 | Unified main/preload/renderer builds |
-| AI (Cloud) | openai, @anthropic-ai/sdk, @google/generative-ai | Provider SDKs with streaming (lazy-loaded) |
-| AI (Local) | Ollama (native fetch, NDJSON) | Local LLM inference |
-| OCR | Tesseract.js 5 | Screenshot text extraction for Ollama |
-| Storage | electron-store + AES-256-GCM | Encrypted key/config storage |
-| Updates | electron-updater | Auto-update via GitHub Releases |
+| AI (Cloud, BYOK) | openai, @anthropic-ai/sdk, @google/generative-ai | Provider SDKs with streaming (lazy-loaded) |
+| Backend (Beta) | Supabase (Postgres + Edge Functions) | Auth, trial entitlement, analytics, kill-switch |
+| Auth (Beta) | Google OAuth via Supabase | Sign-in gate |
+| OCR | Tesseract.js 5 | On-screen code/platform detection |
+| Storage | electron-store + AES-256-GCM | Encrypted key/config storage (entitlement-bound) |
+| Updates | electron-updater (NSIS feed) | Auto-update via GitHub Releases |
 | Markdown | react-markdown + highlight.js | Rich response rendering |
 | Icons | lucide-react | UI iconography |
 | Packaging | electron-builder | Portable Windows executable |
@@ -387,7 +378,7 @@ Channels: {domain}:{action}
 
 - **Node.js** 18+ and **npm** 9+
 - **Windows 10** version 2004 or later (required for `WDA_EXCLUDEFROMCAPTURE`)
-- API key from at least one provider: [OpenAI](https://platform.openai.com/api-keys) / [Anthropic](https://console.anthropic.com/) / [Google AI Studio](https://aistudio.google.com/apikey) — or install [Ollama](https://ollama.com/) for free local AI
+- A Google account (beta sign-in) and an API key from at least one provider: [OpenAI](https://platform.openai.com/api-keys) / [Anthropic](https://console.anthropic.com/) / [Google AI Studio](https://aistudio.google.com/apikey)
 
 ### Install & Run
 
@@ -421,41 +412,24 @@ npm run package:dir
 
 ### First Launch
 
-1. The **onboarding wizard** guides you through API key setup, hotkey reference, and a stealth self-test
-2. Or skip onboarding and press **Ctrl+Shift+G** to toggle the overlay
-3. Click the gear icon to open **Settings** and enter your API key
-4. Close settings — you're ready to go
+1. **Sign in with Google** (beta gate), then accept the **Terms & Conditions** (discloses prompt/analytics logging)
+2. The **onboarding wizard** guides you through API key setup, hotkey reference, and a stealth self-test
+3. Press **Ctrl+Shift+G** to toggle the overlay; the gear icon opens **Settings** to manage your API key
+4. Your 14-day trial countdown shows in the banner — you're ready to go
 
 <br/>
 
 ## 📖 User Guide
 
-### Setting Up AI Providers
-
-#### Cloud Providers (OpenAI / Anthropic / Gemini)
+### Setting Up AI Providers (cloud-only, BYOK)
 
 1. Open InvisiQ → **Settings** (gear icon or `Ctrl+,`)
 2. Go to **API Keys** tab
-3. Paste your API key for the provider you want to use
-4. The key is validated automatically and stored with AES-256-GCM encryption
-5. Select a model from the **model dropdown** in the header bar
+3. Paste your API key for **OpenAI**, **Anthropic**, or **Google Gemini**
+4. The key is validated automatically and stored with AES-256-GCM encryption (the key is **entitlement-bound** during the beta — it's decryptable only while your trial is active)
+5. Select a model from the **model dropdown** in the header bar (or cycle with `Ctrl+Shift+]` / `[`)
 
-#### Ollama (Free, Local AI)
-
-1. Install Ollama from [ollama.com](https://ollama.com)
-2. Pull a model:
-   ```bash
-   # Best all-rounder for coding + general questions (~4.4GB)
-   ollama pull qwen2.5-coder:7b
-
-   # For aptitude/reasoning + coding (~4.4GB)
-   ollama pull qwen2.5:7b
-   ```
-3. Ollama runs automatically on `localhost:11434`
-4. In InvisiQ, select any Ollama model from the model dropdown — no API key needed
-5. Screenshots are **auto-OCR processed** so the model reads text instead of describing images
-
-> **Tip:** For systems with 6GB VRAM, `qwen2.5-coder:7b` is the best fit. Don't use 13B+ models — they'll spill to CPU and run very slowly.
+> The local-LLM / Ollama path was removed permanently — InvisiQ is cloud-only.
 
 ### Taking Screenshots
 
@@ -467,20 +441,21 @@ npm run package:dir
 
 Screenshots are automatically:
 - Resized to max 1920px width (saves tokens)
-- Sent to vision models directly (OpenAI, Anthropic, Gemini)
-- OCR-processed for Ollama (text extracted, image not sent)
+- Sent to the provider's vision model (OpenAI, Anthropic, Gemini)
 - Cleared from memory after sending
 
-### Using Modes
+### One Universal Mode (no picker)
 
-| Mode | Best For | System Prompt Focus |
-|:-----|:---------|:-------------------|
-| **General** | Any question | Clear, accurate, concise answers |
-| **Coding** | LeetCode, algorithms, debugging | Clean solution → Big-O → edge cases |
-| **Meeting** | During calls | Summaries, talking points, context |
-| **Solve** | Assessments | Direct answer first, explanation after |
+InvisiQ has a single intent-adaptive prompt — there is no mode dropdown and no templates. Just type or screenshot and send; the model infers what you need from the message + screen:
 
-**Custom Modes:** Click the mode dropdown → "Create Custom Mode" to define your own system prompt, name, and color.
+| What's on screen / asked | How InvisiQ responds |
+|:-------------------------|:---------------------|
+| A question / MCQ / assessment item | Answer first, then a tight explanation |
+| Code or an algorithm problem / error | Approach + Big-O, then full runnable solution |
+| A meeting / call / transcript | 2–3 concise talking points + action items |
+| Anything else | Direct, well-structured general assistant |
+
+> Behavior is tuned via `UNIVERSAL_SYSTEM_PROMPT` in `src/shared/constants.ts` — it's config, not a feature you configure in the UI.
 
 ### Smart Paste
 
@@ -525,7 +500,7 @@ Resilience mode spawns a native C++ helper process for low-level operations:
 - **Stealth Check:** After first install, take a screenshot with Snipping Tool to verify the overlay is invisible
 - **Opacity:** Use the opacity slider to make the overlay semi-transparent so you can see through it
 - **Compact Mode:** Resize the window below 350px width for a minimal UI
-- **Cost Awareness:** Check the status bar for running token/cost totals — Ollama always shows "Free"
+- **Cost Awareness:** Check the status bar for running per-request / conversation / session token + cost totals
 - **Multiple Monitors:** The overlay position is validated on startup; move it between monitors via Settings → Display
 
 <br/>
@@ -543,8 +518,11 @@ Resilience mode spawns a native C++ helper process for low-level operations:
 | `Ctrl+Shift+C` | Copy last AI response |
 | `Ctrl+Shift+V` | Paste last AI response to active app |
 | `Ctrl+Shift+N` | New conversation |
-| `Ctrl+T` | Open template library |
-| `Escape` | Hide overlay |
+| `Ctrl+Shift+P` | Toggle click-through (passthrough) |
+| `Ctrl+Shift+]` / `[` | Next / previous model |
+| `Ctrl+Shift+I` | Toggle stealth typing / capture mode |
+| `Ctrl+Shift+Q` | Panic — exit capture, uninstall hook, hide overlay |
+| `Escape` | Hide overlay (also exits capture) |
 
 ### Internal Shortcuts (when overlay is focused)
 
@@ -558,14 +536,9 @@ Resilience mode spawns a native C++ helper process for low-level operations:
 
 <br/>
 
-## Built-in Modes
+## One Universal Mode
 
-| Mode | Purpose | Optimized For |
-|:-----|:--------|:--------------|
-| **General** | All-purpose assistant | Clear, accurate answers to any question |
-| **Coding** | Algorithm & engineering help | Clean solutions with Big-O analysis |
-| **Meeting** | Meeting companion | Summaries, talking points, document analysis |
-| **Solve** | Assessment helper | Direct answers first, explanations after |
+There are no built-in modes or templates to choose from anymore — a single intent-adaptive prompt covers every case (questions, code, meetings, general). The model decides the response shape from your message + screenshot. See **One Universal Mode (no picker)** above.
 
 <br/>
 
@@ -575,11 +548,11 @@ Resilience mode spawns a native C++ helper process for low-level operations:
 |:-------|:---------------|
 | **Window Invisibility** | `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` via Electron's `setContentProtection(true)` |
 | **Stealth Watchdog** | Re-applies content protection every 2 seconds |
-| **Key Encryption** | AES-256-GCM with PBKDF2-derived machine-specific key (100K iterations, SHA-512) |
+| **Key Encryption** | AES-256-GCM; machine-specific key (PBKDF2, 100K iters, SHA-512) + a beta **entitlement-bound** key (machine ID + server fragment) |
 | **Process Isolation** | `contextIsolation: true`, `nodeIntegration: false`, IPC-only communication |
 | **Process Disguise** | Appears as "Runtime Broker" with Microsoft Corporation metadata |
-| **Data Residency** | All data stored locally. Zero cloud storage. Zero telemetry. |
-| **API Architecture** | BYOK (Bring Your Own Key). Direct API calls. No intermediary servers. |
+| **Data Residency** | Conversations, settings, and API keys stay encrypted on your machine. **Beta telemetry:** usage events + typed prompts are sent to the backend (disclosed via T&C, PII-redacted, purged after 30 days) — screenshots/OCR are never uploaded. `analytics:delete-my-data` removes your prompt data. |
+| **API Architecture** | BYOK (Bring Your Own Key), cloud-only. AI calls go direct to OpenAI/Anthropic/Google. Auth, trial, and analytics use a Supabase backend. |
 | **Screenshot Lifecycle** | Screenshots cleared from memory after sending. Not persisted to disk. |
 | **Portable Build** | No installer, no registry entries, no Start Menu — just a standalone `.exe` |
 
@@ -609,9 +582,12 @@ ghostai/
 │   │   ├── updater.ts           # electron-updater auto-update
 │   │   ├── memory.ts            # TF-IDF memory store (RAG)
 │   │   ├── resilience-controller.ts # Native helper lifecycle + named pipes
+│   │   ├── capture-controller.ts # Model B capture session (epoch, heartbeat, ladder)
 │   │   ├── companion-server.ts  # HTTP + WebSocket companion server
-│   │   ├── template-store.ts    # Prompt template CRUD
 │   │   ├── export-service.ts    # JSON/MD/TXT/PDF export
+│   │   ├── auth.ts              # Beta: Google OAuth (Supabase)
+│   │   ├── entitlement.ts       # Beta: server-clocked 14-day trial
+│   │   ├── analytics.ts         # Beta: event + prompt capture (T&C-gated)
 │   │   └── tray.ts              # Optional system tray icon
 │   │
 │   ├── preload/
@@ -622,7 +598,7 @@ ghostai/
 │   │   ├── components/          # UI components (30+ files)
 │   │   ├── hooks/               # Custom hooks (12+ files)
 │   │   ├── services/
-│   │   │   ├── ai-providers/    # OpenAI, Anthropic, Gemini, Ollama
+│   │   │   ├── ai-providers/    # OpenAI, Anthropic, Gemini (cloud-only)
 │   │   │   └── speech.ts        # Web Speech + Whisper fallback
 │   │   ├── styles/
 │   │   │   └── globals.css      # Tailwind + dark/light themes
@@ -658,11 +634,11 @@ ghostai/
 - [x] OpenAI, Anthropic, and Gemini streaming chat
 - [x] Markdown rendering with syntax-highlighted code blocks
 - [x] AES-256-GCM encrypted API key storage
-- [x] Global keyboard shortcuts + 4 built-in modes
+- [x] Global keyboard shortcuts + ~~4 built-in modes~~ (later collapsed to one universal mode)
 
 ### Phase 2 — Enhanced Features ✅
 - [x] Chat history persistence with auto-save and auto-titling
-- [x] Custom modes with color picker
+- [x] ~~Custom modes with color picker~~ (removed — single universal mode)
 - [x] Smart paste — paste AI responses into any app
 - [x] Clipboard monitoring with toast notifications
 - [x] Voice input (Web Speech API + Whisper)
@@ -672,7 +648,7 @@ ghostai/
 ### Phase 3 — Production Polish ✅
 - [x] Multi-monitor support with hot-plug detection
 - [x] 3-step onboarding wizard
-- [x] Ollama local AI provider (free)
+- [x] ~~Ollama local AI provider~~ (removed — cloud-only)
 - [x] Light theme + per-request cost tracking
 - [x] Auto-updater via GitHub Releases
 - [x] Responsive layout + internal keyboard shortcuts
@@ -683,24 +659,24 @@ ghostai/
 - [x] Click-through overlay + inline region selector
 - [x] Live meeting assistant (system audio + auto-question detection)
 - [x] Companion mode (HTTP/WS server + QR pairing)
-- [x] 20+ prompt templates across 8 categories
+- [x] ~~20+ prompt templates across 8 categories~~ (removed — single universal mode)
 - [x] TF-IDF memory system (RAG) with auto-extraction
 - [x] JSON/MD/TXT/PDF export
 
-### Phase 5 — Resilience & Camouflage ✅
-- [x] Native C++ helper process with named pipe communication
-- [x] Detours-based API hooking (`WDA_EXCLUDEFROMCAPTURE` enforcement)
-- [x] Full process camouflage (Runtime Broker disguise)
-- [x] Config path migration (seamless upgrade)
-- [x] Ollama OCR intelligence (screenshot text extraction)
-- [x] Portable distribution (single `.exe`, no installer)
-- [x] Settings UI for resilience agent management
+### Phase 5 — Beta Launch + Stealth Hardening ✅
+- [x] **Model B default-on stealth** — suppressing out-of-process capture helper, logical-focus typing, degradation ladder
+- [x] Native C++ helper + named pipe; full process camouflage (Runtime Broker disguise)
+- [x] **Google sign-in** + **server-clocked 14-day trial** (fail-closed) on a Supabase backend
+- [x] **Analytics + prompt capture** behind a T&C gate; **remote kill-switch + minimum-version floor**
+- [x] **Real auto-update** (NSIS feed) + forced-update path
+- [x] **Cloud-only** (Ollama removed); hotkeys migrated Alt → Shift
+- [x] **Single universal mode** — modes + templates removed; one intent-adaptive prompt
+- [x] OCR repurposed to on-screen code/platform detection; portable distribution
 
-### Phase 6 — Future
-- [ ] Plugin system
-- [ ] Voice-to-voice conversation mode
-- [ ] Multi-window support
-- [ ] macOS support
+### Phase 6 — Future / Act 2
+- [ ] Own AI backend (managed inference; remove BYOK requirement)
+- [ ] Admin / org-level standardized prompt pushed to a fleet
+- [ ] Plugin system · voice-to-voice mode · multi-window · macOS
 
 <br/>
 
