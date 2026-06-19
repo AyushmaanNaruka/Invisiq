@@ -262,6 +262,33 @@ function AppInner(): JSX.Element {
   const [injectedInputText, setInjectedInputText] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Keep the latest stealth-focus preference available to the Settings effect
+  // below without making it a dependency (so the effect only fires on open/close).
+  const stealthFocusRef = useRef(isStealthFocus);
+  useEffect(() => {
+    stealthFocusRef.current = isStealthFocus;
+  }, [isStealthFocus]);
+
+  // Settings contains plain inputs (API key, hotkey capture, memory facts) that
+  // need real keyboard focus. With default-on stealth focus the overlay is
+  // WS_EX_NOACTIVATE, so clicks/typing/paste never reach those inputs (same
+  // problem OnboardingFlow solves). While Settings is open we temporarily relax
+  // stealth focus and bring the window forward; content protection stays ON the
+  // whole time, so the panel is still invisible to screen capture. On close we
+  // restore the user's persistent stealth-focus preference.
+  useEffect(() => {
+    const api = window.ghostAPI;
+    if (!api?.overlay) return;
+    if (settingsOpen) {
+      api.overlay
+        .setStealthFocus(false)
+        .then(() => api.overlay.requestFocus())
+        .catch(() => {});
+    } else if (stealthFocusRef.current) {
+      api.overlay.setStealthFocus(true).catch(() => {});
+    }
+  }, [settingsOpen]);
+
   // Apply font size from settings on mount/change
   useEffect(() => {
     if (settings.display.fontSize && settings.display.fontSize !== 13) {
