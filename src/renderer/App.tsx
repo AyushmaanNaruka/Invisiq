@@ -28,7 +28,6 @@ import { useAuth } from './hooks/useAuth';
 import { useEntitlement } from './hooks/useEntitlement';
 import { useUpdateGate } from './hooks/useUpdateGate';
 import { useHotkeys } from './hooks/useHotkeys';
-import { useClickThrough } from './hooks/useClickThrough';
 import { useAudioTranscription } from './hooks/useAudioTranscription';
 import { useLiveTranscription } from './hooks/useLiveTranscription';
 import { useMeetingAssistant } from './hooks/useMeetingAssistant';
@@ -149,7 +148,6 @@ function AppInner(): JSX.Element {
     clearScreenshot,
     clearAllScreenshots,
   } = useScreenshot();
-  const { isPassthrough, togglePassthrough } = useClickThrough();
   const [isStealthFocus, setIsStealthFocus] = useState(false);
   const { registerCallback } = useHotkeys();
   const { lastRequest: costLastRequest, conversation: costConversation, session: costSession, recordUsage, resetConversation: resetCostConversation } = useTokenCost();
@@ -614,8 +612,6 @@ function AppInner(): JSX.Element {
         onOpenHistory={handleOpenHistory}
         onNewConversation={handleNewConversation}
         onClose={handleClose}
-        isPassthrough={isPassthrough}
-        onTogglePassthrough={togglePassthrough}
       />
 
       <ChatPanel

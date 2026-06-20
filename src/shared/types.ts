@@ -13,7 +13,6 @@ export type HotkeyAction =
   | 'new-conversation'
   | 'hide-overlay'
   | 'paste-response'
-  | 'toggle-passthrough'
   | 'next-model'
   | 'prev-model'
   // toggle-invisible-input now toggles Model B capture mode (kept for settings compat)
@@ -276,6 +275,8 @@ export interface ResilienceResponse {
   // key    → a translated keystroke from the suppressing hook (payload = CaptureKeyEvent)
   // proctor→ proctor-process detection update (payload = ProctorDetection)
   // capture_failed → hook/pipe died mid-capture; renderer must degrade
+  // click_outside  → user clicked a window that isn't InvisiQ while capturing;
+  //                  capture-controller exits cleanly so keys return to that app
   type:
     | 'status'
     | 'ack'
@@ -284,7 +285,8 @@ export interface ResilienceResponse {
     | 'ready'
     | 'key'
     | 'proctor'
-    | 'capture_failed';
+    | 'capture_failed'
+    | 'click_outside';
   payload?: Record<string, unknown>;
   error?: string;
 }
@@ -424,7 +426,6 @@ export interface AppSettings {
     processName: string;
     showTrayIcon: boolean;
     // Phase 4
-    clickThroughEnabled: boolean;
     codeDetectionEnabled: boolean;
     codeDetectionIntervalMs: number;
   };

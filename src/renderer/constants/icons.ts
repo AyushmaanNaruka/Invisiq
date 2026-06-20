@@ -108,8 +108,6 @@ export {
   Filter,
   Star,
   Tag,
-  MousePointer,
-  MousePointerBan,
 } from 'lucide-react';
 
 // ─── Icon sizing constants ───

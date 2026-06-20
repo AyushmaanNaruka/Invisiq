@@ -7,7 +7,6 @@ import {
   setOverlayPosition,
   setOverlaySize,
   getOverlayBounds,
-  setPassthrough,
   setStealthFocusMode,
   isStealthFocusEnabled,
   requestStealthFocus,
@@ -564,13 +563,8 @@ export function registerIPCHandlers(): void {
   });
 
   // ══════════════════════════════════════
-  //  PHASE 4: CLICK-THROUGH & INVISIBLE SNIPPING
+  //  PHASE 4: INVISIBLE SNIPPING
   // ══════════════════════════════════════
-
-  ipcMain.handle('overlay:set-passthrough', (_event, args: unknown) => {
-    const { enabled, forward = true } = (args as { enabled: boolean; forward?: boolean }) || {};
-    setPassthrough(Boolean(enabled), Boolean(forward));
-  });
 
   // ── Stealth Focus (Anti-Detection) ──────────────────────────
 

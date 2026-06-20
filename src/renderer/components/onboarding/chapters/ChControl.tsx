@@ -1,4 +1,4 @@
-import { Eye, EyeOff, MousePointer, SlidersHorizontal } from 'lucide-react';
+import { Eye, EyeOff, SlidersHorizontal } from 'lucide-react';
 import LessonScaffold, { type LessonStep } from '../shared/LessonScaffold';
 import ControlDemo from '../shared/ControlDemo';
 
@@ -14,12 +14,6 @@ const STEPS: LessonStep[] = [
     title: 'Panic — vanish in one key',
     desc: 'Instantly hide the overlay and release stealth typing. For when someone walks over.',
     keys: 'Ctrl+Shift+Q',
-  },
-  {
-    icon: MousePointer,
-    title: 'Click-through mode',
-    desc: 'Let clicks pass straight through the overlay to the app underneath.',
-    keys: 'Ctrl+Shift+P',
   },
   {
     icon: SlidersHorizontal,

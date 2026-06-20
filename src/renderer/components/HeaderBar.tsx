@@ -1,4 +1,4 @@
-import { GripVertical, Settings, X, Clock, Plus, MousePointer, MousePointerBan } from 'lucide-react';
+import { GripVertical, Settings, X, Clock, Plus } from 'lucide-react';
 import ModelSelector from './ModelSelector';
 import OpacityControl from './OpacityControl';
 import { GhostTooltip } from './ui/GhostTooltip';
@@ -15,8 +15,6 @@ interface HeaderBarProps {
   onOpenHistory: () => void;
   onNewConversation: () => void;
   onClose: () => void;
-  isPassthrough?: boolean;
-  onTogglePassthrough?: () => void;
 }
 
 export default function HeaderBar({
@@ -30,8 +28,6 @@ export default function HeaderBar({
   onOpenHistory,
   onNewConversation,
   onClose,
-  isPassthrough = false,
-  onTogglePassthrough,
 }: HeaderBarProps): JSX.Element {
   return (
     <div
@@ -81,28 +77,6 @@ export default function HeaderBar({
       {/* Right controls */}
       <div className="flex items-center gap-0.5 no-drag">
         {!compact && <OpacityControl opacity={opacity} onOpacityChange={onOpacityChange} />}
-
-        {onTogglePassthrough && (
-          <GhostTooltip
-            content={isPassthrough ? 'Click-through ON (Ctrl+Shift+P to toggle)' : 'Click-through mode (Ctrl+Shift+P)'}
-            placement="bottom"
-          >
-            <button
-              onClick={onTogglePassthrough}
-              className={`p-1 rounded transition-colors ${
-                isPassthrough
-                  ? 'text-accent-primary bg-accent-primary/10 hover:bg-accent-primary/20'
-                  : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
-              }`}
-            >
-              {isPassthrough ? (
-                <MousePointerBan size={14} strokeWidth={1.75} />
-              ) : (
-                <MousePointer size={14} strokeWidth={1.75} />
-              )}
-            </button>
-          </GhostTooltip>
-        )}
 
         <GhostTooltip content="Settings" placement="bottom">
           <button

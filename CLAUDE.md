@@ -146,7 +146,7 @@ ghostai/
 │   │   ├── index.html / main.tsx / App.tsx
 │   │   │
 │   │   ├── components/
-│   │   │   ├── HeaderBar.tsx         # Drag handle, MODEL selector, passthrough, settings (NO mode picker)
+│   │   │   ├── HeaderBar.tsx         # Drag handle, MODEL selector, settings (NO mode picker, NO click-through)
 │   │   │   ├── ChatPanel.tsx / MessageBubble.tsx / CodeBlock.tsx
 │   │   │   ├── InputArea.tsx         # Text input, send/stop, screenshot, mic, capture-aware editor
 │   │   │   ├── StatusBar.tsx / OpacityControl.tsx / ModelSelector.tsx / Toast.tsx
@@ -167,7 +167,7 @@ ghostai/
 │   │   │   ├── useAI.ts / useScreenshot.ts / useSettings.ts / useHotkeys.ts
 │   │   │   ├── useConversation.ts / useConversationHistory.ts
 │   │   │   ├── useAudioTranscription.ts / useLiveTranscription.ts / useMeetingAssistant.ts
-│   │   │   ├── useCodeDetection.ts / useMemory.ts / useClickThrough.ts
+│   │   │   ├── useCodeDetection.ts / useMemory.ts
 │   │   │   ├── useTokenCost.ts / useWindowSize.ts / useInternalKeyboard.ts (Ctrl+, / Ctrl+K / Ctrl+L)
 │   │   │   ├── useCapture.ts         # Model B stealth typing: capture state + key events (seq/epoch)
 │   │   │   └── useAuth.ts / useEntitlement.ts / useUpdateGate.ts   # Beta gates
@@ -336,7 +336,7 @@ analytics:track       analytics:capture-prompt   analytics:delete-my-data
 tos:accept            tos:status
 # Overlay / window
 overlay:toggle  overlay:hide  overlay:show  overlay:set-opacity
-overlay:set-position  overlay:set-size  overlay:get-bounds  overlay:set-passthrough
+overlay:set-position  overlay:set-size  overlay:get-bounds
 overlay:set-stealth-focus  overlay:stealth-focus-status
 overlay:request-focus  overlay:release-focus
 # Screenshot / monitors
@@ -537,7 +537,6 @@ Ctrl+Shift+A  →  Focus text input
 Ctrl+Shift+C  →  Copy last AI response
 Ctrl+Shift+V  →  Paste last AI response to active app
 Ctrl+Shift+N  →  New conversation
-Ctrl+Shift+P  →  Toggle click-through (passthrough) overlay
 Ctrl+Shift+]  →  Next model        Ctrl+Shift+[  →  Previous model
 Ctrl+Shift+I  →  Toggle stealth typing / capture mode (Model B)
 Ctrl+Shift+Q  →  Panic — exit capture, uninstall hook, hide overlay
@@ -810,9 +809,8 @@ The shipping beta is **gated and instrumented** (Act 1 of the two-act plan: BYOK
 - [x] UI primitives: `GhostButton`, `GhostInput`, `GhostCard`, `GhostTooltip`, `GhostBadge`, `GhostDivider`
 - [x] All animations respect `prefers-reduced-motion`; `MotionConfig` wraps App root
 
-**Sprint 14:** Click-Through Overlay + Invisible Snipping
-- [x] `useClickThrough` hook → `setIgnoreMouseEvents(true, { forward: true })` passthrough toggle
-- [x] Click-through toggle button in HeaderBar (MousePointer/MousePointerOff icons)
+**Sprint 14:** ~~Click-Through Overlay~~ + Invisible Snipping
+- [x] ~~`useClickThrough` hook + passthrough toggle button~~ — **removed entirely** (June 2026). The user-facing click-through feature (hook, HeaderBar toggle, `Ctrl+Shift+P`, `overlay:set-passthrough` IPC, `setPassthrough`, `clickThroughEnabled` setting) was deleted. NOTE: the *internal* `setIgnoreMouseEvents(true)` on the hidden-stealth overlay is NOT this feature — it's a correctness mechanism (a 0-opacity overlay must not eat clicks) and remains.
 - [x] `InlineRegionSelector` — canvas-based in-overlay snipping (no external window)
 - [x] `screenshot:capture-for-snip` + `screenshot:crop-region` IPC via `NativeImage.crop()`
 - [x] Old `screenshot:capture-region` IPC preserved for backward compatibility

@@ -23,7 +23,6 @@ let onHiddenCallback: (() => void) | null = null;
 let userOpacity = 0.85;          // The user's chosen opacity (separate from visibility)
 let logicalVisible = true;       // Whether the overlay should be visible to the user
 let everShown = false;           // Has the HWND been shown at least once (for showInactive)
-let userPassthrough = false;     // The user's click-through preference (restored on show)
 let readyToShowDone = false;     // Gate the first present to 'ready-to-show' (avoids white flash)
 
 export function createOverlayWindow(): BrowserWindow {
@@ -163,7 +162,7 @@ function applyVisibility(): void {
     if (logicalVisible) {
       win.setOpacity(userOpacity);
       win.moveTop(); // raise without focus/foreground events
-      win.setIgnoreMouseEvents(userPassthrough, { forward: true });
+      win.setIgnoreMouseEvents(false); // overlay is interactive when visible
     } else {
       // 0-opacity window must not eat clicks meant for the app underneath.
       win.setOpacity(0);
@@ -178,7 +177,7 @@ function applyVisibility(): void {
       // Re-enforce skipTaskbar — setAlwaysOnTop / show() can re-add WS_EX_APPWINDOW.
       win.setSkipTaskbar(true);
       win.setOpacity(userOpacity);
-      win.setIgnoreMouseEvents(userPassthrough, { forward: true });
+      win.setIgnoreMouseEvents(false); // overlay is interactive when visible
     } else {
       win.hide();
     }
@@ -334,15 +333,4 @@ export function setOverlaySize(width: number, height: number): void {
 
 export function moveToMonitor(monitorId: string): boolean {
   return moveToMonitorImpl(monitorId);
-}
-
-// ── Click-through passthrough ───────────────────────────────────────────────
-export function setPassthrough(enabled: boolean, forward: boolean = true): void {
-  userPassthrough = enabled; // remember the user's preference
-  if (overlayWindow && !overlayWindow.isDestroyed()) {
-    // When hidden in stealth, applyVisibility forces ignore=true regardless.
-    if (logicalVisible) {
-      overlayWindow.setIgnoreMouseEvents(enabled, { forward });
-    }
-  }
 }

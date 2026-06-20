@@ -37,7 +37,6 @@ export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
   'new-conversation': 'CommandOrControl+Shift+N',
   'hide-overlay': 'Escape',
   'paste-response': 'CommandOrControl+Shift+V',
-  'toggle-passthrough': 'CommandOrControl+Shift+P',
   'next-model': 'CommandOrControl+Shift+]',
   'prev-model': 'CommandOrControl+Shift+[',
   'toggle-invisible-input': 'CommandOrControl+Shift+I',
@@ -162,7 +161,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     processName: DEFAULT_PROCESS_NAME,
     showTrayIcon: false,
     // Phase 4
-    clickThroughEnabled: false,
     codeDetectionEnabled: true,
     codeDetectionIntervalMs: 30000,
   },
