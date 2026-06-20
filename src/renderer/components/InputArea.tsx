@@ -327,6 +327,29 @@ export default function InputArea({
         </div>
       )}
 
+      {/* Armed banner — when stealth typing is ON, every keystroke is routed here
+          (and withheld from the app you're looking at). This is easy to forget if
+          your eyes are elsewhere, so make it loud + give the one-key way out. */}
+      {capture.active && (
+        <button
+          type="button"
+          onClick={() => void capture.exit()}
+          className={`mb-2 flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
+            capture.degraded
+              ? 'bg-status-error/15 text-status-error hover:bg-status-error/25'
+              : 'bg-accent-primary/15 text-accent-primary hover:bg-accent-primary/25'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            {capture.degraded ? <AlertTriangle size={12} /> : <Keyboard size={12} />}
+            <span className="font-medium">
+              Stealth typing is ON — keystrokes go to InvisiQ, not the app behind it
+            </span>
+          </span>
+          <span className="shrink-0 opacity-80">Esc / click to release</span>
+        </button>
+      )}
+
       {/* Screenshot previews */}
       {hasScreenshots && (
         <div className="mb-2 flex items-start gap-2">
