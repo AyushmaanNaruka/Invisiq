@@ -7,11 +7,6 @@ class ProviderManager {
   private providers: Map<ProviderID, AIProvider> = new Map();
   private factories: Map<ProviderID, ProviderFactory> = new Map();
 
-  /** Eagerly register a provider instance (used for lightweight providers like Ollama) */
-  register(provider: AIProvider): void {
-    this.providers.set(provider.id, provider);
-  }
-
   /** Lazily register a provider factory — SDK is loaded on first use */
   registerLazy(id: ProviderID, factory: ProviderFactory): void {
     this.factories.set(id, factory);
@@ -66,7 +61,7 @@ class ProviderManager {
       return { model: staticModel, providerId: staticModel.provider };
     }
 
-    // Check dynamically registered providers (e.g. Ollama)
+    // Check any already-resolved providers for the model
     for (const provider of this.providers.values()) {
       const model = provider.models.find((m) => m.id === modelId);
       if (model) {

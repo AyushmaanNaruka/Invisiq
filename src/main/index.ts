@@ -1,6 +1,6 @@
 import { app, session, BrowserWindow } from 'electron';
 import { join } from 'path';
-import { createOverlayWindow, setStealthFocusMode } from './overlay';
+import { createOverlayWindow, setStealthFocusMode, showOverlay, forcePresent } from './overlay';
 import { registerAllHotkeys, unregisterAllHotkeys } from './hotkeys';
 import { registerIPCHandlers } from './ipc-handlers';
 import { ensureConversationsDir } from './conversations';
@@ -17,7 +17,8 @@ import { initInvisibleInput, cleanupInvisibleInput } from './invisible-input';
 import { initAuth } from './auth';
 import { initEntitlement } from './entitlement';
 import { trackEvent, flush as flushAnalytics } from './analytics';
-import { AI_API_DOMAINS } from '@shared/constants';
+import { AI_API_DOMAINS, DEFAULT_PROCESS_NAME } from '@shared/constants';
+import { logger } from '@shared/logger';
 
 // ══════════════════════════════════════
 //  SINGLE INSTANCE LOCK
@@ -29,13 +30,15 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    // If a second instance is launched, focus our existing window
-    const windows = BrowserWindow.getAllWindows();
-    if (windows.length > 0) {
-      const win = windows[0];
-      if (!win.isVisible()) win.show();
-      win.focus();
-    }
+    // A second launch (Start Menu click, etc.) lands here because the first
+    // instance holds the lock. This is ALSO our recovery path: if the first
+    // instance is stuck invisible (e.g. its first present never happened), the
+    // user's instinct is to relaunch — so surface the overlay through the unified
+    // visibility model. Raw win.show()/focus() is WRONG under default-on stealth:
+    // the HWND is WS_EX_NOACTIVATE (focus() is a no-op) and opacity-driven
+    // (show() alone won't restore opacity). showOverlay()/forcePresent() do both.
+    forcePresent();
+    showOverlay();
   });
 }
 
@@ -44,13 +47,13 @@ if (!gotTheLock) {
 // ══════════════════════════════════════
 
 function setupCORSBypass(): void {
-  console.log('[CORS] Setting up bypass for:', AI_API_DOMAINS);
+  logger.log('[CORS] Setting up bypass for:', AI_API_DOMAINS);
 
   // Inject CORS headers into AI API responses
   session.defaultSession.webRequest.onHeadersReceived(
     { urls: AI_API_DOMAINS },
     (details, callback) => {
-      console.log('[CORS] Intercepting response:', details.method, details.url.substring(0, 80));
+      logger.log('[CORS] Intercepting response:', details.method, details.url.substring(0, 80));
       const responseHeaders = { ...details.responseHeaders };
 
       // Delete existing CORS headers (case-insensitive) to prevent duplicates
@@ -95,8 +98,9 @@ function setupCORSBypass(): void {
 // ══════════════════════════════════════
 
 app.whenReady().then(async () => {
-  // Disguise process name (critical — do first)
-  const processName = getNestedSetting('privacy.processName') as string || 'RuntimeBroker';
+  // Set the (de-impersonated) process identity — do first. Neutral name, honest
+  // AppUserModelId; no Microsoft impersonation.
+  const processName = (getNestedSetting('privacy.processName') as string) || DEFAULT_PROCESS_NAME;
   disguiseProcess(processName);
 
   // Setup CORS bypass before loading any renderer content
@@ -160,11 +164,42 @@ app.whenReady().then(async () => {
     overlayWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 
+  // ── Renderer-failure backstops ────────────────────────────────────────────
+  // The overlay's visibility model depends on the renderer painting. If the load
+  // fails or the renderer process dies, default-on stealth would otherwise leave
+  // the user with a silent, invisible, un-relaunchable window (single-instance
+  // lock). Recover instead of failing dark.
+  let reloadAttempts = 0;
+  overlayWindow.webContents.on('did-fail-load', (_e, errorCode, errorDesc, validatedURL, isMainFrame) => {
+    if (!isMainFrame) return; // sub-resource failures are not fatal
+    logger.error(`[overlay] renderer load failed (${errorCode} ${errorDesc}) for ${validatedURL}`);
+    if (reloadAttempts < 2 && !overlayWindow.isDestroyed()) {
+      reloadAttempts += 1;
+      overlayWindow.webContents.reload();
+    } else {
+      // Out of retries — present anyway so the user isn't staring at nothing.
+      forcePresent();
+    }
+  });
+
+  overlayWindow.webContents.on('render-process-gone', (_e, details) => {
+    logger.error('[overlay] render process gone:', details.reason);
+    if (details.reason !== 'clean-exit' && !overlayWindow.isDestroyed() && reloadAttempts < 2) {
+      reloadAttempts += 1;
+      overlayWindow.webContents.reload();
+    }
+  });
+
   // Register global hotkeys
   registerAllHotkeys();
 
   // Defer non-critical startup tasks to after first paint
   overlayWindow.webContents.once('did-finish-load', () => {
+    // Backstop: if the page finished loading but 'ready-to-show' never presented
+    // (it can be delayed/missed on some GPU/compositing paths), present now so the
+    // overlay can never be stuck invisible after a successful load. Idempotent.
+    forcePresent();
+
     // Ensure conversations directory exists (async, non-blocking)
     ensureConversationsDir().catch(() => {});
 

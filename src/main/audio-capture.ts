@@ -34,11 +34,13 @@ function sendChunkToRenderer(overlayWin: BrowserWindow, data: string): void {
  */
 function startPowerShellCapture(
   overlayWin: BrowserWindow,
-  source: AudioCaptureSource,
+  _source: AudioCaptureSource,
   chunkIntervalMs: number
 ): CaptureSession {
-  // PowerShell inline C# for WASAPI loopback or microphone
-  const captureMode = source === 'microphone' ? 'Capture' : 'Loopback';
+  // NOTE: This PowerShell path is a fallback STUB. It defines an NAudio-based
+  // AudioChunker but never invokes it; the active loop below just emits periodic
+  // silence. Real system-audio capture runs through the native
+  // electron-audio-loopback module (startNativeCapture). See useLiveTranscription.
   const script = `
 Add-Type -TypeDefinition @"
 using System;

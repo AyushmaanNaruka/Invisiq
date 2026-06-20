@@ -69,7 +69,7 @@ export async function captureFullScreen(monitorId?: string): Promise<ScreenshotR
       restorePosition = stealthHideForCapture();
       await sleep(CAPTURE_DELAY_MS);
     } else if (wasVisible) {
-      hideOverlay();
+      hideOverlay(true); // transient — restored after capture; must not drop capture session
       await sleep(CAPTURE_DELAY_MS);
     }
 
@@ -178,7 +178,7 @@ export async function captureForSnip(): Promise<ScreenshotResult> {
       restorePosition = stealthHideForCapture();
       await sleep(CAPTURE_DELAY_MS);
     } else if (wasVisible) {
-      hideOverlay();
+      hideOverlay(true); // transient — restored after capture; must not drop capture session
       await sleep(CAPTURE_DELAY_MS);
     }
 
@@ -234,7 +234,7 @@ export async function captureRegion(
       restorePosition = stealthHideForCapture();
       await sleep(CAPTURE_DELAY_MS);
     } else if (wasVisible) {
-      hideOverlay();
+      hideOverlay(true); // transient — restored after capture; must not drop capture session
       await sleep(CAPTURE_DELAY_MS);
     }
 

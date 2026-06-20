@@ -119,7 +119,10 @@ async function toPDF(conv: Conversation): Promise<Buffer> {
       nodeIntegration: false,
     },
   });
-  // NOTE: intentionally NO setContentProtection — this window is hidden and shows only text
+  // Window is hidden (show:false) and destroyed after printToPDF, so it never
+  // composites to screen — but we set content protection anyway to uphold the
+  // project-wide invariant that EVERY BrowserWindow is capture-protected.
+  pdfWin.setContentProtection(true);
 
   await pdfWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
   await new Promise((r) => setTimeout(r, 500)); // Let renderer paint

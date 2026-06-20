@@ -28,7 +28,6 @@ import { useAuth } from './hooks/useAuth';
 import { useEntitlement } from './hooks/useEntitlement';
 import { useUpdateGate } from './hooks/useUpdateGate';
 import { useHotkeys } from './hooks/useHotkeys';
-import { useClickThrough } from './hooks/useClickThrough';
 import { useAudioTranscription } from './hooks/useAudioTranscription';
 import { useLiveTranscription } from './hooks/useLiveTranscription';
 import { useMeetingAssistant } from './hooks/useMeetingAssistant';
@@ -97,6 +96,7 @@ function AppInner(): JSX.Element {
   } = useEntitlement(authStatus.signedIn);
   const { gate: updateGate } = useUpdateGate();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [showTour, setShowTour] = useState(false); // replay of the academy from Settings
 
   // Determine whether to show onboarding after settings load
   useEffect(() => {
@@ -121,7 +121,6 @@ function AppInner(): JSX.Element {
     appendToMessage,
     startNewConversation,
     loadConversation,
-    clearConversation,
     getContextMessages,
   } = useConversation({
     persistChatHistory: settings.privacy.persistChatHistory,
@@ -149,7 +148,6 @@ function AppInner(): JSX.Element {
     clearScreenshot,
     clearAllScreenshots,
   } = useScreenshot();
-  const { isPassthrough, togglePassthrough } = useClickThrough();
   const [isStealthFocus, setIsStealthFocus] = useState(false);
   const { registerCallback } = useHotkeys();
   const { lastRequest: costLastRequest, conversation: costConversation, session: costSession, recordUsage, resetConversation: resetCostConversation } = useTokenCost();
@@ -206,7 +204,7 @@ function AppInner(): JSX.Element {
   } = useLiveTranscription();
 
   // Phase 4: meeting assistant — question detection
-  const { detectedQuestions, dismissQuestion, clearAll: clearQuestions } = useMeetingAssistant({
+  const { detectedQuestions, dismissQuestion } = useMeetingAssistant({
     liveTranscript,
     silenceThresholdMs: settings.meeting?.silenceThresholdMs ?? 3000,
     autoSuggestEnabled: settings.meeting?.autoSuggestEnabled ?? false,
@@ -261,6 +259,33 @@ function AppInner(): JSX.Element {
   const [availableProviders, setAvailableProviders] = useState<Set<ProviderID>>(new Set());
   const [injectedInputText, setInjectedInputText] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Keep the latest stealth-focus preference available to the Settings effect
+  // below without making it a dependency (so the effect only fires on open/close).
+  const stealthFocusRef = useRef(isStealthFocus);
+  useEffect(() => {
+    stealthFocusRef.current = isStealthFocus;
+  }, [isStealthFocus]);
+
+  // Settings contains plain inputs (API key, hotkey capture, memory facts) that
+  // need real keyboard focus. With default-on stealth focus the overlay is
+  // WS_EX_NOACTIVATE, so clicks/typing/paste never reach those inputs (same
+  // problem OnboardingFlow solves). While Settings is open we temporarily relax
+  // stealth focus and bring the window forward; content protection stays ON the
+  // whole time, so the panel is still invisible to screen capture. On close we
+  // restore the user's persistent stealth-focus preference.
+  useEffect(() => {
+    const api = window.ghostAPI;
+    if (!api?.overlay) return;
+    if (settingsOpen) {
+      api.overlay
+        .setStealthFocus(false)
+        .then(() => api.overlay.requestFocus())
+        .catch(() => {});
+    } else if (stealthFocusRef.current) {
+      api.overlay.setStealthFocus(true).catch(() => {});
+    }
+  }, [settingsOpen]);
 
   // Apply font size from settings on mount/change
   useEffect(() => {
@@ -406,7 +431,7 @@ function AppInner(): JSX.Element {
       setStreamingMessageId(assistantMsg.id);
 
       // InvisiQ has a single universal, intent-adaptive system prompt.
-      await sendMessage(aiText, [...getContextMessages(), { id: '', role: 'user', content: aiText, images, timestamp: '' }], {
+      await sendMessage([...getContextMessages(), { id: '', role: 'user', content: aiText, images, timestamp: '' }], {
         model: settings.activeModel,
         systemPrompt: UNIVERSAL_MODE.systemPrompt,
         images,
@@ -564,6 +589,12 @@ function AppInner(): JSX.Element {
     return <OnboardingFlow onComplete={() => setShowOnboarding(false)} />;
   }
 
+  // Replay of the interactive walkthrough (launched from Settings → Account).
+  // Replay mode does not touch onboarding/setup state.
+  if (showTour) {
+    return <OnboardingFlow mode="replay" onComplete={() => setShowTour(false)} />;
+  }
+
   return (
     <ToastProvider>
     <ClipboardListener onAnalyze={handleSend} />
@@ -581,8 +612,6 @@ function AppInner(): JSX.Element {
         onOpenHistory={handleOpenHistory}
         onNewConversation={handleNewConversation}
         onClose={handleClose}
-        isPassthrough={isPassthrough}
-        onTogglePassthrough={togglePassthrough}
       />
 
       <ChatPanel
@@ -669,6 +698,7 @@ function AppInner(): JSX.Element {
         onToggleStealthFocus={handleToggleStealthFocus}
         accountEmail={authStatus.email}
         onLogout={authLogoutFn}
+        onReplayTutorial={() => setShowTour(true)}
       />
 
       <ConversationHistory

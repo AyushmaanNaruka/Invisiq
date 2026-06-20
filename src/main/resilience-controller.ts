@@ -12,6 +12,7 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import { Socket } from 'net';
+import { accessSync } from 'fs';
 import path from 'path';
 import { app } from 'electron';
 import { getOverlayWindow } from './overlay';
@@ -78,7 +79,7 @@ function resolveHelperPath(customPath: string): string {
   const mingwPath = path.join(baseBuildDir, 'ghostai_helper.exe');
   const msvcPath = path.join(baseBuildDir, 'Release', 'ghostai_helper.exe');
   try {
-    require('fs').accessSync(mingwPath);
+    accessSync(mingwPath);
     return mingwPath;
   } catch {
     return msvcPath;

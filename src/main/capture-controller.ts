@@ -17,7 +17,9 @@
 
 import { randomBytes } from 'node:crypto';
 import { globalShortcut } from 'electron';
-import { getOverlayWindow, hideOverlay } from './overlay';
+import { getOverlayWindow, hideOverlay, setOnOverlayHidden } from './overlay';
+import { setContentProtectionDesired } from './stealth';
+import { getNestedSetting } from './store';
 import {
   startAgent,
   sendCommand,
@@ -37,7 +39,6 @@ import type {
 let captureActive = false;
 let epoch = 0;
 let tier: CaptureTier = 'none';
-let helperReady = false;
 let proctorState: ProctorDetection = { detected: false, names: [] };
 
 let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
@@ -57,6 +58,47 @@ function notify(channel: string, payload?: unknown): void {
 
 function notifyCaptureState(): void {
   notify('capture:state', { active: captureActive, epoch, tier });
+}
+
+// ── Adaptive content protection (GetWindowDisplayAffinity sweep evasion) ──────
+// Bucket-B proctors enumerate processes AND can run a GetWindowDisplayAffinity
+// sweep that finds WDA_EXCLUDEFROMCAPTURE windows by their affinity flag (name-
+// independent — the disguise name does NOT help here). For these, IF the user
+// opted in (stealth.evadeSweepProctor), we drop WDA so the sweep finds nothing.
+// Bucket-A proctors (browser extensions: proctorio, honorlock) only see the
+// SHARED screen, so WDA must stay ON for them — we never degrade on those.
+const SWEEP_CAPABLE_PROCTORS = [
+  'msb', // Mettl Secure Browser (process + the MsbWindowCef window class)
+  'mettl',
+  'lockdownbrowser', // Respondus LockDown Browser
+  'safeexambrowser',
+  'examroot',
+  'proctoru',
+];
+
+function isSweepCapableProctor(names: string[]): boolean {
+  return names.some((raw) => {
+    const n = raw.toLowerCase();
+    return SWEEP_CAPABLE_PROCTORS.some((p) => n.includes(p));
+  });
+}
+
+function applyAdaptiveContentProtection(state: ProctorDetection): void {
+  // Opt-in only (default off): dropping WDA dodges affinity sweeps but exposes
+  // the overlay to screenshots/recording (the MORE common proctor vector), so we
+  // never flip it automatically unless the user enabled it.
+  const optedIn =
+    (getNestedSetting('stealth.evadeSweepProctor') as boolean | undefined) === true;
+  if (!optedIn) return;
+
+  const win = getOverlayWindow();
+  if (!win || win.isDestroyed()) return;
+
+  const shouldDrop = state.detected && isSweepCapableProctor(state.names);
+  setContentProtectionDesired(win, !shouldDrop);
+  logger.log(
+    `[capture] adaptive WDA → ${shouldDrop ? 'DROPPED (sweep-capable proctor present)' : 'restored'}`,
+  );
 }
 
 // ── Paste-into-capture shortcut ───────────────────────────────────────────────
@@ -95,7 +137,6 @@ function unregisterPasteShortcut(): void {
 function handleHelperResponse(resp: ResilienceResponse): void {
   switch (resp.type) {
     case 'ready':
-      helperReady = true;
       logger.log('[capture] helper ready');
       break;
 
@@ -116,10 +157,19 @@ function handleHelperResponse(resp: ResilienceResponse): void {
     case 'proctor':
       proctorState = (resp.payload as unknown as ProctorDetection) ?? { detected: false, names: [] };
       notify('proctor:detected', proctorState);
+      applyAdaptiveContentProtection(proctorState);
       break;
 
     case 'capture_failed':
       onCaptureFailure(((resp.payload as { reason?: CaptureFailReason })?.reason) ?? 'pipe-dropped');
+      break;
+
+    case 'click_outside':
+      // The user clicked a window that isn't InvisiQ while capture was armed —
+      // a strong signal they want to type into that app, not InvisiQ. Exit capture
+      // cleanly (NOT the degradation ladder) so their keystrokes go where they
+      // clicked. They re-arm (click the overlay / Ctrl+Shift+I) to type here again.
+      if (captureActive) void exitCapture();
       break;
   }
 }
@@ -200,15 +250,22 @@ function tryArmUiohook(): boolean {
 export async function initCaptureController(): Promise<void> {
   unsubscribeResponses = onHelperResponse(handleHelperResponse);
 
+  // Invariant: stealth capture must never outlive overlay visibility. If the
+  // overlay is hidden by ANY path (toggle hotkey, Escape, IPC, programmatic),
+  // tear the capture session down so the suppressing hook stops eating keystrokes
+  // into an invisible window. This is the fix for "typing in another app goes into
+  // InvisiQ even though it isn't visible."
+  setOnOverlayHidden(() => {
+    if (captureActive) void exitCapture();
+  });
+
   // Randomized pipe name per launch — a stable well-known pipe from a hooking
   // binary is a cheap IOC for an AV/EDR detection rule.
   const pipeName = `InvisiQ-${randomBytes(4).toString('hex')}`;
   try {
     const res = await startAgent('', pipeName);
-    helperReady = res.success && isHelperConnected();
     logger.log(`[capture] helper spawn: ${res.success ? 'ok' : 'failed'}${res.error ? ' — ' + res.error : ''}`);
   } catch (err) {
-    helperReady = false;
     logger.warn('[capture] helper spawn threw — will degrade on capture:', err);
   }
 }

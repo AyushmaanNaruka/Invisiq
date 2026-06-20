@@ -1,15 +1,21 @@
-# NAMING / DISGUISE SPLIT (intentional — see CLAUDE.md "Brand vs. disguise"):
-#   productName: InvisiQ      → user-facing surfaces only: installer heading
+# NAMING (see CLAUDE.md "Brand vs. disguise"):
+#   productName: InvisiQ      → user-facing surfaces: installer heading
 #                               ("InvisiQ Setup"), installer filename, Start Menu
 #                               + search label, uninstaller / Installed Apps entry.
-#   executableName: RuntimeBroker (below) → the actual .exe / PROCESS IMAGE NAME.
-#                               This is what proctoring tools enumerate, so it stays
-#                               disguised. Do NOT rename it to InvisiQ.
+#   executableName: InvisiQ (below) → the actual .exe / PROCESS IMAGE NAME that
+#                               proctoring tools enumerate. Now the BRAND name (was a
+#                               neutral 'Helio') — a deliberate brand-trust decision.
+#                               Safe because visual invisibility (WDA) is name-
+#                               independent and the realistic market (Bucket A) can't
+#                               enumerate processes; only trade-off is Bucket-B lockdown
+#                               browsers blocklisting a recognizable name (future risk).
+#                               This is NOT the old 'RuntimeBroker' Microsoft
+#                               impersonation (EDR/signing/legal toxic) — InvisiQ is
+#                               honest. Keep == DEFAULT_PROCESS_NAME (src/shared/constants.ts).
 #   app.setName('RuntimeBroker') (stealth.ts) + package.json name=runtimebroker →
-#                               drive userData (stored keys/login). Unchanged, so
-#                               renaming productName needs NO data migration.
-# Trade-off accepted: Task Manager's *friendly* (Processes-tab) name now reads
-# "InvisiQ"; the Details-tab image name + proctoring-scanned process stay RuntimeBroker.exe.
+#                               drive userData (stored keys/login). FROZEN internal
+#                               identity (a folder name, invisible to proctoring);
+#                               kept stable so existing keys stay decryptable.
 appId: com.ghostai.app
 productName: InvisiQ
 copyright: "© 2026 InvisiQ. All rights reserved."
@@ -41,7 +47,7 @@ extraResources:
     to: ghostai_helper.exe
 win:
   icon: assets/invisiq-icon-512.png
-  executableName: RuntimeBroker # PROCESS IMAGE NAME — stays disguised (proctoring scans this). Do not rename.
+  executableName: InvisiQ # PROCESS IMAGE NAME proctoring scans — the brand name (brand-trust decision; safe per WDA being name-independent). Keep == DEFAULT_PROCESS_NAME (constants.ts).
   legalTrademarks: "© 2026 InvisiQ. All rights reserved."
   # NSIS (not portable): electron-updater cannot self-update a portable build —
   # it has no install location to replace and electron-builder emits no
@@ -70,7 +76,12 @@ nsis:
   #   assets/installerSidebar.bmp  → 164x314 welcome/finish art
   #   assets/installerHeader.bmp   → 150x57  inner-page header band
   # All three are produced by `npm run gen:installer-assets`.
-  artifactName: ${productName} Setup ${version}.${ext}
+  # Version-LESS installer filename so the website can link to a permanent URL:
+  #   https://github.com/Ghost-AI-Interview/invisiq-releases/releases/latest/download/InvisiQ-Setup.exe
+  # GitHub's /releases/latest/download/<name> redirect only works if <name> is
+  # CONSTANT across releases. electron-updater reads the filename from latest.yml
+  # (not the URL), so a constant name does NOT break auto-update or blockmaps.
+  artifactName: InvisiQ-Setup.${ext}
 # Auto-update feed. Releases MUST be public (no GH token shipped in the client)
 # for the updater to read latest.yml. Source (ghostai) stays PRIVATE to protect
 # the stealth method; only release artifacts go to the dedicated PUBLIC repo below.

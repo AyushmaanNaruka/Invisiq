@@ -130,6 +130,24 @@ export default function SettingsPrivacy({
           />
         </label>
 
+        <label className="flex items-center justify-between cursor-pointer">
+          <div>
+            <span className="text-text-primary text-xs block">Evade Capture-Affinity Sweep</span>
+            <span className="text-text-placeholder text-[10px]">
+              When a lockdown proctor (Mettl/Respondus/SEB) is detected, drop screen-capture
+              protection so an affinity sweep finds nothing. Trade-off: the overlay becomes
+              visible to screenshots/recording while active. Leave off unless you know your
+              proctor sweeps.
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={stealth?.evadeSweepProctor ?? false}
+            onChange={(e) => onUpdate('stealth.evadeSweepProctor', e.target.checked)}
+            className="rounded accent-accent-primary"
+          />
+        </label>
+
         {/* Keyboard-hook disclosure (transparency for AV-aware users) */}
         <div className="flex items-start gap-2 p-2.5 rounded-md bg-bg-input border border-border-subtle">
           <KeyRound size={14} className="text-text-secondary shrink-0 mt-0.5" />
@@ -261,7 +279,7 @@ export default function SettingsPrivacy({
           className="w-full bg-bg-input border border-border-subtle rounded-md px-3 py-1.5 text-xs text-text-primary placeholder:text-text-placeholder focus:outline-none focus:border-border-focus transition-colors"
         />
         <p className="text-text-placeholder text-[10px] mt-1">
-          Disguise name shown in Task Manager. Default: RuntimeBroker. Requires restart.
+          Neutral disguise name shown in Task Manager. Default: Helio. Requires restart.
         </p>
       </div>
 

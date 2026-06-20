@@ -52,7 +52,9 @@ export default function MessageBubble({ message, isStreaming }: MessageBubblePro
       await window.ghostAPI.clipboard.copy(message.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {}
+    } catch {
+      showToast('error', 'Copy failed');
+    }
   };
 
   const handlePaste = async (): Promise<void> => {

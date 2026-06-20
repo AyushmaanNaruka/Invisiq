@@ -3,7 +3,7 @@ import { app } from 'electron';
 import { existsSync, copyFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { encryptApiKey, decryptApiKey, hasServerFragment, isLegacyApiKeyPayload } from './crypto';
-import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE } from '@shared/constants';
+import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE, DEFAULT_PROCESS_NAME } from '@shared/constants';
 import type { AppSettings, ProviderID, EncryptedPayload, WindowState } from '@shared/types';
 
 interface StoredAuthSession {
@@ -18,9 +18,6 @@ interface StoreSchema {
     openai?: EncryptedPayload;
     anthropic?: EncryptedPayload;
     gemini?: EncryptedPayload;
-    // Retained only to keep the dot-notation key type valid (ProviderID still
-    // includes 'ollama'); never written — Ollama is removed from VALID_PROVIDERS.
-    ollama?: EncryptedPayload;
   };
   windowState: WindowState;
   auth?: StoredAuthSession;
@@ -61,8 +58,10 @@ migrateFromOldConfig();
 
 const store = new Store<StoreSchema>({
   // electron-store v10 derives the path from app.getPath('userData') and no
-  // longer accepts `projectName`. The data dir stays "RuntimeBroker" via the
-  // app name; `name` below fixes the config filename (disguise preserved).
+  // longer accepts `projectName`. The data dir is "RuntimeBroker" (frozen
+  // INTERNAL identity — invisible to proctoring/EDR, kept stable so existing
+  // users' encrypted keys stay decryptable; NOT the de-impersonated visible
+  // process name). `name` below fixes the config filename.
   name: 'runtime-broker-config',
   defaults: {
     settings: DEFAULT_SETTINGS,
@@ -127,6 +126,34 @@ function backfillSettingsSchema(): void {
 }
 
 backfillSettingsSchema();
+
+// ══════════════════════════════════════
+//  LEGACY DISGUISE-NAME MIGRATION
+// ══════════════════════════════════════
+
+/**
+ * Reset any install still on a prior DEFAULT process name to the current
+ * DEFAULT_PROCESS_NAME (now the brand name 'InvisiQ'). Two legacy defaults are
+ * rewritten: 'RuntimeBroker' (the removed Microsoft-impersonation disguise) and
+ * 'Helio' (the interim neutral name). A user's CUSTOM alias is preserved — only the
+ * exact prior defaults are rewritten. The userData directory is intentionally NOT
+ * touched — it's a frozen internal identity (see store init above), so keys are
+ * never put at risk.
+ */
+const LEGACY_PROCESS_NAME_DEFAULTS = ['RuntimeBroker', 'Helio'];
+
+function migrateLegacyProcessName(): void {
+  try {
+    const current = store.get('settings.privacy.processName') as string | undefined;
+    if (current && LEGACY_PROCESS_NAME_DEFAULTS.includes(current)) {
+      store.set('settings.privacy.processName', DEFAULT_PROCESS_NAME);
+    }
+  } catch {
+    // Best-effort — never block startup on a migration.
+  }
+}
+
+migrateLegacyProcessName();
 
 // ══════════════════════════════════════
 //  SETTINGS

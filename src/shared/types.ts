@@ -2,7 +2,7 @@
 //  PROVIDER & MODEL TYPES
 // ══════════════════════════════════════
 
-export type ProviderID = 'openai' | 'anthropic' | 'gemini' | 'ollama';
+export type ProviderID = 'openai' | 'anthropic' | 'gemini';
 
 export type HotkeyAction =
   | 'toggle-overlay'
@@ -13,7 +13,6 @@ export type HotkeyAction =
   | 'new-conversation'
   | 'hide-overlay'
   | 'paste-response'
-  | 'toggle-passthrough'
   | 'next-model'
   | 'prev-model'
   // toggle-invisible-input now toggles Model B capture mode (kept for settings compat)
@@ -276,6 +275,8 @@ export interface ResilienceResponse {
   // key    → a translated keystroke from the suppressing hook (payload = CaptureKeyEvent)
   // proctor→ proctor-process detection update (payload = ProctorDetection)
   // capture_failed → hook/pipe died mid-capture; renderer must degrade
+  // click_outside  → user clicked a window that isn't InvisiQ while capturing;
+  //                  capture-controller exits cleanly so keys return to that app
   type:
     | 'status'
     | 'ack'
@@ -284,7 +285,8 @@ export interface ResilienceResponse {
     | 'ready'
     | 'key'
     | 'proctor'
-    | 'capture_failed';
+    | 'capture_failed'
+    | 'click_outside';
   payload?: Record<string, unknown>;
   error?: string;
 }
@@ -391,7 +393,6 @@ export interface AppSettings {
     openai: ProviderConfig;
     anthropic: ProviderConfig;
     gemini: ProviderConfig;
-    ollama: ProviderConfig;
   };
 
   activeProvider: ProviderID;
@@ -425,7 +426,6 @@ export interface AppSettings {
     processName: string;
     showTrayIcon: boolean;
     // Phase 4
-    clickThroughEnabled: boolean;
     codeDetectionEnabled: boolean;
     codeDetectionIntervalMs: number;
   };
@@ -483,6 +483,10 @@ export interface AppSettings {
     // When highly confident nothing is watching, offer to relax to easy-focus
     // typing. Only flips toward convenience, never away from safety.
     relaxWhenSafe: boolean;
+    // Opt-in (default off): when a sweep-capable lockdown proctor is detected,
+    // drop WDA_EXCLUDEFROMCAPTURE to evade GetWindowDisplayAffinity sweeps.
+    // Trade-off: exposes the overlay to screenshots/recording while active.
+    evadeSweepProctor: boolean;
   };
 
   isFirstLaunch: boolean;

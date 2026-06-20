@@ -3,13 +3,26 @@ import path from 'path';
 import { getWindowState, setWindowState } from './store';
 import { ensureContentProtection } from './stealth';
 import { validateOverlayPosition, moveOverlayToMonitor as moveToMonitorImpl } from './monitors';
+import { logger } from '@shared/logger';
+
+// If 'ready-to-show' hasn't presented the overlay within this window, force the
+// present anyway (see the fallback in createOverlayWindow). Generous enough to
+// let a healthy first paint win the race, short enough that a stuck launch
+// self-heals before the user gives up.
+const READY_TO_SHOW_FALLBACK_MS = 4000;
+let presentFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
 let overlayWindow: BrowserWindow | null = null;
 let stealthFocusEnabled = false; // Anti-detection focus mode (WS_EX_NOACTIVATE)
+// Fired whenever the overlay transitions to logically-hidden. Enforces the
+// invariant "stealth capture never outlives overlay visibility" — registered by
+// the capture-controller so a hidden overlay can't keep eating keystrokes. Kept as
+// a callback (not a direct import) to avoid a circular dependency: capture-controller
+// already imports from this module.
+let onHiddenCallback: (() => void) | null = null;
 let userOpacity = 0.85;          // The user's chosen opacity (separate from visibility)
 let logicalVisible = true;       // Whether the overlay should be visible to the user
 let everShown = false;           // Has the HWND been shown at least once (for showInactive)
-let userPassthrough = false;     // The user's click-through preference (restored on show)
 let readyToShowDone = false;     // Gate the first present to 'ready-to-show' (avoids white flash)
 
 export function createOverlayWindow(): BrowserWindow {
@@ -37,8 +50,8 @@ export function createOverlayWindow(): BrowserWindow {
     },
   });
 
-  // CRITICAL — Makes window invisible to screen capture
-  overlayWindow.setContentProtection(true);
+  // CRITICAL — Makes window invisible to screen capture (honors adaptive state)
+  ensureContentProtection(overlayWindow);
 
   // Position: use saved coordinates if valid, otherwise bottom-right of primary display
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
@@ -58,19 +71,23 @@ export function createOverlayWindow(): BrowserWindow {
   // Show window only after content is ready to paint. Route through the unified
   // visibility model so default-on stealth presents correctly on first launch.
   overlayWindow.once('ready-to-show', () => {
-    if (overlayWindow && !overlayWindow.isDestroyed()) {
-      // CRITICAL — re-apply WDA_EXCLUDEFROMCAPTURE both before and after the
-      // first show. Windows DWM doesn't always commit the affinity for the first
-      // composition cycle if it was only set on a hidden HWND, causing the
-      // overlay to flash briefly in screen-share captures until the watchdog
-      // re-applies it. Setting it around the first present eliminates that leak.
-      overlayWindow.setContentProtection(true);
-      readyToShowDone = true;
-      logicalVisible = true;
-      applyVisibility();
-      overlayWindow.setContentProtection(true);
-    }
+    forcePresent();
   });
+
+  // FALLBACK PRESENT — defends the "stuck invisible forever" failure. The entire
+  // visibility model gates on readyToShowDone (set only by 'ready-to-show'). On
+  // some machines that event is delayed or never fires (GPU/transparent-window
+  // compositing bugs, AV scanning app.asar on first run, a renderer load stall).
+  // Under default-on stealth the window has no taskbar button and is opacity-
+  // driven, so a stuck window shows the user NOTHING — they think the app
+  // "closed" and (single-instance lock) can't relaunch it without a reboot.
+  // If 'ready-to-show' hasn't presented within the timeout, present anyway.
+  presentFallbackTimer = setTimeout(() => {
+    if (!readyToShowDone) {
+      logger.warn('[overlay] ready-to-show did not fire in time — forcing present (fallback)');
+      forcePresent();
+    }
+  }, READY_TO_SHOW_FALLBACK_MS);
 
   // Save window state on move/resize
   overlayWindow.on('moved', () => {
@@ -94,6 +111,31 @@ export function createOverlayWindow(): BrowserWindow {
 
 export function getOverlayWindow(): BrowserWindow | null {
   return overlayWindow;
+}
+
+/**
+ * Present the overlay for the first time (idempotent). Called by 'ready-to-show'
+ * on the happy path, by the fallback timer if that event is late/missing, and by
+ * the main-process did-finish-load / did-fail-load / render-process-gone backstops.
+ * After the first present, repeated calls just re-assert visibility + protection.
+ *
+ * CRITICAL — re-apply WDA_EXCLUDEFROMCAPTURE both before and after the present.
+ * Windows DWM doesn't always commit the affinity for the first composition cycle
+ * if it was only set on a hidden HWND, causing the overlay to flash briefly in
+ * screen-share captures until the watchdog re-applies it. Setting it around the
+ * present eliminates that leak.
+ */
+export function forcePresent(): void {
+  if (presentFallbackTimer) {
+    clearTimeout(presentFallbackTimer);
+    presentFallbackTimer = null;
+  }
+  if (!overlayWindow || overlayWindow.isDestroyed()) return;
+  ensureContentProtection(overlayWindow);
+  readyToShowDone = true;
+  logicalVisible = true;
+  applyVisibility();
+  ensureContentProtection(overlayWindow);
 }
 
 // ── Unified visibility model ────────────────────────────────────────────────
@@ -120,7 +162,7 @@ function applyVisibility(): void {
     if (logicalVisible) {
       win.setOpacity(userOpacity);
       win.moveTop(); // raise without focus/foreground events
-      win.setIgnoreMouseEvents(userPassthrough, { forward: true });
+      win.setIgnoreMouseEvents(false); // overlay is interactive when visible
     } else {
       // 0-opacity window must not eat clicks meant for the app underneath.
       win.setOpacity(0);
@@ -128,14 +170,14 @@ function applyVisibility(): void {
     }
   } else {
     if (logicalVisible) {
-      win.setContentProtection(true);
+      ensureContentProtection(win);
       win.setAlwaysOnTop(true);
       if (!win.isVisible()) win.show();
       everShown = true;
       // Re-enforce skipTaskbar — setAlwaysOnTop / show() can re-add WS_EX_APPWINDOW.
       win.setSkipTaskbar(true);
       win.setOpacity(userOpacity);
-      win.setIgnoreMouseEvents(userPassthrough, { forward: true });
+      win.setIgnoreMouseEvents(false); // overlay is interactive when visible
     } else {
       win.hide();
     }
@@ -156,10 +198,19 @@ export function showOverlay(): void {
   notifyVisibility();
 }
 
-export function hideOverlay(): void {
+/**
+ * Hide the overlay.
+ *
+ * `transient` distinguishes a genuine user-intent hide (default) from an internal
+ * hide/show cycle (screenshot, smart-paste) that restores visibility immediately.
+ * Only a real hide tears down stealth capture — a transient hide must NOT, or
+ * taking a screenshot while stealth-typing would silently drop the session.
+ */
+export function hideOverlay(transient = false): void {
   logicalVisible = false;
   applyVisibility();
   notifyVisibility();
+  if (!transient) onHiddenCallback?.(); // stealth capture must not outlive overlay visibility
 }
 
 export function toggleOverlay(): boolean {
@@ -167,7 +218,20 @@ export function toggleOverlay(): boolean {
   logicalVisible = !logicalVisible;
   applyVisibility();
   notifyVisibility();
+  // Hiding via toggle must also tear down capture — otherwise the suppressing
+  // keyboard hook keeps eating keystrokes into an invisible window (the keys
+  // never reach the app the user is now looking at).
+  if (!logicalVisible) onHiddenCallback?.();
   return logicalVisible;
+}
+
+/**
+ * Register a callback fired whenever the overlay transitions to hidden. The
+ * capture-controller uses this to guarantee stealth typing can't survive a hidden
+ * overlay, regardless of which code path hid it.
+ */
+export function setOnOverlayHidden(cb: () => void): void {
+  onHiddenCallback = cb;
 }
 
 /** Logical visibility (NOT win.isVisible() — in stealth the HWND is always "shown"). */
@@ -269,15 +333,4 @@ export function setOverlaySize(width: number, height: number): void {
 
 export function moveToMonitor(monitorId: string): boolean {
   return moveToMonitorImpl(monitorId);
-}
-
-// ── Click-through passthrough ───────────────────────────────────────────────
-export function setPassthrough(enabled: boolean, forward: boolean = true): void {
-  userPassthrough = enabled; // remember the user's preference
-  if (overlayWindow && !overlayWindow.isDestroyed()) {
-    // When hidden in stealth, applyVisibility forces ignore=true regardless.
-    if (logicalVisible) {
-      overlayWindow.setIgnoreMouseEvents(enabled, { forward });
-    }
-  }
 }

@@ -13,16 +13,18 @@
 - **Author:** Ayushmaan Singh Naruka
 - **License:** Personal Use / MIT
 
-### Brand vs. disguise (do not "fix" these)
+### Brand vs. disguise (the DE-IMPERSONATED split)
 
-"InvisiQ" is the **user-facing brand** — use it in UI, docs, system prompts, and any text a user sees. The disguise that hides the app from proctoring tools lives in the **process image name + data dir**, NOT in the installer/Start-Menu label. The split (intentional — do not "reconcile" it):
+"InvisiQ" is the **user-facing brand** — use it in UI, docs, system prompts, and any text a user sees. The **process image name is now also `InvisiQ`** (June 2026 brand-trust decision, superseding the interim neutral `Helio`). This is SAFE: visual invisibility (`WDA_EXCLUDEFROMCAPTURE`) is **name-independent**, and the realistic market (Bucket A — Zoom/Teams/Meet/Proctorio/Honorlock) **cannot enumerate processes**, so the brand name costs nothing there; the only trade-off is that a recognizable name is easier for Bucket-B desktop lockdown browsers (Mettl/Respondus/SEB) to add to a process-name blocklist (a future-popularity risk, not a present one). Crucially, `InvisiQ` is **honest** — it does NOT reintroduce the toxic `RuntimeBroker` + `Microsoft.Windows.RuntimeBroker` + `author: "Microsoft Corporation"` impersonation that was removed (that impersonation was an EDR/AV red flag — CrowdStrike Falcon terminated it at runtime — and a code-signing / legal blocker). Rationale + the Bucket A vs B decision tree is in `docs/InvisiQ-Stealth-Commercialization.md`. The split:
 
-- **User-facing (productName: InvisiQ):** installer heading ("InvisiQ Setup"), installer filename, Start Menu + search label, uninstaller / Installed Apps entry. `electron-builder.yml` → `productName: InvisiQ`, `copyright/legalTrademarks/author: InvisiQ`. This is intentional — do NOT revert to "Runtime Broker." (Trade-off: Task Manager's *Processes-tab* friendly name now reads "InvisiQ" too; that's accepted. The *Details-tab* image name + proctoring-scanned process stay `RuntimeBroker.exe`.)
-- **Disguised (the parts proctoring actually scans / that hold user data) — leave as-is:**
-  - `electron-builder.yml` → `executableName: RuntimeBroker` (the .exe / process image name proctoring tools enumerate), `appId: com.ghostai.app` (stable updater/NSIS upgrade identity)
-  - `package.json` → `name: runtimebroker`
-  - `src/main/stealth.ts` → `app.setName('RuntimeBroker')` + `setAppUserModelId('Microsoft.Windows.RuntimeBroker')`
-  - `src/main/store.ts` → `RuntimeBroker` data directory + the legacy `ghostai` migration path. **userData is derived from `app.setName`/`package.json name`, NOT from `productName`** — so the productName rename needed no data migration.
+- **User-facing (productName: InvisiQ):** installer heading ("InvisiQ Setup"), installer filename, Start Menu + search label, uninstaller / Installed Apps entry. `electron-builder.yml` → `productName: InvisiQ`, `copyright/legalTrademarks/author: InvisiQ`.
+- **Process image name (the .exe proctoring enumerates) — the brand name `InvisiQ`, honest (no impersonation):**
+  - `electron-builder.yml` → `executableName: InvisiQ`. **Single source of truth: `DEFAULT_PROCESS_NAME` in `src/shared/constants.ts`** (YAML can't import it — keep the two in sync; changing the string is a 1-line edit in both). The runtime `process.title` comes from the `privacy.processName` setting (default `InvisiQ`); a one-time migration in `store.ts` (`migrateLegacyProcessName`) rewrites the legacy `RuntimeBroker` and `Helio` defaults to it.
+  - `src/main/stealth.ts` → `app.setAppUserModelId(APP_USER_MODEL_ID)` where `APP_USER_MODEL_ID = 'com.ghostai.app'` (honest — matches `appId`). NOT a Microsoft AUMID.
+  - `electron-builder.yml` → `appId: com.ghostai.app` (stable updater/NSIS upgrade identity)
+- **Frozen INTERNAL data identity (NOT user-visible, NOT proctoring-scanned — do NOT change):**
+  - `src/main/stealth.ts` → `app.setName('RuntimeBroker')` (`DATA_DIR_IDENTITY`) + `package.json` `name: runtimebroker` + `src/main/store.ts` `RuntimeBroker` data dir / `runtime-broker-config.json` + the legacy `ghostai` migration path. This only pins the `%APPDATA%` folder holding the encrypted keys/login. **userData derives from `app.setName`/`package.json name`, NOT from `productName`/`executableName`** — so the de-impersonation rename needed NO data migration and existing users' keys stay decryptable. A folder name is invisible to proctoring/EDR.
+  - **Known one-time rough edge:** an existing beta install auto-updating *across* the executable rename (`RuntimeBroker.exe` / `Helio.exe` → `InvisiQ.exe`) relies on NSIS (keyed by `appId`) to swap the exe + shortcut. New installs are clean; a stale old-named exe on an upgraded machine is cosmetic (data/keys unaffected).
 
 Two more **stable identifiers** that look like the brand but must not be renamed:
 - `src/main/crypto.ts` → `APP_SALT = 'ghostai-v1-...'` — renaming this makes every saved API key undecryptable.
@@ -144,7 +146,7 @@ ghostai/
 │   │   ├── index.html / main.tsx / App.tsx
 │   │   │
 │   │   ├── components/
-│   │   │   ├── HeaderBar.tsx         # Drag handle, MODEL selector, passthrough, settings (NO mode picker)
+│   │   │   ├── HeaderBar.tsx         # Drag handle, MODEL selector, settings (NO mode picker, NO click-through)
 │   │   │   ├── ChatPanel.tsx / MessageBubble.tsx / CodeBlock.tsx
 │   │   │   ├── InputArea.tsx         # Text input, send/stop, screenshot, mic, capture-aware editor
 │   │   │   ├── StatusBar.tsx / OpacityControl.tsx / ModelSelector.tsx / Toast.tsx
@@ -165,7 +167,7 @@ ghostai/
 │   │   │   ├── useAI.ts / useScreenshot.ts / useSettings.ts / useHotkeys.ts
 │   │   │   ├── useConversation.ts / useConversationHistory.ts
 │   │   │   ├── useAudioTranscription.ts / useLiveTranscription.ts / useMeetingAssistant.ts
-│   │   │   ├── useCodeDetection.ts / useMemory.ts / useClickThrough.ts
+│   │   │   ├── useCodeDetection.ts / useMemory.ts
 │   │   │   ├── useTokenCost.ts / useWindowSize.ts / useInternalKeyboard.ts (Ctrl+, / Ctrl+K / Ctrl+L)
 │   │   │   ├── useCapture.ts         # Model B stealth typing: capture state + key events (seq/epoch)
 │   │   │   └── useAuth.ts / useEntitlement.ts / useUpdateGate.ts   # Beta gates
@@ -334,7 +336,7 @@ analytics:track       analytics:capture-prompt   analytics:delete-my-data
 tos:accept            tos:status
 # Overlay / window
 overlay:toggle  overlay:hide  overlay:show  overlay:set-opacity
-overlay:set-position  overlay:set-size  overlay:get-bounds  overlay:set-passthrough
+overlay:set-position  overlay:set-size  overlay:get-bounds
 overlay:set-stealth-focus  overlay:stealth-focus-status
 overlay:request-focus  overlay:release-focus
 # Screenshot / monitors
@@ -535,7 +537,6 @@ Ctrl+Shift+A  →  Focus text input
 Ctrl+Shift+C  →  Copy last AI response
 Ctrl+Shift+V  →  Paste last AI response to active app
 Ctrl+Shift+N  →  New conversation
-Ctrl+Shift+P  →  Toggle click-through (passthrough) overlay
 Ctrl+Shift+]  →  Next model        Ctrl+Shift+[  →  Previous model
 Ctrl+Shift+I  →  Toggle stealth typing / capture mode (Model B)
 Ctrl+Shift+Q  →  Panic — exit capture, uninstall hook, hide overlay
@@ -808,9 +809,8 @@ The shipping beta is **gated and instrumented** (Act 1 of the two-act plan: BYOK
 - [x] UI primitives: `GhostButton`, `GhostInput`, `GhostCard`, `GhostTooltip`, `GhostBadge`, `GhostDivider`
 - [x] All animations respect `prefers-reduced-motion`; `MotionConfig` wraps App root
 
-**Sprint 14:** Click-Through Overlay + Invisible Snipping
-- [x] `useClickThrough` hook → `setIgnoreMouseEvents(true, { forward: true })` passthrough toggle
-- [x] Click-through toggle button in HeaderBar (MousePointer/MousePointerOff icons)
+**Sprint 14:** ~~Click-Through Overlay~~ + Invisible Snipping
+- [x] ~~`useClickThrough` hook + passthrough toggle button~~ — **removed entirely** (June 2026). The user-facing click-through feature (hook, HeaderBar toggle, `Ctrl+Shift+P`, `overlay:set-passthrough` IPC, `setPassthrough`, `clickThroughEnabled` setting) was deleted. NOTE: the *internal* `setIgnoreMouseEvents(true)` on the hidden-stealth overlay is NOT this feature — it's a correctness mechanism (a 0-opacity overlay must not eat clicks) and remains.
 - [x] `InlineRegionSelector` — canvas-based in-overlay snipping (no external window)
 - [x] `screenshot:capture-for-snip` + `screenshot:crop-region` IPC via `NativeImage.crop()`
 - [x] Old `screenshot:capture-region` IPC preserved for backward compatibility

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  X, Eye, EyeOff, Check, CircleAlert, LoaderCircle, Trash2, Server,
+  X, Eye, EyeOff, Check, CircleAlert, LoaderCircle, Trash2,
   Key, Keyboard, Monitor, Shield, Mic, Brain, Smartphone, Cpu,
-  UserCircle, LogOut,
+  UserCircle, LogOut, GraduationCap, ShieldCheck,
 } from 'lucide-react';
 import { providerManager } from '../services/ai-providers/provider-manager';
 import SettingsHotkeys from './SettingsHotkeys';
@@ -26,6 +26,8 @@ interface SettingsProps {
   onToggleStealthFocus?: () => void;
   accountEmail?: string | null;
   onLogout?: () => Promise<void>;
+  /** Re-launch the interactive walkthrough (InvisiQ Academy) in replay mode. */
+  onReplayTutorial?: () => void;
 }
 
 interface KeyState {
@@ -36,7 +38,7 @@ interface KeyState {
 }
 
 // Cloud-only (Beta Launch Plan §6.3) — Ollama removed permanently.
-const PROVIDERS: { id: ProviderID; name: string; placeholder: string; isServerUrl?: boolean }[] = [
+const PROVIDERS: { id: ProviderID; name: string; placeholder: string }[] = [
   { id: 'openai', name: 'OpenAI', placeholder: 'sk-proj-...' },
   { id: 'anthropic', name: 'Anthropic', placeholder: 'sk-ant-...' },
   { id: 'gemini', name: 'Google Gemini', placeholder: 'AIza...' },
@@ -44,7 +46,7 @@ const PROVIDERS: { id: ProviderID; name: string; placeholder: string; isServerUr
 
 type TabId = 'account' | 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio' | 'memory' | 'companion' | 'resilience';
 
-export default function Settings({ isOpen, onClose, settings, onUpdateSetting, compact = false, isStealthFocus = false, onToggleStealthFocus, accountEmail, onLogout }: SettingsProps): JSX.Element | null {
+export default function Settings({ isOpen, onClose, settings, onUpdateSetting, compact = false, isStealthFocus = false, onToggleStealthFocus, accountEmail, onLogout, onReplayTutorial }: SettingsProps): JSX.Element | null {
   const [activeTab, setActiveTab] = useState<TabId>('api-keys');
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -63,24 +65,17 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
     openai: { value: '', masked: true, status: 'idle' },
     anthropic: { value: '', masked: true, status: 'idle' },
     gemini: { value: '', masked: true, status: 'idle' },
-    ollama: { value: 'http://localhost:11434', masked: false, status: 'idle' },
   });
 
   // Load existing keys on open
   useEffect(() => {
     if (!isOpen) return;
-    PROVIDERS.forEach(async ({ id, isServerUrl }) => {
+    PROVIDERS.forEach(async ({ id }) => {
       const { key } = await window.ghostAPI.store.getApiKey(id);
       if (key) {
         setKeys((prev) => ({
           ...prev,
-          [id]: { ...prev[id], value: key, masked: isServerUrl ? false : prev[id].masked, status: 'idle' },
-        }));
-      } else if (isServerUrl) {
-        // Ollama defaults to localhost — no stored value means use default
-        setKeys((prev) => ({
-          ...prev,
-          [id]: { ...prev[id], value: 'http://localhost:11434', masked: false, status: 'idle' },
+          [id]: { ...prev[id], value: key, status: 'idle' },
         }));
       }
     });
@@ -137,6 +132,10 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
       if (result.valid) {
         // Save key/URL on successful validation
         await window.ghostAPI.store.setApiKey(provider, key);
+        // Auto-switch the active model to this provider's default so the user is
+        // immediately on a model they have a working key for.
+        const defaultModel = p.models?.[0]?.id;
+        if (defaultModel) await onUpdateSetting('activeModel', defaultModel);
         const validMsg = result.models && result.models.length > 0
           ? `${result.models.length} model${result.models.length === 1 ? '' : 's'} found`
           : undefined;
@@ -247,6 +246,24 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                 </p>
               </div>
 
+              {onReplayTutorial && (
+                <div className="space-y-2 border-t border-border-subtle pt-4">
+                  <label className="text-text-primary text-sm font-medium">Learn InvisiQ</label>
+                  <p className="text-text-secondary text-[10px]">
+                    Replay the interactive walkthrough — every feature, step by step.
+                  </p>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onReplayTutorial();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20 transition-colors"
+                  >
+                    <GraduationCap size={15} /> Replay tutorial
+                  </button>
+                </div>
+              )}
+
               <button
                 onClick={handleLogout}
                 disabled={loggingOut || !onLogout}
@@ -266,30 +283,33 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
           )}
           {activeTab === 'api-keys' && (
             <div className="space-y-5">
-              {PROVIDERS.map(({ id, name, placeholder, isServerUrl }) => {
+              <div className="flex items-start gap-2 rounded-md border border-accent-primary/25 bg-accent-primary/[0.06] px-3 py-2.5">
+                <ShieldCheck size={15} className="mt-0.5 shrink-0 text-accent-primary" />
+                <p className="text-[11px] leading-relaxed text-text-secondary">
+                  <span className="font-medium text-text-primary">Your API keys never leave this device.</span>{' '}
+                  They’re encrypted and stored locally — never sent to our servers, logged, or shared.
+                  Requests go straight from your machine to the AI provider.
+                </p>
+              </div>
+              {PROVIDERS.map(({ id, name, placeholder }) => {
                 const keyState = keys[id];
                 return (
                   <div key={id} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-text-primary text-sm font-medium flex items-center gap-1.5">
-                        {isServerUrl && <Server size={12} className="text-text-secondary" />}
                         {name}
                       </label>
                       {keyState.status === 'valid' && (
                         <span className="flex items-center gap-1 text-status-success text-xs">
-                          <Check size={12} /> {isServerUrl ? 'Connected' : 'Valid'}
+                          <Check size={12} /> Valid
                         </span>
                       )}
                       {keyState.status === 'invalid' && (
                         <span className="flex items-center gap-1 text-status-error text-xs">
-                          <CircleAlert size={12} /> {isServerUrl ? 'Unreachable' : 'Invalid'}
+                          <CircleAlert size={12} /> Invalid
                         </span>
                       )}
                     </div>
-
-                    {isServerUrl && (
-                      <p className="text-text-secondary text-[10px]">Server URL (no API key needed)</p>
-                    )}
 
                     <div className="relative">
                       <input
@@ -300,14 +320,12 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                         placeholder={placeholder}
                         className="w-full bg-bg-input border border-border-subtle rounded-md px-3 py-2 pr-10 text-sm text-text-primary placeholder:text-text-placeholder focus:outline-none focus:border-border-focus transition-colors"
                       />
-                      {!isServerUrl && (
-                        <button
-                          onClick={() => toggleMask(id)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
-                        >
-                          {keyState.masked ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                      )}
+                      <button
+                        onClick={() => toggleMask(id)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                      >
+                        {keyState.masked ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
                     </div>
 
                     {keyState.error && (
@@ -327,10 +345,10 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                             <LoaderCircle size={12} className="animate-spin" /> Testing...
                           </>
                         ) : (
-                          isServerUrl ? 'Test Connection' : 'Test Key'
+                          'Test Key'
                         )}
                       </button>
-                      {keyState.value.trim() && !isServerUrl && (
+                      {keyState.value.trim() && (
                         <GhostTooltip content="Remove API key" placement="top">
                           <button
                             onClick={() => handleRemoveKey(id)}

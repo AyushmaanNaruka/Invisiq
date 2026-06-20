@@ -37,7 +37,6 @@ export const DEFAULT_HOTKEYS: Record<HotkeyAction, string> = {
   'new-conversation': 'CommandOrControl+Shift+N',
   'hide-overlay': 'Escape',
   'paste-response': 'CommandOrControl+Shift+V',
-  'toggle-passthrough': 'CommandOrControl+Shift+P',
   'next-model': 'CommandOrControl+Shift+]',
   'prev-model': 'CommandOrControl+Shift+[',
   'toggle-invisible-input': 'CommandOrControl+Shift+I',
@@ -106,12 +105,31 @@ export const DEFAULT_WINDOW_STATE: WindowState = {
 //  DEFAULT SETTINGS
 // ══════════════════════════════════════
 
+// ── Process identity ────────────────────────────────────────────────────────
+// THIS is the .exe IMAGE NAME that proctoring tools enumerate (Mettl/Examity/SEB
+// scan szExeFile). It is the brand name 'InvisiQ' — a deliberate brand-trust
+// decision: the realistic market (Bucket A — Zoom/Teams/Meet/Proctorio/Honorlock)
+// CANNOT enumerate processes, and visual invisibility (WDA_EXCLUDEFROMCAPTURE) is
+// fully name-independent, so the brand name costs nothing there. The only trade-off
+// is against Bucket-B desktop lockdown browsers that match a process-name blocklist
+// — a recognizable name is easier to add to such a list than a neutral one (a
+// future-popularity risk, not a present one). See docs/InvisiQ-Stealth-
+// Commercialization.md. NOTE: this is NOT the old 'RuntimeBroker' Microsoft
+// impersonation (EDR/signing/legal toxic) — 'InvisiQ' is honest, so it does not
+// reintroduce that. Keep in sync with electron-builder.yml `win.executableName`
+// (YAML cannot import this constant).
+export const DEFAULT_PROCESS_NAME = 'InvisiQ';
+
+// Honest Windows AppUserModelId — matches our own NSIS/updater appId
+// (electron-builder.yml `appId`). Replaces 'Microsoft.Windows.RuntimeBroker'.
+// Used by Windows for taskbar grouping, pinning, and notification identity.
+export const APP_USER_MODEL_ID = 'com.ghostai.app';
+
 export const DEFAULT_SETTINGS: AppSettings = {
   providers: {
     openai: { hasKey: false, isValid: false },
     anthropic: { hasKey: false, isValid: false },
     gemini: { hasKey: false, isValid: false },
-    ollama: { hasKey: false, isValid: false },
   },
 
   activeProvider: 'openai',
@@ -140,10 +158,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
     clearScreenshotsAfterSend: true,
     persistChatHistory: true,
     logApiRequests: false,
-    processName: 'RuntimeBroker',
+    processName: DEFAULT_PROCESS_NAME,
     showTrayIcon: false,
     // Phase 4
-    clickThroughEnabled: false,
     codeDetectionEnabled: true,
     codeDetectionIntervalMs: 30000,
   },
@@ -195,6 +212,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
     defaultOn: true,
     proctorDetection: true,
     relaxWhenSafe: false,
+    // Opt-in (default OFF). When a sweep-capable lockdown proctor is detected
+    // (Mettl/Respondus/SEB), drop WDA_EXCLUDEFROMCAPTURE so a
+    // GetWindowDisplayAffinity sweep finds nothing. Trade-off: with WDA off the
+    // overlay is exposed to screenshots/recording (the MORE common proctor
+    // vector), so this stays off unless you know your proctor sweeps. Consumed
+    // by capture-controller applyAdaptiveContentProtection().
+    evadeSweepProctor: false,
   },
 
   isFirstLaunch: true,

@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { RotateCcw, Keyboard } from 'lucide-react';
-import { DEFAULT_HOTKEYS } from '@shared/constants';
 import type { HotkeyAction } from '@shared/types';
 
 interface SettingsHotkeysProps {
@@ -18,7 +17,6 @@ const HOTKEY_LABELS: Record<HotkeyAction, string> = {
   'new-conversation': 'New Conversation',
   'hide-overlay': 'Hide Overlay',
   'paste-response': 'Paste Last Response',
-  'toggle-passthrough': 'Toggle Click-Through',
   'next-model': 'Next Model',
   'prev-model': 'Previous Model',
   'toggle-invisible-input': 'Stealth Typing (Capture)',

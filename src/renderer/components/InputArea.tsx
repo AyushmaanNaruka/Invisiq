@@ -98,6 +98,48 @@ function applyCaptureKey(
   }
 }
 
+// ── Caret pixel position (for the stealth custom caret) ──────────────────────
+// In stealth the overlay never holds OS focus, so the browser hides the native
+// blinking caret. We draw our own — which means we must locate the caret in
+// pixels. Standard "mirror div" technique: clone the textarea's text + styles into
+// an off-screen div, drop a marker span at the caret index, and read its offset.
+const CARET_MIRROR_PROPS = [
+  'boxSizing', 'width', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+  'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
+  'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing', 'lineHeight',
+  'textTransform', 'textAlign', 'wordSpacing', 'tabSize',
+] as const;
+
+function getCaretCoordinates(
+  ta: HTMLTextAreaElement,
+  position: number
+): { top: number; left: number; height: number } {
+  const cs = window.getComputedStyle(ta);
+  const div = document.createElement('div');
+  const s = div.style;
+  s.position = 'absolute';
+  s.visibility = 'hidden';
+  s.whiteSpace = 'pre-wrap';
+  s.wordWrap = 'break-word';
+  s.overflowWrap = 'break-word';
+  s.top = '0';
+  s.left = '-9999px';
+  for (const p of CARET_MIRROR_PROPS) {
+    s.setProperty(p.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()), cs.getPropertyValue(p.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())));
+  }
+  s.width = cs.width;
+  div.textContent = ta.value.slice(0, position);
+  const span = document.createElement('span');
+  span.textContent = ta.value.slice(position) || '.';
+  div.appendChild(span);
+  document.body.appendChild(div);
+  const top = span.offsetTop + parseInt(cs.borderTopWidth || '0', 10);
+  const left = span.offsetLeft + parseInt(cs.borderLeftWidth || '0', 10);
+  const height = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2 || 16;
+  document.body.removeChild(div);
+  return { top, left, height };
+}
+
 interface InputAreaProps {
   isStreaming: boolean;
   pendingScreenshots: ImageAttachment[];
@@ -286,6 +328,24 @@ export default function InputArea({
     if (capture.active) textareaRef.current?.focus();
   }, [capture.active, textareaRef]);
 
+  // Stealth custom caret: the native caret is hidden when the overlay lacks OS
+  // focus, so we measure the pixel position of model.caret and draw our own bar.
+  // Re-runs on every model change (typing, arrow-key moves) so the caret tracks.
+  const [caretPx, setCaretPx] = useState<{ top: number; left: number; height: number } | null>(null);
+  useLayoutEffect(() => {
+    const ta = textareaRef.current;
+    if (!capture.active || !ta) {
+      setCaretPx(null);
+      return;
+    }
+    try {
+      const c = getCaretCoordinates(ta, model.caret);
+      setCaretPx({ top: c.top - ta.scrollTop, left: c.left - ta.scrollLeft, height: c.height });
+    } catch {
+      setCaretPx(null);
+    }
+  }, [model, capture.active, textareaRef]);
+
   // Warn once when capture degrades to the leaky uiohook tier.
   const warnedTierRef = useRef<string>('');
   useEffect(() => {
@@ -325,6 +385,29 @@ export default function InputArea({
           <ShieldCheck size={12} />
           <span>Monitored app detected — you're invisible</span>
         </div>
+      )}
+
+      {/* Armed banner — when stealth typing is ON, every keystroke is routed here
+          (and withheld from the app you're looking at). This is easy to forget if
+          your eyes are elsewhere, so make it loud + give the one-key way out. */}
+      {capture.active && (
+        <button
+          type="button"
+          onClick={() => void capture.exit()}
+          className={`mb-2 flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
+            capture.degraded
+              ? 'bg-status-error/15 text-status-error hover:bg-status-error/25'
+              : 'bg-accent-primary/15 text-accent-primary hover:bg-accent-primary/25'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            {capture.degraded ? <AlertTriangle size={12} /> : <Keyboard size={12} />}
+            <span className="font-medium">
+              Stealth typing is ON — keystrokes go to InvisiQ, not the app behind it
+            </span>
+          </span>
+          <span className="shrink-0 opacity-80">Esc / click to release</span>
+        </button>
       )}
 
       {/* Screenshot previews */}
@@ -450,7 +533,8 @@ export default function InputArea({
           </>
         )}
 
-        {/* Text input */}
+        {/* Text input (wrapped so the stealth custom caret can be positioned over it) */}
+        <div className="relative flex-1">
         <textarea
           ref={textareaRef}
           value={text}
@@ -467,6 +551,13 @@ export default function InputArea({
             setModel((prev) => (prev.anchor === s && prev.caret === en ? prev : { value: prev.value, anchor: s, caret: en }));
           }}
           onKeyDown={handleKeyDown}
+          // Clicking the input re-arms stealth typing. We use onMouseDown (not just
+          // onFocus) because the overlay is WS_EX_NOACTIVATE in stealth — a click
+          // doesn't reliably move OS/DOM focus, but the mouse event always reaches
+          // the renderer. This is the "click InvisiQ's input → capture ON" half of
+          // the click-to-toggle (the "click another app → OFF" half is the helper's
+          // mouse hook → capture-controller exitCapture).
+          onMouseDown={() => { if (!capture.active) void capture.enter(); }}
           onFocus={() => { if (!capture.active) void capture.enter(); }}
           placeholder={
             capture.active
@@ -478,7 +569,7 @@ export default function InputArea({
               : 'Ask anything...'
           }
           rows={1}
-          className={`flex-1 bg-bg-input border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-placeholder resize-none focus:outline-none transition-colors ${
+          className={`w-full bg-bg-input border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-placeholder resize-none focus:outline-none transition-colors ${
             capture.active
               ? capture.degraded
                 ? 'border-status-error ring-1 ring-status-error/40'
@@ -487,6 +578,23 @@ export default function InputArea({
           }`}
           style={{ minHeight: '36px', maxHeight: '100px' }}
         />
+        {/* Custom blinking caret — only in stealth, where the OS caret is hidden. */}
+        {capture.active && caretPx && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute"
+            style={{
+              top: caretPx.top,
+              left: caretPx.left,
+              width: 2,
+              height: caretPx.height,
+              borderRadius: 1,
+              background: capture.degraded ? 'rgb(var(--status-error))' : 'rgb(var(--accent-primary))',
+              animation: 'caretBlink 1s steps(1) infinite',
+            }}
+          />
+        )}
+        </div>
 
         {/* Send / Stop button */}
         {isStreaming ? (
