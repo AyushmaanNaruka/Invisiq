@@ -228,6 +228,7 @@ Open with the gear icon or `Ctrl+,`.
 
 | Tab | What you can do |
 |:----|:----------------|
+| **Account** | See your signed-in email and sign out |
 | **API Keys** | Add and validate provider keys |
 | **Hotkeys** | Customize every shortcut |
 | **Display** | Theme, opacity, font size, window size and position |
@@ -235,7 +236,7 @@ Open with the gear icon or `Ctrl+,`.
 | **Audio** | Speech engine, language, meeting transcript |
 | **Memory** | Turn memory on/off, auto-capture, clear |
 | **Companion** | Pair a phone via QR code |
-| **Account** | See your signed-in email and sign out |
+| **Resilience** | Manage the background helper that powers stealth typing — start/stop it and check its status |
 
 ---
 

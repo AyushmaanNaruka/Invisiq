@@ -1,4 +1,4 @@
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow } from 'electron';
 import { captureRegion } from './screenshot';
 import { getMonitorAtCursor } from './monitors';
 import type { ScreenshotResult } from '@shared/types';

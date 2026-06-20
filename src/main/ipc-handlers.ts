@@ -1,5 +1,4 @@
 import { ipcMain, app, clipboard, shell, nativeImage, dialog } from 'electron';
-import { promises as fs } from 'fs';
 import {
   toggleOverlay,
   hideOverlay,
@@ -639,32 +638,45 @@ export function registerIPCHandlers(): void {
   });
 
   ipcMain.handle('screenshot:crop-region', async (_event, args: unknown) => {
-    if (!args || typeof args !== 'object') throw new Error('Invalid args');
-    const { screenshotBase64, x, y, width, height, devicePixelRatio } = args as RegionCropRequest;
+    try {
+      if (!args || typeof args !== 'object') throw new Error('Invalid args');
+      const { screenshotBase64, x, y, width, height, devicePixelRatio } = args as RegionCropRequest;
+      if (typeof screenshotBase64 !== 'string' || screenshotBase64.length === 0) {
+        throw new Error('screenshotBase64 must be a non-empty string');
+      }
 
-    // Clamp to positive values
-    const scale = devicePixelRatio || 1;
-    const sx = Math.max(0, Math.round(x * scale));
-    const sy = Math.max(0, Math.round(y * scale));
-    const sw = Math.max(1, Math.round(width * scale));
-    const sh = Math.max(1, Math.round(height * scale));
+      // Clamp to positive values
+      const scale = devicePixelRatio || 1;
+      const sx = Math.max(0, Math.round(x * scale));
+      const sy = Math.max(0, Math.round(y * scale));
+      const sw = Math.max(1, Math.round(width * scale));
+      const sh = Math.max(1, Math.round(height * scale));
 
-    const img = nativeImage.createFromBuffer(Buffer.from(screenshotBase64, 'base64'));
-    const { width: imgW, height: imgH } = img.getSize();
+      const img = nativeImage.createFromBuffer(Buffer.from(screenshotBase64, 'base64'));
+      const { width: imgW, height: imgH } = img.getSize();
+      if (imgW === 0 || imgH === 0) {
+        throw new Error('Decoded screenshot is empty or not a valid image');
+      }
 
-    // Clamp crop to image bounds
-    const clampedX = Math.min(sx, imgW - 1);
-    const clampedY = Math.min(sy, imgH - 1);
-    const clampedW = Math.min(sw, imgW - clampedX);
-    const clampedH = Math.min(sh, imgH - clampedY);
+      // Clamp crop to image bounds
+      const clampedX = Math.min(sx, imgW - 1);
+      const clampedY = Math.min(sy, imgH - 1);
+      const clampedW = Math.min(sw, imgW - clampedX);
+      const clampedH = Math.min(sh, imgH - clampedY);
 
-    const cropped = img.crop({ x: clampedX, y: clampedY, width: clampedW, height: clampedH });
-    return {
-      base64: cropped.toPNG().toString('base64'),
-      width: clampedW,
-      height: clampedH,
-      timestamp: Date.now(),
-    };
+      const cropped = img.crop({ x: clampedX, y: clampedY, width: clampedW, height: clampedH });
+      return {
+        base64: cropped.toPNG().toString('base64'),
+        width: clampedW,
+        height: clampedH,
+        timestamp: Date.now(),
+      };
+    } catch (err) {
+      // Log on the main side, then re-throw so the renderer's catch surfaces it
+      // (the screenshot domain returns data shapes, not success envelopes).
+      console.error('[ipc] screenshot:crop-region failed:', err);
+      throw err instanceof Error ? err : new Error('Crop failed');
+    }
   });
 
   // ══════════════════════════════════════
@@ -861,7 +873,4 @@ export function registerIPCHandlers(): void {
   ipcMain.handle('resilience:status', () => {
     return getResilienceStatus();
   });
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  void fs; // imported for export-service use
 }

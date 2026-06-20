@@ -45,8 +45,8 @@ export class GeminiProvider implements AIProvider {
     this.abortController = new AbortController();
     const startTime = Date.now();
     let fullContent = '';
-    let usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCostUSD: 0 };
-    let finishReason: 'stop' | 'max_tokens' | 'error' = 'stop';
+    const usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCostUSD: 0 };
+    const finishReason: 'stop' | 'max_tokens' | 'error' = 'stop';
 
     try {
       const modelConfig: { model: string; systemInstruction?: string } = {

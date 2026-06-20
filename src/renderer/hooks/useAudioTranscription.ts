@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { SpeechService } from '../services/speech';
 import type { SpeechEngine } from '@shared/types';
+import { logger } from '@shared/logger';
 
 interface UseAudioTranscriptionReturn {
   isListening: boolean;
@@ -33,7 +34,7 @@ export function useAudioTranscription(): UseAudioTranscriptionReturn {
   // Check actual availability on mount
   useEffect(() => {
     const webSpeechExists = SpeechService.isWebSpeechAvailable();
-    console.log('[AudioHook] Web Speech API available:', webSpeechExists);
+    logger.log('[AudioHook] Web Speech API available:', webSpeechExists);
 
     if (webSpeechExists) {
       // Web Speech API exists (may still fail at runtime with 'network' error,
@@ -43,7 +44,7 @@ export function useAudioTranscription(): UseAudioTranscriptionReturn {
     }
     // Whisper fallback: available if user has an OpenAI key
     window.ghostAPI.store.getApiKey('openai').then(({ key }) => {
-      console.log('[AudioHook] Whisper available (OpenAI key):', !!key);
+      logger.log('[AudioHook] Whisper available (OpenAI key):', !!key);
       setIsAvailable(!!key);
     }).catch(() => setIsAvailable(false));
   }, []);
@@ -59,28 +60,23 @@ export function useAudioTranscription(): UseAudioTranscriptionReturn {
         // If browser engine requested but unavailable, fall back to whisper
         let effectiveEngine = engine;
         if (engine === 'browser' && !SpeechService.isWebSpeechAvailable()) {
-          console.log('[AudioHook] Browser speech unavailable, using Whisper');
+          logger.log('[AudioHook] Browser speech unavailable, using Whisper');
           effectiveEngine = 'whisper';
         }
-        console.log('[AudioHook] Starting with engine:', effectiveEngine);
+        logger.log('[AudioHook] Starting with engine:', effectiveEngine);
 
         await service.start(
           { engine: effectiveEngine, language, continuous: true },
           (text: string, isFinal: boolean) => {
-            console.log('[AudioHook] onResult:', isFinal ? 'FINAL' : 'interim', `"${text.substring(0, 60)}"`);
             if (isFinal) {
-              setTranscript((prev) => {
-                const updated = prev ? `${prev} ${text}` : text;
-                console.log('[AudioHook] transcript updated, length:', updated.length);
-                return updated;
-              });
+              setTranscript((prev) => (prev ? `${prev} ${text}` : text));
               setInterimTranscript('');
             } else {
               setInterimTranscript(text);
             }
           },
           (errMsg: string) => {
-            console.warn('[AudioHook] Speech error:', errMsg);
+            logger.warn('[AudioHook] Speech error:', errMsg);
             setError(errMsg);
             setIsListening(false);
           }

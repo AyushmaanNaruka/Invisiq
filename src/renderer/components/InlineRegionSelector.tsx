@@ -62,7 +62,7 @@ export default function InlineRegionSelector({
   }, []);
 
   const handleMouseUp = useCallback(
-    (e: React.MouseEvent) => {
+    (_e: React.MouseEvent) => {
       if (!isDragging.current || !selection) return;
       isDragging.current = false;
 

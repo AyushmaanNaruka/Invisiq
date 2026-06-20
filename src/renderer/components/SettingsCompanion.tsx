@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { Smartphone, Wifi, WifiOff, QrCode, X, RefreshCw } from 'lucide-react';
+import { Smartphone, Wifi, WifiOff, QrCode, RefreshCw } from 'lucide-react';
 import { GhostTooltip } from './ui/GhostTooltip';
 import type { CompanionDevice } from '@shared/types';
 

@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ANTHROPIC_MODELS } from '@shared/constants';
-import type { AIProvider, ChatRequest, ChatResponse, StreamChunk, ModelConfig, ValidationResult, ChatMessage } from './types';
+import type { AIProvider, ChatRequest, ChatResponse, StreamChunk, ModelConfig, ValidationResult } from './types';
 
 export class AnthropicProvider implements AIProvider {
   readonly name = 'Anthropic';
@@ -44,24 +44,11 @@ export class AnthropicProvider implements AIProvider {
     this.abortController = new AbortController();
     const startTime = Date.now();
     let fullContent = '';
-    let usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCostUSD: 0 };
+    const usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCostUSD: 0 };
     let finishReason: 'stop' | 'max_tokens' | 'error' = 'stop';
 
     try {
       const messages = this.buildMessages(request);
-
-      console.log('[Anthropic] API call:', {
-        model: request.model,
-        max_tokens: request.maxTokens || 4096,
-        hasSystem: !!request.systemPrompt,
-        messageCount: messages.length,
-        messages: messages.map((m) => ({
-          role: m.role,
-          contentType: typeof m.content,
-          contentLength: typeof m.content === 'string' ? m.content.length : (m.content as unknown[]).length,
-          contentPreview: typeof m.content === 'string' ? m.content.slice(0, 80) : `[${(m.content as unknown[]).length} blocks]`,
-        })),
-      });
 
       const stream = this.client.messages.stream(
         {

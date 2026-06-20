@@ -50,19 +50,6 @@ export class OpenAIProvider implements AIProvider {
     try {
       const messages = this.buildMessages(request);
 
-      console.log('[OpenAI] API call:', {
-        model: request.model,
-        max_tokens: request.maxTokens || 4096,
-        temperature: request.temperature ?? 0.7,
-        messageCount: messages.length,
-        messages: messages.map((m) => ({
-          role: m.role,
-          contentType: typeof m.content,
-          contentLength: typeof m.content === 'string' ? m.content.length : Array.isArray(m.content) ? (m.content as unknown[]).length : 0,
-          contentPreview: typeof m.content === 'string' ? m.content.slice(0, 80) : `[${Array.isArray(m.content) ? (m.content as unknown[]).length + ' parts' : typeof m.content}]`,
-        })),
-      });
-
       const stream = await this.client.chat.completions.create(
         {
           model: request.model,

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { X, Search, Trash2, Download, MessageSquare, LoaderCircle } from 'lucide-react';
+import { X, Search, Trash2, Download, MessageSquare } from 'lucide-react';
 import { GhostTooltip } from './ui/GhostTooltip';
 import type { ConversationMeta } from '@shared/types';
 

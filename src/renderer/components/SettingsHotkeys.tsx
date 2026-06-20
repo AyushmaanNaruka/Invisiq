@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { RotateCcw, Keyboard } from 'lucide-react';
-import { DEFAULT_HOTKEYS } from '@shared/constants';
 import type { HotkeyAction } from '@shared/types';
 
 interface SettingsHotkeysProps {

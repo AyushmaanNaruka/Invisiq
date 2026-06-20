@@ -68,7 +68,9 @@ function createHTTPHandler() {
       req.on('data', (chunk) => { body += chunk; });
       req.on('end', () => {
         try {
-          const { token, deviceName, platform } = JSON.parse(body) as {
+          // deviceName/platform are part of the pairing payload but not yet
+          // persisted — only the one-time token is validated here.
+          const { token } = JSON.parse(body) as {
             token: string;
             deviceName: string;
             platform: 'ios' | 'android' | 'web';
