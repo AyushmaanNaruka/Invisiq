@@ -97,6 +97,7 @@ function AppInner(): JSX.Element {
   } = useEntitlement(authStatus.signedIn);
   const { gate: updateGate } = useUpdateGate();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [showTour, setShowTour] = useState(false); // replay of the academy from Settings
 
   // Determine whether to show onboarding after settings load
   useEffect(() => {
@@ -121,7 +122,6 @@ function AppInner(): JSX.Element {
     appendToMessage,
     startNewConversation,
     loadConversation,
-    clearConversation,
     getContextMessages,
   } = useConversation({
     persistChatHistory: settings.privacy.persistChatHistory,
@@ -206,7 +206,7 @@ function AppInner(): JSX.Element {
   } = useLiveTranscription();
 
   // Phase 4: meeting assistant — question detection
-  const { detectedQuestions, dismissQuestion, clearAll: clearQuestions } = useMeetingAssistant({
+  const { detectedQuestions, dismissQuestion } = useMeetingAssistant({
     liveTranscript,
     silenceThresholdMs: settings.meeting?.silenceThresholdMs ?? 3000,
     autoSuggestEnabled: settings.meeting?.autoSuggestEnabled ?? false,
@@ -433,7 +433,7 @@ function AppInner(): JSX.Element {
       setStreamingMessageId(assistantMsg.id);
 
       // InvisiQ has a single universal, intent-adaptive system prompt.
-      await sendMessage(aiText, [...getContextMessages(), { id: '', role: 'user', content: aiText, images, timestamp: '' }], {
+      await sendMessage([...getContextMessages(), { id: '', role: 'user', content: aiText, images, timestamp: '' }], {
         model: settings.activeModel,
         systemPrompt: UNIVERSAL_MODE.systemPrompt,
         images,
@@ -591,6 +591,12 @@ function AppInner(): JSX.Element {
     return <OnboardingFlow onComplete={() => setShowOnboarding(false)} />;
   }
 
+  // Replay of the interactive walkthrough (launched from Settings → Account).
+  // Replay mode does not touch onboarding/setup state.
+  if (showTour) {
+    return <OnboardingFlow mode="replay" onComplete={() => setShowTour(false)} />;
+  }
+
   return (
     <ToastProvider>
     <ClipboardListener onAnalyze={handleSend} />
@@ -696,6 +702,7 @@ function AppInner(): JSX.Element {
         onToggleStealthFocus={handleToggleStealthFocus}
         accountEmail={authStatus.email}
         onLogout={authLogoutFn}
+        onReplayTutorial={() => setShowTour(true)}
       />
 
       <ConversationHistory

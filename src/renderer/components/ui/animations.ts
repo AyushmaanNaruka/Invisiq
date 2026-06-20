@@ -84,6 +84,18 @@ export const collapseHeight: Variants = {
   exit: { opacity: 0, height: 0, overflow: 'hidden', transition: { duration: 0.2, ease: 'easeIn' } },
 };
 
+// ═══ Academy chapter step (directional slide; pass `custom={dir}`) ═══
+
+export const chapterStep: Variants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 32 : -32 }),
+  center: { opacity: 1, x: 0, transition: expoOut },
+  exit: (dir: number) => ({
+    opacity: 0,
+    x: dir > 0 ? -32 : 32,
+    transition: { duration: 0.18, ease: [0.4, 0, 1, 1] as const },
+  }),
+};
+
 // ═══ Staggered list container ═══
 
 export const staggerContainer: Variants = {

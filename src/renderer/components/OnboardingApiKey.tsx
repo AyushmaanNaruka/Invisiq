@@ -34,9 +34,6 @@ export default function OnboardingApiKey({ onConnectedChange }: OnboardingApiKey
     openai: { value: '', masked: true, status: 'idle' },
     anthropic: { value: '', masked: true, status: 'idle' },
     gemini: { value: '', masked: true, status: 'idle' },
-    // Onboarding only collects cloud-provider keys (see PROVIDERS); the vestigial
-    // 'ollama' id is present only to satisfy Record<ProviderID, …>.
-    ollama: { value: '', masked: true, status: 'idle' },
   });
 
   const handleKeyChange = useCallback((provider: ProviderID, value: string) => {
