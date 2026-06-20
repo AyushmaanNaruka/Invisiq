@@ -490,6 +490,13 @@ export default function InputArea({
             setModel((prev) => (prev.anchor === s && prev.caret === en ? prev : { value: prev.value, anchor: s, caret: en }));
           }}
           onKeyDown={handleKeyDown}
+          // Clicking the input re-arms stealth typing. We use onMouseDown (not just
+          // onFocus) because the overlay is WS_EX_NOACTIVATE in stealth — a click
+          // doesn't reliably move OS/DOM focus, but the mouse event always reaches
+          // the renderer. This is the "click InvisiQ's input → capture ON" half of
+          // the click-to-toggle (the "click another app → OFF" half is the helper's
+          // mouse hook → capture-controller exitCapture).
+          onMouseDown={() => { if (!capture.active) void capture.enter(); }}
           onFocus={() => { if (!capture.active) void capture.enter(); }}
           placeholder={
             capture.active

@@ -163,6 +163,14 @@ function handleHelperResponse(resp: ResilienceResponse): void {
     case 'capture_failed':
       onCaptureFailure(((resp.payload as { reason?: CaptureFailReason })?.reason) ?? 'pipe-dropped');
       break;
+
+    case 'click_outside':
+      // The user clicked a window that isn't InvisiQ while capture was armed —
+      // a strong signal they want to type into that app, not InvisiQ. Exit capture
+      // cleanly (NOT the degradation ladder) so their keystrokes go where they
+      // clicked. They re-arm (click the overlay / Ctrl+Shift+I) to type here again.
+      if (captureActive) void exitCapture();
+      break;
   }
 }
 

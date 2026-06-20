@@ -61,9 +61,15 @@ static std::atomic<bool>      g_captureActive{false};
 static std::atomic<long long> g_seq{0};
 static std::atomic<long long> g_epoch{0};
 
-static HHOOK  g_hook = nullptr;        // touched only on the hook thread
+static HHOOK  g_hook = nullptr;        // keyboard hook — touched only on the hook thread
+static HHOOK  g_mouseHook = nullptr;   // mouse hook (click-away release) — hook thread only
 static HWND   g_msgWindow = nullptr;   // message-only window (hook thread)
 static HANDLE g_pipe = INVALID_HANDLE_VALUE;
+static DWORD  g_parentPid = 0;         // Electron main PID — owns the InvisiQ overlay HWND
+// One "click_outside" per capture session is enough to trigger a clean exit; this
+// guards against spamming the pipe with the few clicks that may land before the
+// controller's set_capture(false) round-trips back and uninstalls the hook.
+static std::atomic<bool> g_clickReported{false};
 
 // Keyboard state we track ourselves — GetKeyboardState() is unreliable on the
 // LL hook thread (it fires before the foreground thread's state updates).
@@ -352,6 +358,35 @@ static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lP
     return passthrough();
 }
 
+// ── The low-level mouse hook (runs on the hook thread) ───────────────────────
+//
+//  NON-suppressing: always CallNextHookEx so clicks work normally. Its only job is
+//  to detect when the user clicks a window that ISN'T InvisiQ while capture is
+//  armed — a strong signal they intend to type into that other app. We resolve the
+//  window under the cursor to its owning process and compare to the parent
+//  (Electron main, which owns the overlay HWND); a foreign PID → emit
+//  "click_outside" so the controller exits capture cleanly. PID comparison is
+//  DPI-independent (no screen-coordinate math). Callback stays non-blocking:
+//  WindowFromPoint/GetWindowThreadProcessId are quick user32 calls, no enqueue
+//  beyond a single line.
+static LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode == HC_ACTION && g_captureActive.load() &&
+        (wParam == WM_LBUTTONDOWN || wParam == WM_RBUTTONDOWN || wParam == WM_MBUTTONDOWN)) {
+        if (!g_clickReported.load()) {
+            const MSLLHOOKSTRUCT* ms = reinterpret_cast<MSLLHOOKSTRUCT*>(lParam);
+            HWND hw = WindowFromPoint(ms->pt);
+            HWND root = hw ? GetAncestor(hw, GA_ROOT) : nullptr;
+            DWORD pid = 0;
+            if (root) GetWindowThreadProcessId(root, &pid);
+            if (pid != g_parentPid) {
+                g_clickReported.store(true);
+                emitSimple("click_outside");
+            }
+        }
+    }
+    return CallNextHookEx(g_mouseHook, nCode, wParam, lParam);
+}
+
 // ── Hook install / uninstall (MUST run on the hook thread) ───────────────────
 static void installHook(long long epoch) {
     if (g_hook) return;
@@ -363,10 +398,14 @@ static void installHook(long long epoch) {
     g_pendingSpacing = 0;
     g_seq.store(0);
     g_epoch.store(epoch);
+    g_clickReported.store(false);
 
     g_hook = SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, GetModuleHandleW(nullptr), 0);
     if (g_hook) {
         g_captureActive.store(true);
+        // Best-effort click-away detector — capture still works if this fails.
+        g_mouseHook = SetWindowsHookExW(WH_MOUSE_LL, LowLevelMouseProc, GetModuleHandleW(nullptr), 0);
+        if (!g_mouseHook) logmeta("mouse hook install failed (click-away release disabled)");
         logmeta("hook installed");
         emitSimple("ack");
     } else {
@@ -376,6 +415,10 @@ static void installHook(long long epoch) {
 }
 
 static void uninstallHook() {
+    if (g_mouseHook) {
+        UnhookWindowsHookEx(g_mouseHook);
+        g_mouseHook = nullptr;
+    }
     if (!g_hook) return;
     UnhookWindowsHookEx(g_hook);
     g_hook = nullptr;
@@ -671,6 +714,7 @@ static void dispatchCommand(const std::string& line) {
 int wmain(int argc, wchar_t** argv) {
     std::wstring pipeName = (argc > 1) ? argv[1] : L"InvisiQ";
     DWORD parentPid = (argc > 2) ? (DWORD)_wtoi(argv[2]) : 0;
+    g_parentPid = parentPid; // the mouse hook compares click-target PID against this
 
     std::wstring pipePath = L"\\\\.\\pipe\\" + pipeName;
 
