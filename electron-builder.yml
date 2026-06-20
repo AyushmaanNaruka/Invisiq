@@ -1,18 +1,21 @@
-# NAMING / DISGUISE SPLIT (see CLAUDE.md "Brand vs. disguise"):
-#   productName: InvisiQ      → user-facing surfaces only: installer heading
+# NAMING (see CLAUDE.md "Brand vs. disguise"):
+#   productName: InvisiQ      → user-facing surfaces: installer heading
 #                               ("InvisiQ Setup"), installer filename, Start Menu
 #                               + search label, uninstaller / Installed Apps entry.
-#   executableName: Helio (below) → the actual .exe / PROCESS IMAGE NAME that
-#                               proctoring tools enumerate. NEUTRAL, de-impersonated
-#                               (was 'RuntimeBroker', a Microsoft-binary impersonation
-#                               → EDR/AV/legal liability). Keep in sync with
-#                               DEFAULT_PROCESS_NAME in src/shared/constants.ts.
+#   executableName: InvisiQ (below) → the actual .exe / PROCESS IMAGE NAME that
+#                               proctoring tools enumerate. Now the BRAND name (was a
+#                               neutral 'Helio') — a deliberate brand-trust decision.
+#                               Safe because visual invisibility (WDA) is name-
+#                               independent and the realistic market (Bucket A) can't
+#                               enumerate processes; only trade-off is Bucket-B lockdown
+#                               browsers blocklisting a recognizable name (future risk).
+#                               This is NOT the old 'RuntimeBroker' Microsoft
+#                               impersonation (EDR/signing/legal toxic) — InvisiQ is
+#                               honest. Keep == DEFAULT_PROCESS_NAME (src/shared/constants.ts).
 #   app.setName('RuntimeBroker') (stealth.ts) + package.json name=runtimebroker →
 #                               drive userData (stored keys/login). FROZEN internal
 #                               identity (a folder name, invisible to proctoring);
 #                               kept stable so existing keys stay decryptable.
-# Trade-off accepted: Task Manager's *friendly* (Processes-tab) name reads "InvisiQ"
-# (productName); the Details-tab image name + proctoring-scanned process are Helio.exe.
 appId: com.ghostai.app
 productName: InvisiQ
 copyright: "© 2026 InvisiQ. All rights reserved."
@@ -44,7 +47,7 @@ extraResources:
     to: ghostai_helper.exe
 win:
   icon: assets/invisiq-icon-512.png
-  executableName: Helio # PROCESS IMAGE NAME proctoring scans — neutral, de-impersonated. Keep == DEFAULT_PROCESS_NAME (constants.ts).
+  executableName: InvisiQ # PROCESS IMAGE NAME proctoring scans — the brand name (brand-trust decision; safe per WDA being name-independent). Keep == DEFAULT_PROCESS_NAME (constants.ts).
   legalTrademarks: "© 2026 InvisiQ. All rights reserved."
   # NSIS (not portable): electron-updater cannot self-update a portable build —
   # it has no install location to replace and electron-builder emits no

@@ -132,18 +132,20 @@ backfillSettingsSchema();
 // ══════════════════════════════════════
 
 /**
- * The legacy default process name was 'RuntimeBroker' — a Microsoft-impersonation
- * disguise we've removed (EDR/AV/legal liability). Reset any install still on
- * that exact legacy default to the neutral DEFAULT_PROCESS_NAME so de-
- * impersonation is total. A user's CUSTOM alias is preserved (only the exact
- * legacy default is rewritten). The userData directory is intentionally NOT
+ * Reset any install still on a prior DEFAULT process name to the current
+ * DEFAULT_PROCESS_NAME (now the brand name 'InvisiQ'). Two legacy defaults are
+ * rewritten: 'RuntimeBroker' (the removed Microsoft-impersonation disguise) and
+ * 'Helio' (the interim neutral name). A user's CUSTOM alias is preserved — only the
+ * exact prior defaults are rewritten. The userData directory is intentionally NOT
  * touched — it's a frozen internal identity (see store init above), so keys are
  * never put at risk.
  */
+const LEGACY_PROCESS_NAME_DEFAULTS = ['RuntimeBroker', 'Helio'];
+
 function migrateLegacyProcessName(): void {
   try {
     const current = store.get('settings.privacy.processName') as string | undefined;
-    if (current === 'RuntimeBroker') {
+    if (current && LEGACY_PROCESS_NAME_DEFAULTS.includes(current)) {
       store.set('settings.privacy.processName', DEFAULT_PROCESS_NAME);
     }
   } catch {

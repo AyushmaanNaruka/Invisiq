@@ -78,8 +78,25 @@ architecture (the only durable moat vs hardened lockdown browsers).
    Bucket-A proctors (Proctorio/Honorlock) never trigger it — they see the shared screen, so WDA
    must stay on.
 
+## Update (June 2026) — process name reverted to the brand `InvisiQ`
+
+The interim neutral name `Helio` was replaced by the brand name **`InvisiQ`** (`executableName` +
+`DEFAULT_PROCESS_NAME`). Rationale, consistent with the table above:
+
+- Layer 1 (WDA visual invisibility) is **name-independent**, and Bucket-A proctors (the realistic
+  market) **can't see the process name at all** — so the brand name costs nothing where it matters.
+- The historical evidence agrees: earlier releases shipped as `InvisiQ` and were not detected.
+- This is **not** a regression to the toxic `RuntimeBroker` impersonation — `InvisiQ` is an honest
+  name, so the EDR/signing/legal problems that drove the de-impersonation do **not** return. We only
+  trade a sliver of layer-4 obscurity against Bucket-B lockdown browsers (a recognizable name is
+  easier to blocklist than a neutral one — a future-popularity risk, not a present one).
+- The frozen internal data identity (`app.setName('RuntimeBroker')`, userData dir) is untouched, so
+  keys stay decryptable. `migrateLegacyProcessName()` now rewrites both `RuntimeBroker` and `Helio`
+  stored defaults to `InvisiQ`.
+
 ## Known rough edge
 
-An existing beta install auto-updating *across* the `RuntimeBroker.exe → Helio.exe` rename
-relies on NSIS (keyed by `appId`) to swap the exe + shortcut. New installs are clean; a stale
-`RuntimeBroker.exe` on an upgraded machine is cosmetic — data/keys are unaffected.
+An existing beta install auto-updating *across* the executable rename
+(`RuntimeBroker.exe` / `Helio.exe` → `InvisiQ.exe`) relies on NSIS (keyed by `appId`) to swap the
+exe + shortcut. New installs are clean; a stale old-named exe on an upgraded machine is cosmetic —
+data/keys are unaffected.

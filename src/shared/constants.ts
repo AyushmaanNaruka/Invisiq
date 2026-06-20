@@ -106,14 +106,20 @@ export const DEFAULT_WINDOW_STATE: WindowState = {
 //  DEFAULT SETTINGS
 // ══════════════════════════════════════
 
-// ── Process identity (de-impersonated) ──────────────────────────────────────
-// The neutral, non-impersonating process/executable name. THIS is the .exe
-// IMAGE NAME that proctoring tools enumerate (Mettl/Examity/SEB scan szExeFile).
-// Replaces the legacy 'RuntimeBroker' Microsoft-impersonation disguise, which was
-// an EDR/AV red flag (behavioral termination by CrowdStrike Falcon) and a code-
-// signing / legal blocker for commercialization. Keep this in sync with
-// electron-builder.yml `win.executableName` (YAML cannot import this constant).
-export const DEFAULT_PROCESS_NAME = 'Helio';
+// ── Process identity ────────────────────────────────────────────────────────
+// THIS is the .exe IMAGE NAME that proctoring tools enumerate (Mettl/Examity/SEB
+// scan szExeFile). It is the brand name 'InvisiQ' — a deliberate brand-trust
+// decision: the realistic market (Bucket A — Zoom/Teams/Meet/Proctorio/Honorlock)
+// CANNOT enumerate processes, and visual invisibility (WDA_EXCLUDEFROMCAPTURE) is
+// fully name-independent, so the brand name costs nothing there. The only trade-off
+// is against Bucket-B desktop lockdown browsers that match a process-name blocklist
+// — a recognizable name is easier to add to such a list than a neutral one (a
+// future-popularity risk, not a present one). See docs/InvisiQ-Stealth-
+// Commercialization.md. NOTE: this is NOT the old 'RuntimeBroker' Microsoft
+// impersonation (EDR/signing/legal toxic) — 'InvisiQ' is honest, so it does not
+// reintroduce that. Keep in sync with electron-builder.yml `win.executableName`
+// (YAML cannot import this constant).
+export const DEFAULT_PROCESS_NAME = 'InvisiQ';
 
 // Honest Windows AppUserModelId — matches our own NSIS/updater appId
 // (electron-builder.yml `appId`). Replaces 'Microsoft.Windows.RuntimeBroker'.
