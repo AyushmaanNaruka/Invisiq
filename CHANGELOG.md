@@ -4,6 +4,24 @@ All notable changes to InvisiQ are documented here.
 
 ---
 
+## [1.3.0] — Interactive Onboarding, Stealth-Typing UX & Brand Name
+
+### Added
+- **InvisiQ Academy** — a premium, replayable, interactive onboarding walkthrough that teaches every feature with live mock-overlay demos (ask, screenshot, stealth typing, controls), a 3D-tilt feature gallery, and a settings tour. Replayable anytime from Settings → Account. All animations respect `prefers-reduced-motion`.
+- **API-key trust note** in the onboarding step and Settings → API Keys: keys are encrypted on-device and never sent to our servers, logged, or shared.
+- **Auto-switch model on key validation** — validating a provider's key selects that provider's default model.
+- **Visible custom caret in stealth typing** — draws a blinking caret at the tracked position (the native caret is hidden when the overlay lacks OS focus).
+
+### Changed
+- **Stealth typing follows focus** — clicking another app turns capture OFF (keystrokes go there); clicking InvisiQ's input turns it back ON (helper `WH_MOUSE_LL` + clean exit).
+- **Stealth typing can no longer outlive overlay visibility** — hiding the overlay (any path) tears down the capture hook, so keystrokes never leak into a hidden window.
+- **Process / executable name is now the brand `InvisiQ`** (was the interim neutral `Helio`). Safe — visual invisibility (WDA) is name-independent and the realistic market can't enumerate processes; not a return to the toxic `RuntimeBroker` impersonation. See `docs/InvisiQ-Stealth-Commercialization.md`.
+
+### Removed
+- **Click-through (passthrough) overlay** feature removed entirely (hook, HeaderBar toggle, `Ctrl+Shift+P`, IPC, setting). The internal hidden-overlay click pass-through (correctness) is unchanged.
+
+---
+
 ## [Unreleased] — Single Universal Mode
 
 ### One mode, no templates (UX simplification)
