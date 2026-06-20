@@ -17,7 +17,8 @@ import { initInvisibleInput, cleanupInvisibleInput } from './invisible-input';
 import { initAuth } from './auth';
 import { initEntitlement } from './entitlement';
 import { trackEvent, flush as flushAnalytics } from './analytics';
-import { AI_API_DOMAINS } from '@shared/constants';
+import { AI_API_DOMAINS, DEFAULT_PROCESS_NAME } from '@shared/constants';
+import { logger } from '@shared/logger';
 
 // ══════════════════════════════════════
 //  SINGLE INSTANCE LOCK
@@ -44,13 +45,13 @@ if (!gotTheLock) {
 // ══════════════════════════════════════
 
 function setupCORSBypass(): void {
-  console.log('[CORS] Setting up bypass for:', AI_API_DOMAINS);
+  logger.log('[CORS] Setting up bypass for:', AI_API_DOMAINS);
 
   // Inject CORS headers into AI API responses
   session.defaultSession.webRequest.onHeadersReceived(
     { urls: AI_API_DOMAINS },
     (details, callback) => {
-      console.log('[CORS] Intercepting response:', details.method, details.url.substring(0, 80));
+      logger.log('[CORS] Intercepting response:', details.method, details.url.substring(0, 80));
       const responseHeaders = { ...details.responseHeaders };
 
       // Delete existing CORS headers (case-insensitive) to prevent duplicates
@@ -95,8 +96,9 @@ function setupCORSBypass(): void {
 // ══════════════════════════════════════
 
 app.whenReady().then(async () => {
-  // Disguise process name (critical — do first)
-  const processName = getNestedSetting('privacy.processName') as string || 'RuntimeBroker';
+  // Set the (de-impersonated) process identity — do first. Neutral name, honest
+  // AppUserModelId; no Microsoft impersonation.
+  const processName = (getNestedSetting('privacy.processName') as string) || DEFAULT_PROCESS_NAME;
   disguiseProcess(processName);
 
   // Setup CORS bypass before loading any renderer content

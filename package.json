@@ -1,9 +1,9 @@
 {
   "name": "runtimebroker",
   "version": "1.2.2",
-  "description": "Runtime Broker",
+  "description": "InvisiQ",
   "main": "./out/main/index.js",
-  "author": "Microsoft Corporation",
+  "author": "InvisiQ",
   "license": "MIT",
   "scripts": {
     "dev": "electron-vite dev",
@@ -11,7 +11,8 @@
     "start": "electron-vite preview",
     "postinstall": "node scripts/postinstall.js",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "lint": "eslint src/ --ext .ts,.tsx",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "build:helper": "node scripts/build-helper.js",
     "gen:installer-assets": "electron scripts/gen-installer-assets.cjs sidebar && electron scripts/gen-installer-assets.cjs header",
     "verify": "npx ts-node scripts/verify-build.ts",
@@ -40,6 +41,7 @@
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/node": "^22.10.0",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.12",
@@ -51,9 +53,13 @@
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
     "electron-vite": "^5.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "globals": "^15.0.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.0.0"
   },
   "optionalDependencies": {
     "@rollup/rollup-win32-x64-msvc": "^4.60.3"

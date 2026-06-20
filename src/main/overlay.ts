@@ -6,6 +6,12 @@ import { validateOverlayPosition, moveOverlayToMonitor as moveToMonitorImpl } fr
 
 let overlayWindow: BrowserWindow | null = null;
 let stealthFocusEnabled = false; // Anti-detection focus mode (WS_EX_NOACTIVATE)
+// Fired whenever the overlay transitions to logically-hidden. Enforces the
+// invariant "stealth capture never outlives overlay visibility" — registered by
+// the capture-controller so a hidden overlay can't keep eating keystrokes. Kept as
+// a callback (not a direct import) to avoid a circular dependency: capture-controller
+// already imports from this module.
+let onHiddenCallback: (() => void) | null = null;
 let userOpacity = 0.85;          // The user's chosen opacity (separate from visibility)
 let logicalVisible = true;       // Whether the overlay should be visible to the user
 let everShown = false;           // Has the HWND been shown at least once (for showInactive)
@@ -37,8 +43,8 @@ export function createOverlayWindow(): BrowserWindow {
     },
   });
 
-  // CRITICAL — Makes window invisible to screen capture
-  overlayWindow.setContentProtection(true);
+  // CRITICAL — Makes window invisible to screen capture (honors adaptive state)
+  ensureContentProtection(overlayWindow);
 
   // Position: use saved coordinates if valid, otherwise bottom-right of primary display
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
@@ -64,11 +70,11 @@ export function createOverlayWindow(): BrowserWindow {
       // composition cycle if it was only set on a hidden HWND, causing the
       // overlay to flash briefly in screen-share captures until the watchdog
       // re-applies it. Setting it around the first present eliminates that leak.
-      overlayWindow.setContentProtection(true);
+      ensureContentProtection(overlayWindow);
       readyToShowDone = true;
       logicalVisible = true;
       applyVisibility();
-      overlayWindow.setContentProtection(true);
+      ensureContentProtection(overlayWindow);
     }
   });
 
@@ -128,7 +134,7 @@ function applyVisibility(): void {
     }
   } else {
     if (logicalVisible) {
-      win.setContentProtection(true);
+      ensureContentProtection(win);
       win.setAlwaysOnTop(true);
       if (!win.isVisible()) win.show();
       everShown = true;
@@ -156,10 +162,19 @@ export function showOverlay(): void {
   notifyVisibility();
 }
 
-export function hideOverlay(): void {
+/**
+ * Hide the overlay.
+ *
+ * `transient` distinguishes a genuine user-intent hide (default) from an internal
+ * hide/show cycle (screenshot, smart-paste) that restores visibility immediately.
+ * Only a real hide tears down stealth capture — a transient hide must NOT, or
+ * taking a screenshot while stealth-typing would silently drop the session.
+ */
+export function hideOverlay(transient = false): void {
   logicalVisible = false;
   applyVisibility();
   notifyVisibility();
+  if (!transient) onHiddenCallback?.(); // stealth capture must not outlive overlay visibility
 }
 
 export function toggleOverlay(): boolean {
@@ -167,7 +182,20 @@ export function toggleOverlay(): boolean {
   logicalVisible = !logicalVisible;
   applyVisibility();
   notifyVisibility();
+  // Hiding via toggle must also tear down capture — otherwise the suppressing
+  // keyboard hook keeps eating keystrokes into an invisible window (the keys
+  // never reach the app the user is now looking at).
+  if (!logicalVisible) onHiddenCallback?.();
   return logicalVisible;
+}
+
+/**
+ * Register a callback fired whenever the overlay transitions to hidden. The
+ * capture-controller uses this to guarantee stealth typing can't survive a hidden
+ * overlay, regardless of which code path hid it.
+ */
+export function setOnOverlayHidden(cb: () => void): void {
+  onHiddenCallback = cb;
 }
 
 /** Logical visibility (NOT win.isVisible() — in stealth the HWND is always "shown"). */

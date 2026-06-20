@@ -106,12 +106,25 @@ export const DEFAULT_WINDOW_STATE: WindowState = {
 //  DEFAULT SETTINGS
 // ══════════════════════════════════════
 
+// ── Process identity (de-impersonated) ──────────────────────────────────────
+// The neutral, non-impersonating process/executable name. THIS is the .exe
+// IMAGE NAME that proctoring tools enumerate (Mettl/Examity/SEB scan szExeFile).
+// Replaces the legacy 'RuntimeBroker' Microsoft-impersonation disguise, which was
+// an EDR/AV red flag (behavioral termination by CrowdStrike Falcon) and a code-
+// signing / legal blocker for commercialization. Keep this in sync with
+// electron-builder.yml `win.executableName` (YAML cannot import this constant).
+export const DEFAULT_PROCESS_NAME = 'Helio';
+
+// Honest Windows AppUserModelId — matches our own NSIS/updater appId
+// (electron-builder.yml `appId`). Replaces 'Microsoft.Windows.RuntimeBroker'.
+// Used by Windows for taskbar grouping, pinning, and notification identity.
+export const APP_USER_MODEL_ID = 'com.ghostai.app';
+
 export const DEFAULT_SETTINGS: AppSettings = {
   providers: {
     openai: { hasKey: false, isValid: false },
     anthropic: { hasKey: false, isValid: false },
     gemini: { hasKey: false, isValid: false },
-    ollama: { hasKey: false, isValid: false },
   },
 
   activeProvider: 'openai',
@@ -140,7 +153,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     clearScreenshotsAfterSend: true,
     persistChatHistory: true,
     logApiRequests: false,
-    processName: 'RuntimeBroker',
+    processName: DEFAULT_PROCESS_NAME,
     showTrayIcon: false,
     // Phase 4
     clickThroughEnabled: false,
@@ -195,6 +208,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
     defaultOn: true,
     proctorDetection: true,
     relaxWhenSafe: false,
+    // Opt-in (default OFF). When a sweep-capable lockdown proctor is detected
+    // (Mettl/Respondus/SEB), drop WDA_EXCLUDEFROMCAPTURE so a
+    // GetWindowDisplayAffinity sweep finds nothing. Trade-off: with WDA off the
+    // overlay is exposed to screenshots/recording (the MORE common proctor
+    // vector), so this stays off unless you know your proctor sweeps. Consumed
+    // by capture-controller applyAdaptiveContentProtection().
+    evadeSweepProctor: false,
   },
 
   isFirstLaunch: true,

@@ -2,7 +2,7 @@
 //  PROVIDER & MODEL TYPES
 // ══════════════════════════════════════
 
-export type ProviderID = 'openai' | 'anthropic' | 'gemini' | 'ollama';
+export type ProviderID = 'openai' | 'anthropic' | 'gemini';
 
 export type HotkeyAction =
   | 'toggle-overlay'
@@ -391,7 +391,6 @@ export interface AppSettings {
     openai: ProviderConfig;
     anthropic: ProviderConfig;
     gemini: ProviderConfig;
-    ollama: ProviderConfig;
   };
 
   activeProvider: ProviderID;
@@ -483,6 +482,10 @@ export interface AppSettings {
     // When highly confident nothing is watching, offer to relax to easy-focus
     // typing. Only flips toward convenience, never away from safety.
     relaxWhenSafe: boolean;
+    // Opt-in (default off): when a sweep-capable lockdown proctor is detected,
+    // drop WDA_EXCLUDEFROMCAPTURE to evade GetWindowDisplayAffinity sweeps.
+    // Trade-off: exposes the overlay to screenshots/recording while active.
+    evadeSweepProctor: boolean;
   };
 
   isFirstLaunch: boolean;
