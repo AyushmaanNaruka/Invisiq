@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   X, Eye, EyeOff, Check, CircleAlert, LoaderCircle, Trash2,
   Key, Keyboard, Monitor, Shield, Mic, Brain, Smartphone, Cpu,
-  UserCircle, LogOut, GraduationCap,
+  UserCircle, LogOut, GraduationCap, ShieldCheck,
 } from 'lucide-react';
 import { providerManager } from '../services/ai-providers/provider-manager';
 import SettingsHotkeys from './SettingsHotkeys';
@@ -132,6 +132,10 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
       if (result.valid) {
         // Save key/URL on successful validation
         await window.ghostAPI.store.setApiKey(provider, key);
+        // Auto-switch the active model to this provider's default so the user is
+        // immediately on a model they have a working key for.
+        const defaultModel = p.models?.[0]?.id;
+        if (defaultModel) await onUpdateSetting('activeModel', defaultModel);
         const validMsg = result.models && result.models.length > 0
           ? `${result.models.length} model${result.models.length === 1 ? '' : 's'} found`
           : undefined;
@@ -279,6 +283,14 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
           )}
           {activeTab === 'api-keys' && (
             <div className="space-y-5">
+              <div className="flex items-start gap-2 rounded-md border border-accent-primary/25 bg-accent-primary/[0.06] px-3 py-2.5">
+                <ShieldCheck size={15} className="mt-0.5 shrink-0 text-accent-primary" />
+                <p className="text-[11px] leading-relaxed text-text-secondary">
+                  <span className="font-medium text-text-primary">Your API keys never leave this device.</span>{' '}
+                  They’re encrypted and stored locally — never sent to our servers, logged, or shared.
+                  Requests go straight from your machine to the AI provider.
+                </p>
+              </div>
               {PROVIDERS.map(({ id, name, placeholder }) => {
                 const keyState = keys[id];
                 return (

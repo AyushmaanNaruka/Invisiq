@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Check, CircleAlert, LoaderCircle, ArrowUpRight } from 'lucide-react';
+import { Eye, EyeOff, Check, CircleAlert, LoaderCircle, ArrowUpRight, ShieldCheck } from 'lucide-react';
 import { providerManager } from '../services/ai-providers/provider-manager';
 import { staggerContainer, staggerItem } from './ui/animations';
 import type { ProviderID } from '@shared/types';
@@ -64,6 +64,16 @@ export default function OnboardingApiKey({ onConnectedChange }: OnboardingApiKey
 
       if (result.valid) {
         await window.ghostAPI.store.setApiKey(provider, key);
+        // Auto-switch the active model to this provider's default so the user can
+        // start chatting immediately on a model they actually have a key for.
+        const defaultModel = p.models?.[0]?.id;
+        if (defaultModel) {
+          try {
+            await window.ghostAPI.store.set('activeModel', defaultModel);
+          } catch {
+            /* non-fatal */
+          }
+        }
         setKeys((prev) => {
           const next = { ...prev, [provider]: { ...prev[provider], status: 'valid' as const, error: undefined } };
           onConnectedChange?.(Object.values(next).some((k) => k.status === 'valid'));
@@ -191,7 +201,16 @@ export default function OnboardingApiKey({ onConnectedChange }: OnboardingApiKey
         })}
       </motion.div>
 
-      <p className="mt-4 text-[11px] leading-relaxed text-text-placeholder">
+      <div className="mt-4 flex items-start gap-2 rounded-lg border border-accent-primary/25 bg-accent-primary/[0.06] px-3 py-2.5">
+        <ShieldCheck size={15} className="mt-0.5 flex-shrink-0 text-accent-primary" />
+        <p className="text-[11px] leading-relaxed text-text-secondary">
+          <span className="font-semibold text-text-primary">Your API keys never leave this device.</span>{' '}
+          They’re encrypted and stored locally — we never send them to our servers, log them, or share
+          them with anyone. Every AI request goes straight from your machine to the provider you chose.
+        </p>
+      </div>
+
+      <p className="mt-3 text-[11px] leading-relaxed text-text-placeholder">
         During the beta, the <span className="text-text-secondary">text</span> of prompts you send is
         stored to improve InvisiQ — never your screenshots or screen contents. You can wipe it
         anytime in Settings → Privacy.
