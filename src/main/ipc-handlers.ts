@@ -61,9 +61,9 @@ import {
 import { login as authLogin, logout as authLogout, getStatusReady as authStatus } from './auth';
 import { getStatusReady as entitlementStatus, refresh as entitlementRefresh } from './entitlement';
 import { trackEvent, capturePrompt, acceptTos, deleteMyData } from './analytics';
-import { CURRENT_TOS_VERSION } from '@shared/constants';
+import { CURRENT_TOS_VERSION, PROVIDER_IDS } from '@shared/constants';
 
-const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini'];
+const VALID_PROVIDERS: ProviderID[] = PROVIDER_IDS;
 
 export function registerIPCHandlers(): void {
   // ══════════════════════════════════════

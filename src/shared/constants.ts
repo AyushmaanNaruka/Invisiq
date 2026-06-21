@@ -1,4 +1,9 @@
-import type { HotkeyAction, Mode, AppSettings, WindowState, ModelConfig } from './types';
+import type { HotkeyAction, Mode, AppSettings, WindowState, ModelConfig, ProviderID } from './types';
+
+// Single source of truth for the set of shipping BYOK providers. Use this for
+// validation/iteration everywhere instead of re-typing ['openai','anthropic',...]
+// — adding a provider then means editing ONE list. Order = ModelSelector display order.
+export const PROVIDER_IDS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'groq', 'openrouter'];
 
 // ══════════════════════════════════════
 //  SUPABASE BACKEND (Beta — auth / trial / analytics)
@@ -130,6 +135,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     openai: { hasKey: false, isValid: false },
     anthropic: { hasKey: false, isValid: false },
     gemini: { hasKey: false, isValid: false },
+    groq: { hasKey: false, isValid: false },
+    openrouter: { hasKey: false, isValid: false },
   },
 
   activeProvider: 'openai',
@@ -317,10 +324,117 @@ export const GEMINI_MODELS: ModelConfig[] = [
   },
 ];
 
+// ── Groq (OpenAI-compatible; base https://api.groq.com/openai/v1) ──
+// Llama-4-Scout was deprecated by Groq on 2026-06-17; qwen3.6-27b is the
+// current vision-capable model so screenshot prompts keep working on Groq.
+export const GROQ_MODELS: ModelConfig[] = [
+  {
+    id: 'llama-3.3-70b-versatile',
+    name: 'Llama 3.3 70B (Groq)',
+    provider: 'groq',
+    supportsVision: false,
+    maxContextTokens: 131072,
+    maxOutputTokens: 32768,
+    costPer1MInput: 0.59,
+    costPer1MOutput: 0.79,
+    speed: 'fast',
+  },
+  {
+    id: 'llama-3.1-8b-instant',
+    name: 'Llama 3.1 8B Instant (Groq)',
+    provider: 'groq',
+    supportsVision: false,
+    maxContextTokens: 131072,
+    maxOutputTokens: 32768,
+    costPer1MInput: 0.05,
+    costPer1MOutput: 0.08,
+    speed: 'fast',
+  },
+  {
+    id: 'openai/gpt-oss-120b',
+    name: 'GPT-OSS 120B (Groq)',
+    provider: 'groq',
+    supportsVision: false,
+    maxContextTokens: 131072,
+    maxOutputTokens: 65536,
+    costPer1MInput: 0.15,
+    costPer1MOutput: 0.60,
+    speed: 'fast',
+  },
+  {
+    id: 'qwen/qwen3.6-27b',
+    name: 'Qwen3.6 27B Vision (Groq)',
+    provider: 'groq',
+    supportsVision: true,
+    maxContextTokens: 131072,
+    maxOutputTokens: 32768,
+    // Groq does not publish per-token pricing for this model; approximate.
+    costPer1MInput: 0.40,
+    costPer1MOutput: 0.80,
+    speed: 'fast',
+  },
+];
+
+// ── OpenRouter (OpenAI-compatible; base https://openrouter.ai/api/v1) ──
+// One BYOK key → DeepSeek, Qwen, and Mistral. Slugs + pricing pulled from the
+// public openrouter.ai/api/v1/models catalog (2026-06).
+export const OPENROUTER_MODELS: ModelConfig[] = [
+  {
+    id: 'deepseek/deepseek-v4-pro',
+    name: 'DeepSeek V4 Pro',
+    provider: 'openrouter',
+    supportsVision: false,
+    maxContextTokens: 1048576,
+    maxOutputTokens: 16384,
+    costPer1MInput: 0.435,
+    costPer1MOutput: 0.87,
+    speed: 'medium',
+  },
+  {
+    id: 'deepseek/deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash',
+    provider: 'openrouter',
+    supportsVision: false,
+    maxContextTokens: 1048576,
+    maxOutputTokens: 16384,
+    costPer1MInput: 0.09,
+    costPer1MOutput: 0.18,
+    speed: 'fast',
+  },
+  {
+    id: 'qwen/qwen3.7-max',
+    name: 'Qwen3.7 Max',
+    provider: 'openrouter',
+    supportsVision: false,
+    maxContextTokens: 1000000,
+    maxOutputTokens: 16384,
+    costPer1MInput: 1.25,
+    costPer1MOutput: 3.75,
+    speed: 'medium',
+  },
+  {
+    // NOTE: qwen/qwen3.6-27b is intentionally NOT listed here — Groq already owns
+    // that slug (GROQ_MODELS), and model IDs must be globally unique because routing
+    // resolves provider purely by id (providerManager.getModelById → first match in
+    // ALL_MODELS). Mistral Medium is OpenRouter's vision model instead.
+    id: 'mistralai/mistral-medium-3.5',
+    name: 'Mistral Medium 3.5',
+    provider: 'openrouter',
+    supportsVision: true,
+    maxContextTokens: 262144,
+    maxOutputTokens: 16384,
+    costPer1MInput: 1.50,
+    costPer1MOutput: 7.50,
+    speed: 'medium',
+  },
+];
+
 export const ALL_MODELS: ModelConfig[] = [
   ...OPENAI_MODELS,
   ...ANTHROPIC_MODELS,
   ...GEMINI_MODELS,
+  ...GROQ_MODELS,
+  ...OPENROUTER_MODELS,
 ];
 
 // ══════════════════════════════════════
@@ -333,6 +447,8 @@ export const AI_API_DOMAINS = [
   'https://api.openai.com/*',
   'https://api.anthropic.com/*',
   'https://generativelanguage.googleapis.com/*',
+  'https://api.groq.com/*',
+  'https://openrouter.ai/*',
 ];
 
 // ══════════════════════════════════════

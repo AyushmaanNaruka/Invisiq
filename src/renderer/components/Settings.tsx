@@ -42,6 +42,8 @@ const PROVIDERS: { id: ProviderID; name: string; placeholder: string }[] = [
   { id: 'openai', name: 'OpenAI', placeholder: 'sk-proj-...' },
   { id: 'anthropic', name: 'Anthropic', placeholder: 'sk-ant-...' },
   { id: 'gemini', name: 'Google Gemini', placeholder: 'AIza...' },
+  { id: 'groq', name: 'Groq', placeholder: 'gsk_...' },
+  { id: 'openrouter', name: 'OpenRouter', placeholder: 'sk-or-v1-...' },
 ];
 
 type TabId = 'account' | 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio' | 'memory' | 'companion' | 'resilience';
@@ -65,6 +67,8 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
     openai: { value: '', masked: true, status: 'idle' },
     anthropic: { value: '', masked: true, status: 'idle' },
     gemini: { value: '', masked: true, status: 'idle' },
+    groq: { value: '', masked: true, status: 'idle' },
+    openrouter: { value: '', masked: true, status: 'idle' },
   });
 
   // Load existing keys on open

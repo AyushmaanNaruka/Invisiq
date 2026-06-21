@@ -16,6 +16,16 @@ providerManager.registerLazy('gemini', async () => {
   return new GeminiProvider();
 });
 
+providerManager.registerLazy('groq', async () => {
+  const { GroqProvider } = await import('./groq');
+  return new GroqProvider();
+});
+
+providerManager.registerLazy('openrouter', async () => {
+  const { OpenRouterProvider } = await import('./openrouter');
+  return new OpenRouterProvider();
+});
+
 // Ollama removed permanently for the beta (Beta Launch Plan §6.3) — cloud-only.
 
 export { providerManager };

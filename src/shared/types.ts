@@ -2,7 +2,9 @@
 //  PROVIDER & MODEL TYPES
 // ══════════════════════════════════════
 
-export type ProviderID = 'openai' | 'anthropic' | 'gemini';
+// 'groq' + 'openrouter' added Jun 2026 — both OpenAI-compatible (see openai-compatible.ts).
+// OpenRouter exposes DeepSeek/Qwen/Mistral through a single BYOK key.
+export type ProviderID = 'openai' | 'anthropic' | 'gemini' | 'groq' | 'openrouter';
 
 export type HotkeyAction =
   | 'toggle-overlay'
@@ -393,6 +395,8 @@ export interface AppSettings {
     openai: ProviderConfig;
     anthropic: ProviderConfig;
     gemini: ProviderConfig;
+    groq: ProviderConfig;
+    openrouter: ProviderConfig;
   };
 
   activeProvider: ProviderID;

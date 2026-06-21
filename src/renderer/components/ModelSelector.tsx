@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Eye, Lock } from 'lucide-react';
 import { GhostTooltip } from './ui/GhostTooltip';
-import { ALL_MODELS } from '@shared/constants';
+import { ALL_MODELS, PROVIDER_IDS } from '@shared/constants';
 import type { ModelConfig, ProviderID } from '@shared/types';
 
 interface ModelSelectorProps {
@@ -13,12 +13,14 @@ interface ModelSelectorProps {
 }
 
 // Cloud-only (Beta Launch Plan §6.3) — Ollama removed permanently.
-const PROVIDER_LABELS: Record<'openai' | 'anthropic' | 'gemini', string> = {
+const PROVIDER_LABELS: Record<ProviderID, string> = {
   openai: 'OPENAI',
   anthropic: 'ANTHROPIC',
   gemini: 'GOOGLE',
+  groq: 'GROQ',
+  openrouter: 'OPENROUTER',
 };
-const PROVIDER_ORDER: Array<'openai' | 'anthropic' | 'gemini'> = ['openai', 'anthropic', 'gemini'];
+const PROVIDER_ORDER: ProviderID[] = PROVIDER_IDS;
 
 function abbreviateModelName(name: string): string {
   // "GPT-4o Mini" → "4o Mini", "Claude 3.5 Sonnet" → "3.5 Son.", "Gemini 1.5 Pro" → "1.5 Pro"

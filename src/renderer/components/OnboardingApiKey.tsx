@@ -27,6 +27,8 @@ const PROVIDERS: {
   { id: 'openai', name: 'OpenAI', placeholder: 'sk-proj-…', color: '#10A37F', keyUrl: 'platform.openai.com' },
   { id: 'anthropic', name: 'Anthropic', placeholder: 'sk-ant-…', color: '#D4A574', keyUrl: 'console.anthropic.com' },
   { id: 'gemini', name: 'Google Gemini', placeholder: 'AIza…', color: '#4285F4', keyUrl: 'aistudio.google.com' },
+  { id: 'groq', name: 'Groq', placeholder: 'gsk_…', color: '#F55036', keyUrl: 'console.groq.com/keys' },
+  { id: 'openrouter', name: 'OpenRouter', placeholder: 'sk-or-v1-…', color: '#6566F1', keyUrl: 'openrouter.ai/keys' },
 ];
 
 export default function OnboardingApiKey({ onConnectedChange }: OnboardingApiKeyProps): JSX.Element {
@@ -34,6 +36,8 @@ export default function OnboardingApiKey({ onConnectedChange }: OnboardingApiKey
     openai: { value: '', masked: true, status: 'idle' },
     anthropic: { value: '', masked: true, status: 'idle' },
     gemini: { value: '', masked: true, status: 'idle' },
+    groq: { value: '', masked: true, status: 'idle' },
+    openrouter: { value: '', masked: true, status: 'idle' },
   });
 
   const handleKeyChange = useCallback((provider: ProviderID, value: string) => {

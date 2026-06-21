@@ -36,7 +36,7 @@ import { useMemory } from './hooks/useMemory';
 import { useTokenCost } from './hooks/useTokenCost';
 import { useInternalKeyboard } from './hooks/useInternalKeyboard';
 import { useWindowSize } from './hooks/useWindowSize';
-import { UNIVERSAL_MODE, CURRENT_TOS_VERSION } from '@shared/constants';
+import { UNIVERSAL_MODE, CURRENT_TOS_VERSION, PROVIDER_IDS } from '@shared/constants';
 import type { ProviderID } from '@shared/types';
 
 // Initialize AI providers
@@ -326,7 +326,7 @@ function AppInner(): JSX.Element {
   // Check which providers have API keys
   useEffect(() => {
     async function checkProviders(): Promise<void> {
-      const providers: ProviderID[] = ['openai', 'anthropic', 'gemini'];
+      const providers: ProviderID[] = PROVIDER_IDS;
       const available = new Set<ProviderID>();
       for (const p of providers) {
         const { key } = await window.ghostAPI.store.getApiKey(p);

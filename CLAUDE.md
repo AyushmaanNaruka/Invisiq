@@ -176,7 +176,9 @@ ghostai/
 │   │   ├── services/
 │   │   │   ├── ai-providers/
 │   │   │   │   ├── types.ts / provider-manager.ts / index.ts
-│   │   │   │   ├── openai.ts / anthropic.ts / gemini.ts   # all lazy-loaded
+│   │   │   │   ├── openai-compatible.ts  # shared base (chat/stream/vision) for OpenAI-wire providers
+│   │   │   │   ├── openai.ts / groq.ts / openrouter.ts  # thin subclasses of openai-compatible (config only)
+│   │   │   │   ├── anthropic.ts / gemini.ts             # all lazy-loaded
 │   │   │   │   │       # REMOVED: ollama.ts (local LLM removed permanently — cloud-only)
 │   │   │   └── speech.ts             # SpeechService: Web Speech + Whisper (OCR is tesseract.js, used in hooks)
 │   │   │
@@ -300,7 +302,9 @@ The overlay must be hidden before capturing, otherwise we get a blank spot where
 
 ### 4. AI Provider Abstraction
 
-**Cloud-only, BYOK.** Three providers ship: OpenAI, Anthropic, Google Gemini. The Ollama/local-LLM adapter was removed permanently (no `ollama.ts`, no local endpoint in `AI_API_DOMAINS`). A vestigial `'ollama'` `ProviderID` may still appear in types — do not build on it. AI calls run in the **renderer** (HTTP), never the main process.
+**Cloud-only, BYOK.** Five providers ship: OpenAI, Anthropic, Google Gemini, **Groq**, and **OpenRouter** (one key → DeepSeek/Qwen/Mistral). The Ollama/local-LLM adapter was removed permanently (no `ollama.ts`, no local endpoint in `AI_API_DOMAINS`). AI calls run in the **renderer** (HTTP), never the main process.
+
+**OpenAI-compatible base (Groq/OpenRouter/OpenAI):** Groq (`https://api.groq.com/openai/v1`) and OpenRouter (`https://openrouter.ai/api/v1`) speak the same wire format as OpenAI, so all three extend `OpenAICompatibleProvider` (`openai-compatible.ts`) and only supply config (`baseURL`, `defaultHeaders`, `models`, `validationModel`). OpenRouter sends `HTTP-Referer`/`X-Title` attribution headers. **Two non-obvious invariants:** (1) every new provider's domain MUST be added to `AI_API_DOMAINS` in `constants.ts` or the main-process CORS bypass blocks it; (2) **`ModelConfig.id` must be globally unique across providers** — routing resolves provider purely via `providerManager.getModelById` (first match in `ALL_MODELS`), so the *same* model slug cannot be listed under two providers (that's why `qwen/qwen3.6-27b` lives only under Groq). To expose one model via multiple providers you'd need a separate `apiModel` field decoupling internal-id from wire-slug. Live key test: `node scripts/test-openai-compatible.js <groq|openrouter> <KEY>`.
 
 All AI providers implement the same interface (see `src/renderer/services/ai-providers/types.ts`):
 

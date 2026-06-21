@@ -3,7 +3,7 @@ import { app } from 'electron';
 import { existsSync, copyFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { encryptApiKey, decryptApiKey, hasServerFragment, isLegacyApiKeyPayload } from './crypto';
-import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE, DEFAULT_PROCESS_NAME } from '@shared/constants';
+import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE, DEFAULT_PROCESS_NAME, PROVIDER_IDS } from '@shared/constants';
 import type { AppSettings, ProviderID, EncryptedPayload, WindowState } from '@shared/types';
 
 interface StoredAuthSession {
@@ -18,6 +18,8 @@ interface StoreSchema {
     openai?: EncryptedPayload;
     anthropic?: EncryptedPayload;
     gemini?: EncryptedPayload;
+    groq?: EncryptedPayload;
+    openrouter?: EncryptedPayload;
   };
   windowState: WindowState;
   auth?: StoredAuthSession;
@@ -191,7 +193,7 @@ export function getNestedSetting(key: string): unknown {
 // ══════════════════════════════════════
 
 // Ollama removed permanently for the beta (Beta Launch Plan §6.3) — cloud-only.
-const VALID_PROVIDERS: ProviderID[] = ['openai', 'anthropic', 'gemini'];
+const VALID_PROVIDERS: ProviderID[] = PROVIDER_IDS;
 
 export function setApiKey(provider: ProviderID, key: string): void {
   if (!VALID_PROVIDERS.includes(provider)) {
