@@ -110,6 +110,7 @@ function AppInner(): JSX.Element {
     document.documentElement.classList.toggle('light-theme', settings.display.theme === 'light');
   }, [settings.display.theme]);
 
+  const { isStreaming, error, lastUsage, sendMessage, stopGeneration } = useAI();
   const {
     messages,
     conversationId,
@@ -126,6 +127,7 @@ function AppInner(): JSX.Element {
     persistChatHistory: settings.privacy.persistChatHistory,
     activeMode: settings.activeMode,
     activeModel: settings.activeModel,
+    isStreaming,
   });
   const {
     conversations,
@@ -137,7 +139,6 @@ function AppInner(): JSX.Element {
     exportConversation: exportHistoryConversation,
     deleteAllConversations,
   } = useConversationHistory();
-  const { isStreaming, error, lastUsage, sendMessage, stopGeneration } = useAI();
   const {
     pendingScreenshots,
     snipScreenshot,
@@ -192,6 +193,34 @@ function AppInner(): JSX.Element {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
+
+  // Session restore: on launch, reopen the most recent conversation so chats
+  // survive an app/PC restart (instead of always booting to a blank chat).
+  // Runs once, after settings + history have loaded; only when persistence is on
+  // and there's no active chat to clobber.
+  const didRestoreRef = useRef(false);
+  useEffect(() => {
+    if (didRestoreRef.current) return;
+    if (settingsLoading || historyLoading) return; // wait for both to settle
+    didRestoreRef.current = true;
+    if (!settings.privacy.persistChatHistory) return;
+    if (conversations.length === 0) return;
+    if (messages.length > 0 || conversationId) return; // don't overwrite an active chat
+    loadConversation(conversations[0].id)
+      .then((res) => {
+        if (res?.model) updateSetting('activeModel', res.model);
+      })
+      .catch(() => {});
+  }, [
+    settingsLoading,
+    historyLoading,
+    conversations,
+    settings.privacy.persistChatHistory,
+    messages.length,
+    conversationId,
+    loadConversation,
+    updateSetting,
+  ]);
 
   // Phase 4: system audio / live transcription
   const {

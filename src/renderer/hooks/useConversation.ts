@@ -10,6 +10,10 @@ interface UseConversationConfig {
   persistChatHistory: boolean;
   activeMode: string;
   activeModel: string;
+  /** While true, tokens are still streaming in — saves are debounced. When the
+   *  turn goes idle, the conversation is flushed to disk immediately so closing
+   *  the app right after a response never loses it. */
+  isStreaming: boolean;
 }
 
 interface UseConversationReturn {
@@ -48,7 +52,7 @@ function generateTitle(firstUserMessage: string): string {
 // ══════════════════════════════════════
 
 export function useConversation(config: UseConversationConfig): UseConversationReturn {
-  const { persistChatHistory, activeMode, activeModel } = config;
+  const { persistChatHistory, activeMode, activeModel, isStreaming } = config;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -58,28 +62,55 @@ export function useConversation(config: UseConversationConfig): UseConversationR
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const titleGeneratedRef = useRef<boolean>(false);
 
-  // ── Auto-save (debounced 500ms) ──────────────────────────
+  // Always-current snapshot of "what would we persist right now" so the
+  // close/quit flush below can write without depending on stale closures.
+  const snapshotRef = useRef<{ canSave: boolean; build: () => Conversation }>({
+    canSave: false,
+    build: () => ({}) as Conversation,
+  });
+  snapshotRef.current = {
+    canSave: !!conversationId && messages.length > 0 && persistChatHistory,
+    build: (): Conversation => ({
+      id: conversationId as string,
+      title: conversationTitle || 'Untitled',
+      messages,
+      mode: activeMode,
+      model: activeModel,
+      createdAt: createdAtRef.current,
+      updatedAt: new Date().toISOString(),
+      totalTokens: messages.reduce((sum, m) => sum + (m.usage?.totalTokens || 0), 0),
+      estimatedCost: messages.reduce((sum, m) => sum + (m.usage?.estimatedCostUSD || 0), 0),
+    }),
+  };
+
+  // ── Auto-save ────────────────────────────────────────────
+  // Debounce only while tokens are still streaming in; once the turn is idle we
+  // flush immediately (delay 0) so a quick close right after a response can't
+  // lose the conversation to a pending 500ms timer.
   useEffect(() => {
     if (!conversationId || messages.length === 0 || !persistChatHistory) return;
 
     clearTimeout(saveTimeoutRef.current);
+    const delay = isStreaming ? 500 : 0;
     saveTimeoutRef.current = setTimeout(() => {
-      const conversation: Conversation = {
-        id: conversationId,
-        title: conversationTitle || 'Untitled',
-        messages,
-        mode: activeMode,
-        model: activeModel,
-        createdAt: createdAtRef.current,
-        updatedAt: new Date().toISOString(),
-        totalTokens: messages.reduce((sum, m) => sum + (m.usage?.totalTokens || 0), 0),
-        estimatedCost: messages.reduce((sum, m) => sum + (m.usage?.estimatedCostUSD || 0), 0),
-      };
-      window.ghostAPI.conversation.save(conversation).catch(console.error);
-    }, 500);
+      window.ghostAPI.conversation.save(snapshotRef.current.build()).catch(console.error);
+    }, delay);
 
     return () => clearTimeout(saveTimeoutRef.current);
-  }, [messages, conversationId, conversationTitle, persistChatHistory, activeMode, activeModel]);
+  }, [messages, conversationId, conversationTitle, persistChatHistory, activeMode, activeModel, isStreaming]);
+
+  // ── Flush on window close / quit ─────────────────────────
+  // Best-effort final write so the in-flight conversation survives an app/PC
+  // restart even if it happened inside the debounce window.
+  useEffect(() => {
+    const flush = (): void => {
+      if (snapshotRef.current.canSave) {
+        window.ghostAPI.conversation.save(snapshotRef.current.build()).catch(() => {});
+      }
+    };
+    window.addEventListener('beforeunload', flush);
+    return () => window.removeEventListener('beforeunload', flush);
+  }, []);
 
   // ── Auto-generate title from first user message ──────────
   useEffect(() => {

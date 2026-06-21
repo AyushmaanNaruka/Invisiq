@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Circle } from 'lucide-react';
 import { GhostTooltip } from './ui/GhostTooltip';
 
@@ -9,13 +9,28 @@ interface OpacityControlProps {
 
 export default function OpacityControl({ opacity, onOpacityChange }: OpacityControlProps): JSX.Element {
   const [showSlider, setShowSlider] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Click-to-stick: the slider opens on click and stays open (no hover tether)
+  // until the user clicks outside the control or toggles the button again. This
+  // lets the user click anywhere on the track to set a value without the popover
+  // collapsing the moment the pointer drifts off it.
+  useEffect(() => {
+    if (!showSlider) return;
+    const handlePointerDown = (e: MouseEvent): void => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setShowSlider(false);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [showSlider]);
 
   return (
-    <div className="relative no-drag" onMouseLeave={() => setShowSlider(false)}>
+    <div ref={containerRef} className="relative no-drag">
       <GhostTooltip content={`Opacity: ${Math.round(opacity * 100)}%`} placement="bottom" disabled={showSlider}>
         <button
-          onClick={() => setShowSlider(!showSlider)}
-          onMouseEnter={() => setShowSlider(true)}
+          onClick={() => setShowSlider((v) => !v)}
           className="p-1 rounded hover:bg-bg-hover text-text-secondary hover:text-text-primary transition-colors"
         >
           <Circle size={14} />
