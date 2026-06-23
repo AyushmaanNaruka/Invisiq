@@ -31,7 +31,7 @@ import { useHotkeys } from './hooks/useHotkeys';
 import { useAudioTranscription } from './hooks/useAudioTranscription';
 import { useLiveTranscription } from './hooks/useLiveTranscription';
 import { useMeetingAssistant } from './hooks/useMeetingAssistant';
-import { useCodeDetection } from './hooks/useCodeDetection';
+import { useCodeDetection, buildScreenContextPrefix } from './hooks/useCodeDetection';
 import { useMemory } from './hooks/useMemory';
 import { useTokenCost } from './hooks/useTokenCost';
 import { useInternalKeyboard } from './hooks/useInternalKeyboard';
@@ -241,9 +241,11 @@ function AppInner(): JSX.Element {
   });
 
   // Phase 4: code detection
-  const { lastDetection: codeDetection, dismiss: dismissCodeDetection } = useCodeDetection({
-    enabled: settings.privacy?.codeDetectionEnabled ?? false,
+  const { lastDetection: codeDetection, dismiss: dismissCodeDetection, latestOcrText } = useCodeDetection({
+    // Scan when code-detection OR rolling-OCR screen-awareness is on.
+    enabled: (settings.privacy?.codeDetectionEnabled ?? false) || (settings.privacy?.screenAwarenessRollingOcr ?? false),
     intervalMs: settings.privacy?.codeDetectionIntervalMs ?? 30000,
+    retainOcrText: settings.privacy?.screenAwarenessRollingOcr ?? false,
   });
 
   const [meetingPanelOpen, setMeetingPanelOpen] = useState(false);
@@ -440,6 +442,16 @@ function AppInner(): JSX.Element {
         }
       }
 
+      // Screen Awareness (rolling OCR): prepend a lightweight text snapshot of the
+      // screen so even text-only queries are screen-aware. Text-only — never sent to
+      // analytics (capturePrompt below uses the original `text`, not `aiText`).
+      if (settings.privacy?.screenAwarenessRollingOcr) {
+        const screenPrefix = buildScreenContextPrefix(latestOcrText);
+        if (screenPrefix) {
+          aiText = screenPrefix + aiText;
+        }
+      }
+
       // Add user message to conversation (shows original text)
       addUserMessage(text, images);
       clearAllScreenshots();
@@ -513,7 +525,9 @@ function AppInner(): JSX.Element {
       settings.activeModel,
       settings.audio?.autoIncludeTranscript,
       settings.privacy?.screenAwarenessEnabled,
+      settings.privacy?.screenAwarenessRollingOcr,
       captureSilentNow,
+      latestOcrText,
       settings.memory?.enabled,
       settings.memory?.autoExtract,
       settings.memory?.maxContextFacts,

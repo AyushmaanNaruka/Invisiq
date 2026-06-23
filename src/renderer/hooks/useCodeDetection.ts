@@ -8,6 +8,18 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { CodeDetectionResult, CodePlatform } from '@shared/types';
 
+/**
+ * Screen Awareness: wrap the latest OCR snapshot of the screen as a lightweight
+ * text context prefix for the AI. Text-only (never sent to analytics), truncated
+ * to keep token cost bounded. Returns '' when there's nothing useful.
+ */
+export function buildScreenContextPrefix(ocrText: string | null, maxChars = 1500): string {
+  const t = (ocrText ?? '').trim();
+  if (!t) return '';
+  const clipped = t.length > maxChars ? t.slice(0, maxChars) + '…' : t;
+  return `[Context — text currently visible on the user's screen (OCR, may be noisy):\n${clipped}]\n\n`;
+}
+
 interface PlatformSignature {
   keywords: string[];
   platform: CodePlatform;
@@ -155,21 +167,29 @@ interface UseCodeDetectionOptions {
   enabled?: boolean;
   intervalMs?: number;
   onDetected?: (result: CodeDetectionResult) => void;
+  /** When true, retain the raw OCR text of each scan in `latestOcrText` (Screen Awareness). */
+  retainOcrText?: boolean;
 }
 
 interface UseCodeDetectionReturn {
   lastDetection: CodeDetectionResult | null;
   isScanning: boolean;
   dismiss: () => void;
+  /** Latest raw OCR text from the most recent scan (null unless retainOcrText is on). */
+  latestOcrText: string | null;
 }
 
 export function useCodeDetection({
   enabled = false,
   intervalMs = 30000,
   onDetected,
+  retainOcrText = false,
 }: UseCodeDetectionOptions): UseCodeDetectionReturn {
   const [lastDetection, setLastDetection] = useState<CodeDetectionResult | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [latestOcrText, setLatestOcrText] = useState<string | null>(null);
+  const retainOcrTextRef = useRef(retainOcrText);
+  retainOcrTextRef.current = retainOcrText;
   const isScanningRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastPlatformRef = useRef<CodePlatform | null>(null);
@@ -191,6 +211,10 @@ export function useCodeDetection({
       const worker = await createWorker('eng');
       const { data: { text } } = await worker.recognize(`data:image/png;base64,${screenshot.base64}`);
       await worker.terminate();
+
+      if (retainOcrTextRef.current) {
+        setLatestOcrText(text);
+      }
 
       const result = detectPlatform(text);
       if (result && result.platform !== 'unknown') {
@@ -244,5 +268,5 @@ export function useCodeDetection({
     setLastDetection(null);
   }, [lastDetection]);
 
-  return { lastDetection, isScanning, dismiss };
+  return { lastDetection, isScanning, dismiss, latestOcrText };
 }
