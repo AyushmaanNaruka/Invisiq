@@ -432,6 +432,12 @@ export interface AppSettings {
     // Phase 4
     codeDetectionEnabled: boolean;
     codeDetectionIntervalMs: number;
+    // Post-beta: Ambient Screen Awareness — auto-attach the current screen as
+    // vision context on send, so the user never has to manually screenshot.
+    screenAwarenessEnabled: boolean;
+    // Keep a lightweight rolling OCR text snapshot of the screen between captures
+    // (cheap text context even when no vision image is attached). Higher CPU cost.
+    screenAwarenessRollingOcr: boolean;
   };
 
   audio: {

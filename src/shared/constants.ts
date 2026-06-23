@@ -170,6 +170,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
     // Phase 4
     codeDetectionEnabled: true,
     codeDetectionIntervalMs: 30000,
+    // Post-beta: Ambient Screen Awareness (auto-capture on default; rolling OCR opt-in to save CPU)
+    screenAwarenessEnabled: true,
+    screenAwarenessRollingOcr: false,
   },
 
   audio: {
