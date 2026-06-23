@@ -3,12 +3,20 @@ import type { ImageAttachment, ScreenshotResult, RegionCropRequest } from '@shar
 
 const MAX_SCREENSHOTS = 3;
 
+/** Pure mapper: ScreenshotResult → ImageAttachment (null passes through). */
+export function toAttachment(result: ScreenshotResult | null): ImageAttachment | null {
+  if (!result) return null;
+  return { data: result.base64, mimeType: 'image/png', width: result.width, height: result.height };
+}
+
 interface UseScreenshotReturn {
   pendingScreenshots: ImageAttachment[];
   isCapturing: boolean;
   /** Non-null while the inline region selector is open */
   snipScreenshot: ScreenshotResult | null;
   captureFull: () => Promise<void>;
+  /** Screen Awareness: one-shot silent capture → attachment, WITHOUT touching pending state. */
+  captureSilentNow: () => Promise<ImageAttachment | null>;
   /** Captures a full-screen snapshot and opens the InlineRegionSelector */
   captureRegion: () => Promise<void>;
   /** Called by InlineRegionSelector on mouseup — crops and adds to pending */
@@ -25,19 +33,19 @@ export function useScreenshot(): UseScreenshotReturn {
   const [snipScreenshot, setSnipScreenshot] = useState<ScreenshotResult | null>(null);
 
   const processResult = useCallback((result: ScreenshotResult | null) => {
-    if (!result) return;
-    setPendingScreenshots((prev) => {
-      if (prev.length >= MAX_SCREENSHOTS) return prev;
-      return [
-        ...prev,
-        {
-          data: result.base64,
-          mimeType: 'image/png',
-          width: result.width,
-          height: result.height,
-        },
-      ];
-    });
+    const att = toAttachment(result);
+    if (!att) return;
+    setPendingScreenshots((prev) => (prev.length >= MAX_SCREENSHOTS ? prev : [...prev, att]));
+  }, []);
+
+  const captureSilentNow = useCallback(async (): Promise<ImageAttachment | null> => {
+    try {
+      const result = await window.ghostAPI.screenshot.captureSilent();
+      return toAttachment(result);
+    } catch (err) {
+      console.error('Silent auto-capture failed:', err);
+      return null;
+    }
   }, []);
 
   const captureFull = useCallback(async () => {
@@ -96,6 +104,7 @@ export function useScreenshot(): UseScreenshotReturn {
     isCapturing,
     snipScreenshot,
     captureFull,
+    captureSilentNow,
     captureRegion,
     confirmRegion,
     cancelSnip,
