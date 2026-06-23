@@ -240,6 +240,36 @@ export default function SettingsPrivacy({
             className="rounded accent-accent-primary"
           />
         </label>
+
+        <label className="flex items-center justify-between cursor-pointer">
+          <div>
+            <span className="text-text-primary text-xs block">Screen Awareness</span>
+            <span className="text-text-placeholder text-[10px]">
+              Auto-attach the current screen when you send a message — no screenshot button needed
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={settings.screenAwarenessEnabled ?? true}
+            onChange={(e) => onUpdate('privacy.screenAwarenessEnabled', e.target.checked)}
+            className="rounded accent-accent-primary"
+          />
+        </label>
+
+        <label className="flex items-center justify-between cursor-pointer">
+          <div>
+            <span className="text-text-primary text-xs block">Rolling Screen Text (OCR)</span>
+            <span className="text-text-placeholder text-[10px]">
+              Keep a lightweight text snapshot of the screen for faster context. Uses more CPU.
+            </span>
+          </div>
+          <input
+            type="checkbox"
+            checked={settings.screenAwarenessRollingOcr ?? false}
+            onChange={(e) => onUpdate('privacy.screenAwarenessRollingOcr', e.target.checked)}
+            className="rounded accent-accent-primary"
+          />
+        </label>
       </div>
 
       {/* Beta data — prompt-logging disclosure + delete (§8) */}
