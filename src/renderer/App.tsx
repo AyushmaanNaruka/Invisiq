@@ -37,7 +37,7 @@ import { useTokenCost } from './hooks/useTokenCost';
 import { useInternalKeyboard } from './hooks/useInternalKeyboard';
 import { useWindowSize } from './hooks/useWindowSize';
 import { UNIVERSAL_MODE, CURRENT_TOS_VERSION, PROVIDER_IDS } from '@shared/constants';
-import type { ProviderID } from '@shared/types';
+import type { ProviderID, ImageAttachment } from '@shared/types';
 
 // Initialize AI providers
 import './services/ai-providers/index';
@@ -241,11 +241,23 @@ function AppInner(): JSX.Element {
   });
 
   // Phase 4: code detection
+  // Screen Awareness: a silent capture warmed when a coding problem is detected, so the
+  // next send is near-instant. { shot, at } — reused by handleSend if recent (<4s old).
+  const prefetchedShotRef = useRef<{ shot: ImageAttachment; at: number } | null>(null);
+
   const { lastDetection: codeDetection, dismiss: dismissCodeDetection, latestOcrText } = useCodeDetection({
     // Scan when code-detection OR rolling-OCR screen-awareness is on.
     enabled: (settings.privacy?.codeDetectionEnabled ?? false) || (settings.privacy?.screenAwarenessRollingOcr ?? false),
     intervalMs: settings.privacy?.codeDetectionIntervalMs ?? 30000,
     retainOcrText: settings.privacy?.screenAwarenessRollingOcr ?? false,
+    onDetected: () => {
+      // Proactive prefetch: on a new coding-problem detection, pre-capture once so the
+      // answer is ready the instant the user asks. Only when Screen Awareness is on.
+      if (!settings.privacy?.screenAwarenessEnabled) return;
+      captureSilentNow().then((shot) => {
+        if (shot) prefetchedShotRef.current = { shot, at: Date.now() };
+      });
+    },
   });
 
   const [meetingPanelOpen, setMeetingPanelOpen] = useState(false);
@@ -422,7 +434,10 @@ function AppInner(): JSX.Element {
       // feature is on, silently auto-capture the current screen so the AI "sees" what's
       // on screen — no screenshot button needed. Capture hides the overlay (stealth-safe).
       if (!images && settings.privacy?.screenAwarenessEnabled) {
-        const auto = await captureSilentNow();
+        // Reuse a recent prefetched capture (<4s) for near-instant answers; else capture fresh.
+        const pre = prefetchedShotRef.current;
+        prefetchedShotRef.current = null;
+        const auto = pre && Date.now() - pre.at < 4000 ? pre.shot : await captureSilentNow();
         if (auto) images = [auto];
       }
 
