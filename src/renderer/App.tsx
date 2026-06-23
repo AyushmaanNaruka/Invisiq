@@ -143,6 +143,7 @@ function AppInner(): JSX.Element {
     pendingScreenshots,
     snipScreenshot,
     captureFull,
+    captureSilentNow,
     captureRegion,
     confirmRegion,
     cancelSnip,
@@ -411,9 +412,17 @@ function AppInner(): JSX.Element {
   const handleSend = useCallback(
     async (text: string) => {
       // Build images array from pending screenshots (clone to prevent mutation by clearAll)
-      const images = pendingScreenshots.length > 0
+      let images = pendingScreenshots.length > 0
         ? pendingScreenshots.map((img) => ({ ...img }))
         : undefined;
+
+      // Ambient Screen Awareness: if the user attached NO manual screenshot and the
+      // feature is on, silently auto-capture the current screen so the AI "sees" what's
+      // on screen — no screenshot button needed. Capture hides the overlay (stealth-safe).
+      if (!images && settings.privacy?.screenAwarenessEnabled) {
+        const auto = await captureSilentNow();
+        if (auto) images = [auto];
+      }
 
       // Auto-context: when transcription is active and the user opted in, prepend
       // the live transcript for the AI but show the original text in chat. Gated on
@@ -503,6 +512,8 @@ function AppInner(): JSX.Element {
       settings.activeMode,
       settings.activeModel,
       settings.audio?.autoIncludeTranscript,
+      settings.privacy?.screenAwarenessEnabled,
+      captureSilentNow,
       settings.memory?.enabled,
       settings.memory?.autoExtract,
       settings.memory?.maxContextFacts,
