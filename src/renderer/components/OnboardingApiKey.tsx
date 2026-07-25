@@ -38,6 +38,10 @@ export default function OnboardingApiKey({ onConnectedChange }: OnboardingApiKey
     gemini: { value: '', masked: true, status: 'idle' },
     groq: { value: '', masked: true, status: 'idle' },
     openrouter: { value: '', masked: true, status: 'idle' },
+    // Onboarding stays cloud-key-only (Ollama setup lives in Settings) — this
+    // entry only exists to satisfy Record<ProviderID, KeyState>; it's never
+    // rendered since PROVIDERS above doesn't include 'ollama'.
+    ollama: { value: '', masked: true, status: 'idle' },
   });
 
   const handleKeyChange = useCallback((provider: ProviderID, value: string) => {
