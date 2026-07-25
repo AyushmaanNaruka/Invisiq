@@ -4,7 +4,8 @@
 
 // 'groq' + 'openrouter' added Jun 2026 — both OpenAI-compatible (see openai-compatible.ts).
 // OpenRouter exposes DeepSeek/Qwen/Mistral through a single BYOK key.
-export type ProviderID = 'openai' | 'anthropic' | 'gemini' | 'groq' | 'openrouter';
+// 'ollama' re-added for the open-source release — local server, no API key, dynamic model list.
+export type ProviderID = 'openai' | 'anthropic' | 'gemini' | 'groq' | 'openrouter' | 'ollama';
 
 export type HotkeyAction =
   | 'toggle-overlay'
@@ -397,6 +398,7 @@ export interface AppSettings {
     gemini: ProviderConfig;
     groq: ProviderConfig;
     openrouter: ProviderConfig;
+    ollama: ProviderConfig;
   };
 
   activeProvider: ProviderID;

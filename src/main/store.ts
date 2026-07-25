@@ -20,6 +20,7 @@ interface StoreSchema {
     gemini?: EncryptedPayload;
     groq?: EncryptedPayload;
     openrouter?: EncryptedPayload;
+    ollama?: EncryptedPayload;
   };
   windowState: WindowState;
   auth?: StoredAuthSession;
@@ -192,8 +193,9 @@ export function getNestedSetting(key: string): unknown {
 //  API KEYS (ENCRYPTED)
 // ══════════════════════════════════════
 
-// Ollama removed permanently for the beta (Beta Launch Plan §6.3) — cloud-only.
-const VALID_PROVIDERS: ProviderID[] = PROVIDER_IDS;
+// PROVIDER_IDS is the 5 cloud BYOK providers; ollama is a local server (no
+// API key) added separately so setApiKey/getApiKey/removeApiKey accept it.
+const VALID_PROVIDERS: ProviderID[] = [...PROVIDER_IDS, 'ollama'];
 
 export function setApiKey(provider: ProviderID, key: string): void {
   if (!VALID_PROVIDERS.includes(provider)) {

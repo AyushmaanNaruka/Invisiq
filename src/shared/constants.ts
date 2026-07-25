@@ -137,6 +137,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     gemini: { hasKey: false, isValid: false },
     groq: { hasKey: false, isValid: false },
     openrouter: { hasKey: false, isValid: false },
+    ollama: { hasKey: false, isValid: false },
   },
 
   activeProvider: 'openai',
@@ -444,14 +445,13 @@ export const ALL_MODELS: ModelConfig[] = [
 //  AI API DOMAINS (for CORS bypass)
 // ══════════════════════════════════════
 
-// Cloud-only (Beta Launch Plan §6.3). Local LLM endpoints removed permanently —
-// no localhost entry means an OpenAI-compatible local server can't be reached.
 export const AI_API_DOMAINS = [
   'https://api.openai.com/*',
   'https://api.anthropic.com/*',
   'https://generativelanguage.googleapis.com/*',
   'https://api.groq.com/*',
   'https://openrouter.ai/*',
+  'http://localhost:11434/*',
 ];
 
 // ══════════════════════════════════════

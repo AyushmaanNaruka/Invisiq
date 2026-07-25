@@ -63,7 +63,9 @@ import { getStatusReady as entitlementStatus, refresh as entitlementRefresh } fr
 import { trackEvent, capturePrompt, acceptTos, deleteMyData } from './analytics';
 import { CURRENT_TOS_VERSION, PROVIDER_IDS } from '@shared/constants';
 
-const VALID_PROVIDERS: ProviderID[] = PROVIDER_IDS;
+// PROVIDER_IDS is the 5 cloud BYOK providers; ollama is a local server (no
+// API key) added separately so store:set-api-key etc. accept it.
+const VALID_PROVIDERS: ProviderID[] = [...PROVIDER_IDS, 'ollama'];
 
 export function registerIPCHandlers(): void {
   // ══════════════════════════════════════
