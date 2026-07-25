@@ -26,7 +26,12 @@ providerManager.registerLazy('openrouter', async () => {
   return new OpenRouterProvider();
 });
 
-// Ollama removed permanently for the beta (Beta Launch Plan §6.3) — cloud-only.
+// Ollama has no SDK to lazy-load, but registerLazy's factory pattern works
+// fine for a plain construction too — resolveProvider awaits it once.
+providerManager.registerLazy('ollama', async () => {
+  const { OllamaProvider } = await import('./ollama');
+  return new OllamaProvider();
+});
 
 export { providerManager };
 export type { AIProvider } from './types';
