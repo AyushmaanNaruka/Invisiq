@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  X, Eye, EyeOff, Check, CircleAlert, LoaderCircle, Trash2,
+  X, Eye, EyeOff, Check, CircleAlert, LoaderCircle, Trash2, Server,
   Key, Keyboard, Monitor, Shield, Mic, Brain, Smartphone, Cpu,
   UserCircle, LogOut, GraduationCap, ShieldCheck,
 } from 'lucide-react';
@@ -37,13 +37,13 @@ interface KeyState {
   error?: string;
 }
 
-// Cloud-only (Beta Launch Plan §6.3) — Ollama removed permanently.
-const PROVIDERS: { id: ProviderID; name: string; placeholder: string }[] = [
+const PROVIDERS: { id: ProviderID; name: string; placeholder: string; isServerUrl?: boolean }[] = [
   { id: 'openai', name: 'OpenAI', placeholder: 'sk-proj-...' },
   { id: 'anthropic', name: 'Anthropic', placeholder: 'sk-ant-...' },
   { id: 'gemini', name: 'Google Gemini', placeholder: 'AIza...' },
   { id: 'groq', name: 'Groq', placeholder: 'gsk_...' },
   { id: 'openrouter', name: 'OpenRouter', placeholder: 'sk-or-v1-...' },
+  { id: 'ollama', name: 'Ollama (Local)', placeholder: 'http://localhost:11434', isServerUrl: true },
 ];
 
 type TabId = 'account' | 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio' | 'memory' | 'companion' | 'resilience';
@@ -69,17 +69,24 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
     gemini: { value: '', masked: true, status: 'idle' },
     groq: { value: '', masked: true, status: 'idle' },
     openrouter: { value: '', masked: true, status: 'idle' },
+    ollama: { value: 'http://localhost:11434', masked: false, status: 'idle' },
   });
 
   // Load existing keys on open
   useEffect(() => {
     if (!isOpen) return;
-    PROVIDERS.forEach(async ({ id }) => {
+    PROVIDERS.forEach(async ({ id, isServerUrl }) => {
       const { key } = await window.ghostAPI.store.getApiKey(id);
       if (key) {
         setKeys((prev) => ({
           ...prev,
-          [id]: { ...prev[id], value: key, status: 'idle' },
+          [id]: { ...prev[id], value: key, masked: isServerUrl ? false : prev[id].masked, status: 'idle' },
+        }));
+      } else if (isServerUrl) {
+        // Ollama defaults to localhost — no stored value means use the default
+        setKeys((prev) => ({
+          ...prev,
+          [id]: { ...prev[id], value: 'http://localhost:11434', masked: false, status: 'idle' },
         }));
       }
     });
@@ -295,25 +302,30 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                   Requests go straight from your machine to the AI provider.
                 </p>
               </div>
-              {PROVIDERS.map(({ id, name, placeholder }) => {
+              {PROVIDERS.map(({ id, name, placeholder, isServerUrl }) => {
                 const keyState = keys[id];
                 return (
                   <div key={id} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-text-primary text-sm font-medium flex items-center gap-1.5">
+                        {isServerUrl && <Server size={12} className="text-text-secondary" />}
                         {name}
                       </label>
                       {keyState.status === 'valid' && (
                         <span className="flex items-center gap-1 text-status-success text-xs">
-                          <Check size={12} /> Valid
+                          <Check size={12} /> {isServerUrl ? 'Connected' : 'Valid'}
                         </span>
                       )}
                       {keyState.status === 'invalid' && (
                         <span className="flex items-center gap-1 text-status-error text-xs">
-                          <CircleAlert size={12} /> Invalid
+                          <CircleAlert size={12} /> {isServerUrl ? 'Unreachable' : 'Invalid'}
                         </span>
                       )}
                     </div>
+
+                    {isServerUrl && (
+                      <p className="text-text-secondary text-[10px]">Server URL (no API key needed)</p>
+                    )}
 
                     <div className="relative">
                       <input
@@ -324,12 +336,14 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                         placeholder={placeholder}
                         className="w-full bg-bg-input border border-border-subtle rounded-md px-3 py-2 pr-10 text-sm text-text-primary placeholder:text-text-placeholder focus:outline-none focus:border-border-focus transition-colors"
                       />
-                      <button
-                        onClick={() => toggleMask(id)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
-                      >
-                        {keyState.masked ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
+                      {!isServerUrl && (
+                        <button
+                          onClick={() => toggleMask(id)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+                        >
+                          {keyState.masked ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      )}
                     </div>
 
                     {keyState.error && (
@@ -349,10 +363,10 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                             <LoaderCircle size={12} className="animate-spin" /> Testing...
                           </>
                         ) : (
-                          'Test Key'
+                          isServerUrl ? 'Test Connection' : 'Test Key'
                         )}
                       </button>
-                      {keyState.value.trim() && (
+                      {keyState.value.trim() && !isServerUrl && (
                         <GhostTooltip content="Remove API key" placement="top">
                           <button
                             onClick={() => handleRemoveKey(id)}
