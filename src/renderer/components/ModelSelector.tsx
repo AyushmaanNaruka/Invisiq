@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Eye, Lock } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { ChevronDown, Eye, Lock, Server } from 'lucide-react';
 import { GhostTooltip } from './ui/GhostTooltip';
 import { ALL_MODELS, PROVIDER_IDS } from '@shared/constants';
+import { providerManager } from '../services/ai-providers/provider-manager';
 import type { ModelConfig, ProviderID } from '@shared/types';
 
 interface ModelSelectorProps {
@@ -12,14 +13,17 @@ interface ModelSelectorProps {
   compact?: boolean;
 }
 
-// Cloud-only (Beta Launch Plan §6.3) — Ollama removed permanently.
 const PROVIDER_LABELS: Record<ProviderID, string> = {
   openai: 'OPENAI',
   anthropic: 'ANTHROPIC',
   gemini: 'GOOGLE',
   groq: 'GROQ',
   openrouter: 'OPENROUTER',
+  ollama: 'OLLAMA (LOCAL)',
 };
+// Static, cost-tracked cloud providers in display order. Ollama is NOT in
+// PROVIDER_IDS (it's a local server with a dynamic model list, not a static
+// catalog) — it's appended separately below, after its models are fetched.
 const PROVIDER_ORDER: ProviderID[] = PROVIDER_IDS;
 
 function abbreviateModelName(name: string): string {
@@ -40,9 +44,13 @@ function ModelSelector({
   compact = false,
 }: ModelSelectorProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
+  const [ollamaModels, setOllamaModels] = useState<ModelConfig[]>([]);
   const ref = useRef<HTMLDivElement>(null);
+  const ollamaRefreshed = useRef(false);
 
-  const currentModel = ALL_MODELS.find((m) => m.id === activeModel) || ALL_MODELS[0];
+  // Combine static (cloud) models with dynamically-fetched Ollama models
+  const allModels = [...ALL_MODELS, ...ollamaModels];
+  const currentModel = allModels.find((m) => m.id === activeModel) || ALL_MODELS[0];
 
   useEffect(() => {
     function handleClick(e: MouseEvent): void {
@@ -54,8 +62,32 @@ function ModelSelector({
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  // Refresh Ollama's model list when the dropdown opens (once per open)
+  const refreshOllama = useCallback(async () => {
+    try {
+      const ollamaProvider = await providerManager.resolveProvider('ollama');
+      if (!ollamaProvider) return;
+      const { key: serverUrl } = await window.ghostAPI.store.getApiKey('ollama');
+      ollamaProvider.initialize(serverUrl || 'http://localhost:11434');
+      const models = await providerManager.refreshModels('ollama');
+      setOllamaModels(models);
+    } catch {
+      // Ollama not available — leave ollamaModels empty, section shows "Not detected"
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && !ollamaRefreshed.current) {
+      ollamaRefreshed.current = true;
+      refreshOllama();
+    }
+    if (!isOpen) {
+      ollamaRefreshed.current = false;
+    }
+  }, [isOpen, refreshOllama]);
+
   // Group models by provider
-  const grouped = ALL_MODELS.reduce<Partial<Record<ProviderID, ModelConfig[]>>>((acc, model) => {
+  const grouped = allModels.reduce<Partial<Record<ProviderID, ModelConfig[]>>>((acc, model) => {
     if (!acc[model.provider]) acc[model.provider] = [];
     acc[model.provider]!.push(model);
     return acc;
@@ -116,6 +148,49 @@ function ModelSelector({
               </div>
             );
           })}
+
+          {/* Ollama: dynamic local models, shown separately from the static cloud catalog */}
+          {ollamaModels.length > 0 && (
+            <div>
+              <div className="px-3 py-1.5 text-text-placeholder text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                <Server size={9} />
+                {PROVIDER_LABELS.ollama}
+              </div>
+              {ollamaModels.map((model) => (
+                <button
+                  key={model.id}
+                  onClick={() => {
+                    onModelChange(model.id);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left hover:bg-bg-hover transition-colors ${
+                    model.id === activeModel ? 'text-accent-primary' : 'text-text-primary'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>{model.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {model.supportsVision && <Eye size={10} className="text-text-secondary" />}
+                    <span className="text-[9px] text-status-success">Free</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Show the Ollama section even when nothing is detected, so users discover it */}
+          {ollamaModels.length === 0 && (
+            <div>
+              <div className="px-3 py-1.5 text-text-placeholder text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                <Server size={9} />
+                {PROVIDER_LABELS.ollama}
+              </div>
+              <div className="px-3 py-2 text-text-placeholder text-[10px]">
+                Not detected. Install Ollama and pull a model to use local AI.
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
