@@ -74,19 +74,24 @@ async function ocrExtractText(images: ImageAttachment[]): Promise<string> {
         logger.log('[useAI] OCR: workers ready after', Date.now() - t0, 'ms');
 
         // Distribute images across workers; each runs recognize() concurrently on its own thread.
-        const results = await Promise.all(
-          targets.map(async (img, idx) => {
-            const worker = workers[idx % workerCount];
-            const ti = Date.now();
-            const dataUri = `data:${img.mimeType};base64,${img.data}`;
-            const { data: { text } } = await worker.recognize(dataUri);
-            logger.log(`[useAI] OCR: image ${idx + 1}/${targets.length} done in ${Date.now() - ti}ms, ${text.length} chars`);
-            return text.trim();
-          })
-        );
-
-        await Promise.all(workers.map((w) => w.terminate().catch(() => undefined)));
-        return results.filter(Boolean).join('\n\n');
+        // Wrapped in try/finally so a failed recognize() (or the outer race losing to
+        // the timeout while this keeps running in the background) still terminates
+        // every worker instead of leaking ~12MB of loaded training data each.
+        try {
+          const results = await Promise.all(
+            targets.map(async (img, idx) => {
+              const worker = workers[idx % workerCount];
+              const ti = Date.now();
+              const dataUri = `data:${img.mimeType};base64,${img.data}`;
+              const { data: { text } } = await worker.recognize(dataUri);
+              logger.log(`[useAI] OCR: image ${idx + 1}/${targets.length} done in ${Date.now() - ti}ms, ${text.length} chars`);
+              return text.trim();
+            })
+          );
+          return results.filter(Boolean).join('\n\n');
+        } finally {
+          await Promise.all(workers.map((w) => w.terminate().catch(() => undefined)));
+        }
       })(),
       new Promise<string>((_, reject) =>
         setTimeout(() => reject(new Error(`OCR timeout after ${OCR_TIMEOUT_MS}ms`)), OCR_TIMEOUT_MS)
@@ -151,7 +156,20 @@ export function useAI(): UseAIReturn {
   const initializedProviders = useRef<Set<string>>(new Set());
 
   const initializeProvider = useCallback(async (modelId: string): Promise<AIProvider> => {
-    const result = providerManager.getModelById(modelId);
+    let result = providerManager.getModelById(modelId);
+    if (!result) {
+      // Not in the static cloud catalog — it may be an Ollama model whose dynamic
+      // list hasn't been fetched yet this session (e.g. right after an app restart,
+      // before the user opened the model dropdown or Settings). Try resolving
+      // Ollama and refreshing its model list once before giving up.
+      const ollamaProvider = await providerManager.resolveProvider('ollama');
+      if (ollamaProvider) {
+        const { key: serverUrl } = await window.ghostAPI.store.getApiKey('ollama');
+        ollamaProvider.initialize(serverUrl || 'http://localhost:11434');
+        await providerManager.refreshModels('ollama');
+        result = providerManager.getModelById(modelId);
+      }
+    }
     if (!result) throw new Error(`Model ${modelId} not found`);
 
     const { providerId } = result;
@@ -206,10 +224,11 @@ export function useAI(): UseAIReturn {
       let ollamaOcrApplied = false;
       let isDebugTurn = false;
 
-      const ocrImages = options.images && options.images.length > 0
-        ? options.images
-        : contextMessages.filter((m) => m.role === 'user' && m.images?.length)
-            .pop()?.images ?? [];
+      // Only OCR images newly attached THIS turn — never fall back to reusing an
+      // older screenshot from earlier in the conversation. Reusing history here
+      // would silently re-run OCR on a stale image and misclassify an unrelated
+      // follow-up question as a "fix this bug" debug turn.
+      const ocrImages = options.images ?? [];
 
       if (provider.id === 'ollama' && ocrImages.length > 0) {
         let ocrText = await ocrExtractText(ocrImages);
@@ -279,6 +298,17 @@ export function useAI(): UseAIReturn {
           });
           logger.log('[useAI] Ollama enrichment: OCR=%d chars, debugTurn=%s', ocrText.length, isDebugTurn);
         }
+      }
+
+      // Strip images from EVERY message once Ollama enrichment has run — not just
+      // the last one. Without this, older screenshots from earlier turns still
+      // reach ollama.ts's message builder (which attaches any user message's
+      // images), silently re-triggering the "describe instead of solve" behavior
+      // this workaround exists to prevent, and bloating the small context window.
+      if (ollamaOcrApplied) {
+        enrichedMessages = enrichedMessages.map((msg) =>
+          msg.images && msg.images.length > 0 ? { ...msg, images: undefined } : msg
+        );
       }
 
       // Keep first user message + recent turns when over the context budget.
