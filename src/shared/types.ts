@@ -68,6 +68,11 @@ export interface ImageAttachment {
   mimeType: 'image/png' | 'image/jpeg';
   width?: number;
   height?: number;
+  // Whether this image was deliberately attached by the user ('manual' — screenshot
+  // button, snip, region capture) or silently grabbed by Ambient Screen Awareness
+  // ('auto'). Optional/undefined is treated as manual by consumers that care about
+  // this distinction (e.g. useAI.ts's debug-turn detection).
+  source?: 'manual' | 'auto';
 }
 
 export interface TokenUsage {

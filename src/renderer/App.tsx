@@ -426,8 +426,8 @@ function AppInner(): JSX.Element {
   const handleSend = useCallback(
     async (text: string) => {
       // Build images array from pending screenshots (clone to prevent mutation by clearAll)
-      let images = pendingScreenshots.length > 0
-        ? pendingScreenshots.map((img) => ({ ...img }))
+      let images: ImageAttachment[] | undefined = pendingScreenshots.length > 0
+        ? pendingScreenshots.map((img) => ({ ...img, source: 'manual' as const }))
         : undefined;
 
       // Ambient Screen Awareness: if the user attached NO manual screenshot and the
@@ -438,7 +438,7 @@ function AppInner(): JSX.Element {
         const pre = prefetchedShotRef.current;
         prefetchedShotRef.current = null;
         const auto = pre && Date.now() - pre.at < 4000 ? pre.shot : await captureSilentNow();
-        if (auto) images = [auto];
+        if (auto) images = [{ ...auto, source: 'auto' as const }];
       }
 
       // Auto-context: when transcription is active and the user opted in, prepend

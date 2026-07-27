@@ -258,7 +258,8 @@ export function useAI(): UseAIReturn {
           // Detect "fix this code" follow-ups: prior assistant turn had code,
           // user now shows an error/wrong-output screenshot. Build a structured
           // debug prompt that explicitly pins the prior code as ground truth.
-          const debug = detectDebugTurn(contextMessages, true);
+          const hasManualImage = ocrImages.some((img) => img.source !== 'auto');
+          const debug = detectDebugTurn(contextMessages, hasManualImage);
           isDebugTurn = debug.isDebug;
 
           enrichedMessages = contextMessages.map((msg, idx) => {
