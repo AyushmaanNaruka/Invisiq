@@ -32,7 +32,7 @@
 
 InvisiQ is a desktop overlay that sits on top of every application on your screen — **completely invisible to all screen capture, screen sharing, recording software, and proctoring tools**. It uses Windows' native `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` API to make the overlay window undetectable.
 
-Capture your screen, ask questions, get real-time AI responses with streaming — all through a sleek interface controlled entirely by keyboard shortcuts. Bring your own API key for **OpenAI, Anthropic, or Google Gemini** (cloud-only). Conversations, settings, and API keys stay encrypted on your machine.
+Capture your screen, ask questions, get real-time AI responses with streaming — all through a sleek interface controlled entirely by keyboard shortcuts. Bring your own API key for **OpenAI, Anthropic, Google Gemini, Groq, or OpenRouter**, or skip the key entirely and run a **local Ollama** model. Conversations, settings, and API keys stay encrypted on your machine.
 
 > **No sign-in, no trial, no telemetry.** InvisiQ is fully open-source and runs entirely on your machine — no account, no gate, no expiration. BYOK cloud provider keys (OpenAI, Anthropic, Google Gemini) are optional and added in Settings → API Keys, or skip cloud providers entirely and run fully free/offline against a local Ollama server (install Ollama, `ollama pull <model>`, then point InvisiQ at it in Settings).
 
@@ -50,8 +50,8 @@ The window is **excluded from all capture APIs** at the OS level. Snipping Tool,
 </td>
 <td width="50%" valign="top">
 
-### 🤖 Multi-Provider AI (BYOK)
-Connect to **OpenAI**, **Anthropic Claude**, or **Google Gemini** with your own API keys. Switch models mid-conversation (`Ctrl+Shift+]` / `[`). Stream responses token-by-token. Cloud-only — the local-LLM/Ollama path was removed.
+### 🤖 Multi-Provider AI (BYOK + Local)
+Connect to **OpenAI**, **Anthropic Claude**, **Google Gemini**, **Groq**, or **OpenRouter** with your own API keys — or run a **local Ollama** server for free, fully offline. Switch models mid-conversation (`Ctrl+Shift+]` / `[`). Stream responses token-by-token.
 
 </td>
 </tr>
@@ -155,7 +155,7 @@ Single portable `.exe` — no installer needed. Just download, double-click, and
 | **Google** | Gemini 2.5 Flash | Yes | 1M | Fast |
 | **Google** | Gemini 2.5 Pro | Yes | 1M | Medium |
 
-> Cloud-only, bring-your-own-key. The Ollama / local-LLM path was removed permanently. Model list lives in `src/shared/constants.ts`.
+> Bring-your-own-key for the cloud providers above (also Groq and OpenRouter, not shown in this table), or add a local Ollama server (no key needed) in Settings — its model list is fetched dynamically from the running server rather than a static table. Model list lives in `src/shared/constants.ts`.
 
 <br/>
 
@@ -220,8 +220,8 @@ Single portable `.exe` — no installer needed. Just download, double-click, and
 ║                            │  │  └───┬────┘ └────┬─────┘         │ │  ║
 ║                            │  │      │           │               │ │  ║
 ║                            │  │  ┌───┴────┐                     │ │  ║
-║                            │  │  │ Google │   (cloud-only, BYOK) │ │  ║
-║                            │  │  │ Gemini │                     │ │  ║
+║                            │  │  │ Google │   (+Groq/OpenRouter/ │ │  ║
+║                            │  │  │ Gemini │    Ollama — BYOK)    │ │  ║
 ║                            │  │  └───┬────┘                     │ │  ║
 ║                            │  │      │                          │ │  ║
 ║                            │  └──────┼──────────────────────────┘ │  ║
@@ -230,8 +230,8 @@ Single portable `.exe` — no installer needed. Just download, double-click, and
 ║                                      │                               ║
 ╚══════════════════════════════════════╪═══════════════════════════════╝
                                        │
-                              Cloud APIs (HTTPS)
-                       OpenAI · Anthropic · Google Gemini
+                    Cloud APIs (HTTPS) — or localhost for Ollama
+              OpenAI · Anthropic · Google Gemini · Groq · OpenRouter · Ollama
 ```
 
 ### Screenshot Capture Flow
@@ -416,15 +416,13 @@ npm run package:dir
 
 ## 📖 User Guide
 
-### Setting Up AI Providers (cloud-only, BYOK)
+### Setting Up AI Providers (BYOK + local)
 
 1. Open InvisiQ → **Settings** (gear icon or `Ctrl+,`)
 2. Go to **API Keys** tab
-3. Paste your API key for **OpenAI**, **Anthropic**, or **Google Gemini**
-4. The key is validated automatically and stored with AES-256-GCM encryption, tied to a machine-specific key — no trial, no expiration
-5. Select a model from the **model dropdown** in the header bar (or cycle with `Ctrl+Shift+]` / `[`)
-
-> The local-LLM / Ollama path was removed permanently — InvisiQ is cloud-only.
+3. Paste your API key for **OpenAI**, **Anthropic**, **Google Gemini**, **Groq**, or **OpenRouter** — or, for **Ollama**, enter your local server URL instead (defaults to `http://localhost:11434`, no key needed)
+4. Cloud keys are validated automatically and stored with AES-256-GCM encryption, tied to a machine-specific key — no trial, no expiration. Ollama just needs a running `ollama serve` with a model pulled.
+5. Select a model from the **model dropdown** in the header bar (or cycle with `Ctrl+Shift+]` / `[`) — Ollama models appear under a separate "LOCAL" group once detected.
 
 ### Taking Screenshots
 
@@ -547,7 +545,7 @@ There are no built-in modes or templates to choose from anymore — a single int
 | **Process Isolation** | `contextIsolation: true`, `nodeIntegration: false`, IPC-only communication |
 | **Process Disguise** | Appears as "Runtime Broker" with Microsoft Corporation metadata |
 | **Data Residency** | Conversations, settings, and API keys stay encrypted on your machine. No telemetry, no analytics, no sign-in — nothing is sent to a backend. |
-| **API Architecture** | BYOK (Bring Your Own Key), cloud-only. AI calls go direct to OpenAI/Anthropic/Google. No auth, trial, or analytics backend. |
+| **API Architecture** | BYOK (Bring Your Own Key) for cloud providers, or a local Ollama server. AI calls go direct to the provider (or your own machine for Ollama) — never through a backend. No auth, trial, or analytics backend. |
 | **Screenshot Lifecycle** | Screenshots cleared from memory after sending. Not persisted to disk. |
 | **Portable Build** | No installer, no registry entries, no Start Menu — just a standalone `.exe` |
 
@@ -590,7 +588,7 @@ ghostai/
 │   │   ├── components/          # UI components (30+ files)
 │   │   ├── hooks/               # Custom hooks (12+ files)
 │   │   ├── services/
-│   │   │   ├── ai-providers/    # OpenAI, Anthropic, Gemini (cloud-only)
+│   │   │   ├── ai-providers/    # OpenAI, Anthropic, Gemini, Groq, OpenRouter, Ollama
 │   │   │   └── speech.ts        # Web Speech + Whisper fallback
 │   │   ├── styles/
 │   │   │   └── globals.css      # Tailwind + dark/light themes
@@ -640,7 +638,7 @@ ghostai/
 ### Phase 3 — Production Polish ✅
 - [x] Multi-monitor support with hot-plug detection
 - [x] 3-step onboarding wizard
-- [x] ~~Ollama local AI provider~~ (removed — cloud-only)
+- [x] Ollama local AI provider (later removed for the beta, then re-added for the open-source release — see Phase 7)
 - [x] Light theme + per-request cost tracking
 - [x] Auto-updater via GitHub Releases
 - [x] Responsive layout + internal keyboard shortcuts
@@ -661,11 +659,16 @@ ghostai/
 - [x] **Google sign-in** + **server-clocked 14-day trial** (fail-closed) on a Supabase backend
 - [x] **Analytics + prompt capture** behind a T&C gate; **remote kill-switch + minimum-version floor**
 - [x] **Real auto-update** (NSIS feed) + forced-update path
-- [x] **Cloud-only** (Ollama removed); hotkeys migrated Alt → Shift
+- [x] Cloud-only for this phase (Ollama removed); hotkeys migrated Alt → Shift
 - [x] **Single universal mode** — modes + templates removed; one intent-adaptive prompt
 - [x] OCR repurposed to on-screen code/platform detection; portable distribution
 
-### Phase 6 — Future / Act 2
+### Phase 7 — Open Source ✅
+- [x] **Removed the entire beta gating stack** — Google sign-in, server-clocked 14-day trial, prompt-capture analytics + T&C gate, remote kill-switch/version-floor. The app now boots straight to the main UI; no account, no backend dependency beyond the AI providers themselves.
+- [x] **Ollama re-added** — local server support (`Settings → API Keys`, no key needed, defaults to `http://localhost:11434`), with OCR-based vision workaround and small-context-window handling for local models.
+- [x] Encryption collapsed to a single machine-only key (the entitlement-bound scheme this replaced is gone — a saved key from before this change needs a one-time re-entry).
+
+### Phase 8 — Future / Act 2
 - [ ] Own AI backend (managed inference; remove BYOK requirement)
 - [ ] Admin / org-level standardized prompt pushed to a fleet
 - [ ] Plugin system · voice-to-voice mode · multi-window · macOS
