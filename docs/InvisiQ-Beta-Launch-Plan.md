@@ -1,3 +1,9 @@
+> **⚠ HISTORICAL — SUPERSEDED (2026-07-25):** This document describes the
+> gated-beta design (Google auth, server-clocked trial, analytics, T&C gate,
+> kill-switch). That entire stack was removed for the open-source release —
+> see CLAUDE.md's "Beta Launch Gating — Removed for Open Source" section for
+> current behavior. Kept for historical reference only.
+
 # InvisiQ — Beta Launch & Product Plan: Auth, Trial, Anti-Tamper, Auto-Update & Own AI Backend
 
 > **Status:** Proposed — awaiting build approval

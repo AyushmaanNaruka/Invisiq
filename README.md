@@ -34,7 +34,7 @@ InvisiQ is a desktop overlay that sits on top of every application on your scree
 
 Capture your screen, ask questions, get real-time AI responses with streaming — all through a sleek interface controlled entirely by keyboard shortcuts. Bring your own API key for **OpenAI, Anthropic, or Google Gemini** (cloud-only). Conversations, settings, and API keys stay encrypted on your machine.
 
-> **Beta note:** the shipping beta requires a Google sign-in and runs on a 14-day trial. It captures usage analytics and your typed prompts (disclosed and accepted via an in-app T&C gate) to improve the product — screenshots and OCR text are never uploaded, and prompt data is purged after 30 days. This is Act 1 of a two-act plan (BYOK beta → managed AI backend).
+> **No sign-in, no trial, no telemetry.** InvisiQ is fully open-source and runs entirely on your machine — no account, no gate, no expiration. BYOK cloud provider keys (OpenAI, Anthropic, Google Gemini) are optional and added in Settings → API Keys, or skip cloud providers entirely and run fully free/offline against a local Ollama server (install Ollama, `ollama pull <model>`, then point InvisiQ at it in Settings).
 
 <br/>
 
@@ -128,8 +128,8 @@ Dual engine speech recognition: **Web Speech API** + **Whisper**. Live meeting a
 <tr>
 <td width="50%" valign="top">
 
-### 💰 Cost Tracking & Trial
-Per-request, per-conversation, and per-session token and cost tracking in the status bar. Beta runs on a server-clocked 14-day trial with a countdown banner; Google sign-in required.
+### 💰 Cost Tracking
+Per-request, per-conversation, and per-session token and cost tracking in the status bar. No trial, no sign-in — free to use for as long as you want.
 
 </td>
 <td width="50%" valign="top">
@@ -336,7 +336,6 @@ Channels: {domain}:{action}
   clipboard:* conversation:* app:*         monitors:*
   update:*    audio:*        companion:*   memory:*
   export:*    resilience:*   capture:*     invisible-input:*
-  auth:*      entitlement:*  analytics:*   tos:*
 ```
 
 <br/>
@@ -361,10 +360,8 @@ Channels: {domain}:{action}
 | Styling | TailwindCSS 3 + Framer Motion 11 | Utility-first theming + animations |
 | Build | electron-vite 5 | Unified main/preload/renderer builds |
 | AI (Cloud, BYOK) | openai, @anthropic-ai/sdk, @google/generative-ai | Provider SDKs with streaming (lazy-loaded) |
-| Backend (Beta) | Supabase (Postgres + Edge Functions) | Auth, trial entitlement, analytics, kill-switch |
-| Auth (Beta) | Google OAuth via Supabase | Sign-in gate |
 | OCR | Tesseract.js 5 | On-screen code/platform detection |
-| Storage | electron-store + AES-256-GCM | Encrypted key/config storage (entitlement-bound) |
+| Storage | electron-store + AES-256-GCM | Encrypted key/config storage (machine-bound) |
 | Updates | electron-updater (NSIS feed) | Auto-update via GitHub Releases |
 | Markdown | react-markdown + highlight.js | Rich response rendering |
 | Icons | lucide-react | UI iconography |
@@ -378,7 +375,7 @@ Channels: {domain}:{action}
 
 - **Node.js** 18+ and **npm** 9+
 - **Windows 10** version 2004 or later (required for `WDA_EXCLUDEFROMCAPTURE`)
-- A Google account (beta sign-in) and an API key from at least one provider: [OpenAI](https://platform.openai.com/api-keys) / [Anthropic](https://console.anthropic.com/) / [Google AI Studio](https://aistudio.google.com/apikey)
+- (Optional) An API key from a cloud provider: [OpenAI](https://platform.openai.com/api-keys) / [Anthropic](https://console.anthropic.com/) / [Google AI Studio](https://aistudio.google.com/apikey) — or install [Ollama](https://ollama.com) and pull a model to run fully free/offline
 
 ### Install & Run
 
@@ -412,10 +409,8 @@ npm run package:dir
 
 ### First Launch
 
-1. **Sign in with Google** (beta gate), then accept the **Terms & Conditions** (discloses prompt/analytics logging)
-2. The **onboarding wizard** guides you through API key setup, hotkey reference, and a stealth self-test
-3. Press **Ctrl+Shift+G** to toggle the overlay; the gear icon opens **Settings** to manage your API key
-4. Your 14-day trial countdown shows in the banner — you're ready to go
+1. No sign-in, no trial — the app boots straight to the **onboarding wizard**, which guides you through API key setup (optional), hotkey reference, and a stealth self-test
+2. Press **Ctrl+Shift+G** to toggle the overlay; the gear icon opens **Settings** to manage your API key or local Ollama server
 
 <br/>
 
@@ -426,7 +421,7 @@ npm run package:dir
 1. Open InvisiQ → **Settings** (gear icon or `Ctrl+,`)
 2. Go to **API Keys** tab
 3. Paste your API key for **OpenAI**, **Anthropic**, or **Google Gemini**
-4. The key is validated automatically and stored with AES-256-GCM encryption (the key is **entitlement-bound** during the beta — it's decryptable only while your trial is active)
+4. The key is validated automatically and stored with AES-256-GCM encryption, tied to a machine-specific key — no trial, no expiration
 5. Select a model from the **model dropdown** in the header bar (or cycle with `Ctrl+Shift+]` / `[`)
 
 > The local-LLM / Ollama path was removed permanently — InvisiQ is cloud-only.
@@ -548,11 +543,11 @@ There are no built-in modes or templates to choose from anymore — a single int
 |:-------|:---------------|
 | **Window Invisibility** | `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` via Electron's `setContentProtection(true)` |
 | **Stealth Watchdog** | Re-applies content protection every 2 seconds |
-| **Key Encryption** | AES-256-GCM; machine-specific key (PBKDF2, 100K iters, SHA-512) + a beta **entitlement-bound** key (machine ID + server fragment) |
+| **Key Encryption** | AES-256-GCM; machine-specific key (PBKDF2, 100K iters, SHA-512) |
 | **Process Isolation** | `contextIsolation: true`, `nodeIntegration: false`, IPC-only communication |
 | **Process Disguise** | Appears as "Runtime Broker" with Microsoft Corporation metadata |
-| **Data Residency** | Conversations, settings, and API keys stay encrypted on your machine. **Beta telemetry:** usage events + typed prompts are sent to the backend (disclosed via T&C, PII-redacted, purged after 30 days) — screenshots/OCR are never uploaded. `analytics:delete-my-data` removes your prompt data. |
-| **API Architecture** | BYOK (Bring Your Own Key), cloud-only. AI calls go direct to OpenAI/Anthropic/Google. Auth, trial, and analytics use a Supabase backend. |
+| **Data Residency** | Conversations, settings, and API keys stay encrypted on your machine. No telemetry, no analytics, no sign-in — nothing is sent to a backend. |
+| **API Architecture** | BYOK (Bring Your Own Key), cloud-only. AI calls go direct to OpenAI/Anthropic/Google. No auth, trial, or analytics backend. |
 | **Screenshot Lifecycle** | Screenshots cleared from memory after sending. Not persisted to disk. |
 | **Portable Build** | No installer, no registry entries, no Start Menu — just a standalone `.exe` |
 
@@ -585,9 +580,6 @@ ghostai/
 │   │   ├── capture-controller.ts # Model B capture session (epoch, heartbeat, ladder)
 │   │   ├── companion-server.ts  # HTTP + WebSocket companion server
 │   │   ├── export-service.ts    # JSON/MD/TXT/PDF export
-│   │   ├── auth.ts              # Beta: Google OAuth (Supabase)
-│   │   ├── entitlement.ts       # Beta: server-clocked 14-day trial
-│   │   ├── analytics.ts         # Beta: event + prompt capture (T&C-gated)
 │   │   └── tray.ts              # Optional system tray icon
 │   │
 │   ├── preload/

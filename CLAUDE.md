@@ -714,23 +714,20 @@ Main process handles: window management, hotkeys, screenshots, storage. Renderer
 
 ---
 
-## Beta Launch — Auth, Trial, Analytics & Kill-Switch
+## Beta Launch Gating — Removed for Open Source
 
-The shipping beta is **gated and instrumented** (Act 1 of the two-act plan: BYOK beta → own AI backend). Full design: `docs/InvisiQ-Beta-Launch-Plan.md`. Backend: Supabase project `hlpxesuuqypxnubswbzh` (`SUPABASE_URL` / `SUPABASE_ANON_KEY` in `constants.ts`; the anon key is client-safe / RLS-protected — service-role & signing secrets NEVER ship).
-
-**App-start gate flow (in `App.tsx`):** Login (Google OAuth) → T&C gate (if `tosAcceptedVersion !== CURRENT_TOS_VERSION`) → entitlement check → forced-update check → main UI. Locked/expired/offline → `LockScreen`; below version floor or killed → `ForcedUpdate`.
-
-| Concern | Main module | Hook | Notes |
-|---|---|---|---|
-| Auth | `auth.ts` | `useAuth` | Google OAuth via Supabase; `AuthStatus` |
-| Trial | `entitlement.ts` | `useEntitlement` | **Server-clocked** 14-day trial, **fail-closed** (offline ⇒ locked). `EntitlementStatus` |
-| Analytics | `analytics.ts` | — | `analytics:track` events + `analytics:capture-prompt` (typed prompt text only — never screenshots/OCR); server redacts PII; beta prompt rows purged after 30 days; `analytics:delete-my-data` |
-| T&C | (in `analytics.ts`/store) | — | `CURRENT_TOS_VERSION` in `constants.ts`; each prompt row stamped with accepted version |
-| Kill-switch / version floor | `updater.ts` | `useUpdateGate` | `VersionGateStatus`: remote `killed` or `below-floor` ⇒ block use |
-
-**Crypto coupling (do not break):** `crypto.ts` has two schemes — v1 machine-only key (legacy) and **v2 entitlement-bound key** (machineId + server fragment). `FRAGMENT_SECRET` must NEVER rotate or all v2-encrypted API keys become undecryptable. `APP_SALT` likewise must never change.
-
-**Auto-update is real:** NSIS feed via `electron-updater`, pulling GitHub Releases from `publish.repo: GhostAI`. `RELEASES_LATEST_URL` is the manual-download fallback. See `docs/RELEASE.md`.
+The shipping beta (through v1.3.0) was gated: Google sign-in, a server-clocked
+14-day trial (fail-closed), full prompt-capture analytics, a T&C gate, and a
+remote kill-switch/version-floor, all backed by a Supabase project. This entire
+stack was **removed** for the open-source release (2026-07-25): `auth.ts`,
+`entitlement.ts`, `analytics.ts`, and their IPC/preload surface are deleted;
+`App.tsx` boots straight to onboarding/main UI; `crypto.ts` collapsed from a
+dual-key scheme (machine key + entitlement-bound key gating decryption on a
+live trial) to a single machine-only key. `electron-updater` still checks
+GitHub Releases normally — only the blocking kill-switch/version-floor check
+was removed. `docs/InvisiQ-Beta-Launch-Plan.md` is now a historical design
+spec (see its status banner). Existing users' API keys saved under the old
+entitlement-bound scheme needed a one-time re-entry after this change.
 
 ---
 
