@@ -14,7 +14,6 @@ const VALID_CHANNELS = [
   'update:progress',
   'update:downloaded',
   'update:error',
-  'update:required',
   // Phase 4
   'audio:chunk',
   'companion:message',
@@ -37,54 +36,9 @@ const VALID_CHANNELS = [
   'capture:failed',
   'capture:paste',
   'proctor:detected',
-  // Beta — auth + entitlement
-  'auth:changed',
-  'entitlement:changed',
 ];
 
 const ghostAPI = {
-  // ══════════════════════════════════════
-  //  AUTH (Google OAuth — Beta)
-  // ══════════════════════════════════════
-  auth: {
-    login: (): Promise<{ signedIn: boolean; email: string | null; userId: string | null; error?: string }> =>
-      ipcRenderer.invoke('auth:login'),
-    logout: (): Promise<{ signedIn: boolean; email: string | null; userId: string | null }> =>
-      ipcRenderer.invoke('auth:logout'),
-    status: (): Promise<{ signedIn: boolean; email: string | null; userId: string | null }> =>
-      ipcRenderer.invoke('auth:status'),
-  },
-
-  // ══════════════════════════════════════
-  //  ENTITLEMENT (14-day trial — Beta)
-  // ══════════════════════════════════════
-  entitlement: {
-    status: (): Promise<{ status: string; daysLeft: number; expiresAt: string | null }> =>
-      ipcRenderer.invoke('entitlement:status'),
-    refresh: (): Promise<{ status: string; daysLeft: number; expiresAt: string | null }> =>
-      ipcRenderer.invoke('entitlement:refresh'),
-  },
-
-  // ══════════════════════════════════════
-  //  ANALYTICS + T&C (Beta — §8)
-  // ══════════════════════════════════════
-  analytics: {
-    track: (name: string, props?: Record<string, unknown>): Promise<void> =>
-      ipcRenderer.invoke('analytics:track', { name, props }),
-    capturePrompt: (prompt: {
-      content: string;
-      model?: string;
-      mode?: string;
-      hasImage?: boolean;
-    }): Promise<void> => ipcRenderer.invoke('analytics:capture-prompt', { prompt }),
-    deleteMyData: (): Promise<{ ok: boolean; error?: string }> =>
-      ipcRenderer.invoke('analytics:delete-my-data'),
-  },
-  tos: {
-    accept: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('tos:accept'),
-    status: (): Promise<{ current: string }> => ipcRenderer.invoke('tos:status'),
-  },
-
   // ══════════════════════════════════════
   //  OVERLAY
   // ══════════════════════════════════════
@@ -234,8 +188,6 @@ const ghostAPI = {
       ipcRenderer.invoke('update:download'),
     install: () =>
       ipcRenderer.invoke('update:install'),
-    versionStatus: () =>
-      ipcRenderer.invoke('update:version-status'),
     openReleases: () =>
       ipcRenderer.invoke('update:open-releases'),
   },

@@ -1,8 +1,5 @@
 import type {
   AppSettings,
-  AuthStatus,
-  EntitlementStatus,
-  VersionGateStatus,
   ProviderID,
   ScreenshotResult,
   MonitorInfo,
@@ -30,29 +27,6 @@ declare global {
 
   interface Window {
     ghostAPI: {
-      auth: {
-        login(): Promise<AuthStatus & { error?: string }>;
-        logout(): Promise<AuthStatus>;
-        status(): Promise<AuthStatus>;
-      };
-      entitlement: {
-        status(): Promise<EntitlementStatus>;
-        refresh(): Promise<EntitlementStatus>;
-      };
-      analytics: {
-        track(name: string, props?: Record<string, unknown>): Promise<void>;
-        capturePrompt(prompt: {
-          content: string;
-          model?: string;
-          mode?: string;
-          hasImage?: boolean;
-        }): Promise<void>;
-        deleteMyData(): Promise<{ ok: boolean; error?: string }>;
-      };
-      tos: {
-        accept(): Promise<{ ok: boolean }>;
-        status(): Promise<{ current: string }>;
-      };
       overlay: {
         toggle(): Promise<{ visible: boolean }>;
         hide(): Promise<void>;
@@ -121,7 +95,6 @@ declare global {
         check(): Promise<void>;
         download(): Promise<void>;
         install(): Promise<void>;
-        versionStatus(): Promise<VersionGateStatus>;
         openReleases(): Promise<void>;
       };
       /** Phase 4: System audio capture */
