@@ -8,7 +8,7 @@ import { disguiseProcess, applyFullStealth, startStealthWatchdog } from './steal
 import { getNestedSetting } from './store';
 import { stopClipboardMonitor } from './clipboard-monitor';
 import { initMonitorManager } from './monitors';
-import { initializeAutoUpdater, initVersionGate } from './updater';
+import { initializeAutoUpdater } from './updater';
 import { createTray } from './tray';
 import { initMemoryStore } from './memory';
 import { cleanupResilience } from './resilience-controller';

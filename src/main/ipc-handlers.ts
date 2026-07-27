@@ -33,7 +33,6 @@ import {
   checkForUpdates,
   downloadUpdate,
   installUpdate,
-  getVersionGateStatus,
   openReleasesPage,
 } from './updater';
 import { startClipboardMonitor, stopClipboardMonitor, isClipboardMonitorRunning } from './clipboard-monitor';
@@ -477,10 +476,6 @@ export function registerIPCHandlers(): void {
 
   ipcMain.handle('update:install', () => {
     installUpdate();
-  });
-
-  ipcMain.handle('update:version-status', async () => {
-    return getVersionGateStatus();
   });
 
   ipcMain.handle('update:open-releases', () => {
