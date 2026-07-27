@@ -2,15 +2,9 @@ import Store from 'electron-store';
 import { app } from 'electron';
 import { existsSync, copyFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import { encryptApiKey, decryptApiKey, hasServerFragment, isLegacyApiKeyPayload } from './crypto';
+import { encryptApiKey, decryptApiKey } from './crypto';
 import { DEFAULT_SETTINGS, DEFAULT_WINDOW_STATE, DEFAULT_PROCESS_NAME, PROVIDER_IDS } from '@shared/constants';
 import type { AppSettings, ProviderID, EncryptedPayload, WindowState } from '@shared/types';
-
-interface StoredAuthSession {
-  refreshToken: EncryptedPayload; // encrypted with the machine-only key
-  userId: string;
-  email: string | null;
-}
 
 interface StoreSchema {
   settings: AppSettings;
@@ -23,7 +17,6 @@ interface StoreSchema {
     ollama?: EncryptedPayload;
   };
   windowState: WindowState;
-  auth?: StoredAuthSession;
 }
 
 // ══════════════════════════════════════
@@ -212,35 +205,18 @@ export function getApiKey(provider: ProviderID): string | null {
     throw new Error(`Invalid provider: ${provider}`);
   }
 
-  // Entitlement gate (Beta Launch Plan §6.1): with no server fragment held
-  // (trial expired or unverified), API keys cannot be decrypted — so no key is
-  // returned and no provider can initialize. This is the core trial enforcement.
-  if (!hasServerFragment()) {
-    return null;
-  }
-
   const encrypted = store.get(`keys.${provider}`) as EncryptedPayload | undefined;
   if (!encrypted || !encrypted.iv || !encrypted.data || !encrypted.tag) {
     return null;
   }
 
   try {
-    const plain = decryptApiKey(encrypted);
-    // Migrate legacy (machine-key, v1) payloads to the entitled (v2) scheme on
-    // first read while active. Guarded so a re-encrypt failure never bricks the
-    // key — we've already decrypted it successfully.
-    if (isLegacyApiKeyPayload(encrypted)) {
-      try {
-        store.set(`keys.${provider}`, encryptApiKey(plain));
-      } catch (migErr) {
-        console.error(`Key migration failed for ${provider} (kept legacy):`, migErr);
-      }
-    }
-    return plain;
+    return decryptApiKey(encrypted);
   } catch (error) {
     console.error(`Failed to decrypt ${provider} API key:`, error);
-    // Clear corrupted entry so the user is prompted to re-enter rather than
-    // hitting a permanent silent failure.
+    // Clear corrupted/undecryptable entry (e.g. a key saved under the old,
+    // now-removed entitlement-bound scheme) so the user is prompted to
+    // re-enter rather than hitting a permanent silent failure.
     store.delete(`keys.${provider}` as keyof StoreSchema);
     store.set(`settings.providers.${provider}.hasKey`, false);
     store.set(`settings.providers.${provider}.isValid`, false);
@@ -265,22 +241,6 @@ export function getWindowState(): WindowState {
 export function setWindowState(state: Partial<WindowState>): void {
   const current = getWindowState();
   store.set('windowState', { ...current, ...state });
-}
-
-// ══════════════════════════════════════
-//  AUTH SESSION (refresh token encrypted)
-// ══════════════════════════════════════
-
-export function getAuthSession(): StoredAuthSession | null {
-  return (store.get('auth') as StoredAuthSession | undefined) ?? null;
-}
-
-export function setAuthSession(session: StoredAuthSession): void {
-  store.set('auth', session);
-}
-
-export function clearAuthSession(): void {
-  store.delete('auth' as keyof StoreSchema);
 }
 
 // ══════════════════════════════════════
