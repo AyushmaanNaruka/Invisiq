@@ -354,45 +354,6 @@ export type CaptureFailReason =
   | 'hook-unavailable';
 
 // ══════════════════════════════════════
-//  AUTH (Beta — Google OAuth via Supabase)
-// ══════════════════════════════════════
-
-export interface AuthStatus {
-  signedIn: boolean;
-  email: string | null;
-  userId: string | null;
-}
-
-// ══════════════════════════════════════
-//  ENTITLEMENT (Beta — 14-day trial gate)
-// ══════════════════════════════════════
-
-export type EntitlementStatusKind =
-  | 'active' // trial live → API keys decryptable
-  | 'expired' // trial ended → locked
-  | 'offline' // couldn't verify at launch (fail-closed) → locked
-  | 'unknown'; // not signed in / not yet checked
-
-export interface EntitlementStatus {
-  status: EntitlementStatusKind;
-  daysLeft: number;
-  expiresAt: string | null;
-}
-
-// ══════════════════════════════════════
-//  VERSION GATE (Beta — remote kill-switch / forced update §10.4)
-// ══════════════════════════════════════
-
-export interface VersionGateStatus {
-  required: boolean; // running build must update before it can be used
-  reason: 'killed' | 'below-floor' | null;
-  message: string | null;
-  minVersion: string | null;
-  latestVersion: string | null;
-  currentVersion: string;
-}
-
-// ══════════════════════════════════════
 //  APPLICATION SETTINGS
 // ══════════════════════════════════════
 
@@ -508,9 +469,6 @@ export interface AppSettings {
 
   isFirstLaunch: boolean;
   onboardingComplete: boolean;
-  // T&C version the user has accepted (beta prompt-logging disclosure, §8). When
-  // this !== CURRENT_TOS_VERSION the app shows the T&C gate before use.
-  tosAcceptedVersion: string;
   version: string;
 }
 
@@ -554,9 +512,6 @@ export interface EncryptedPayload {
   iv: string;
   data: string;
   tag: string;
-  // Payload scheme version. Absent/1 = machine-only key (legacy API keys + auth
-  // secrets). 2 = entitlement-bound key (machineId + server fragment). See crypto.ts.
-  v?: number;
 }
 
 // ══════════════════════════════════════

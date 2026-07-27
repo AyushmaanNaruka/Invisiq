@@ -6,21 +6,6 @@ import type { HotkeyAction, Mode, AppSettings, WindowState, ModelConfig, Provide
 export const PROVIDER_IDS: ProviderID[] = ['openai', 'anthropic', 'gemini', 'groq', 'openrouter'];
 
 // ══════════════════════════════════════
-//  SUPABASE BACKEND (Beta — auth / trial / analytics)
-// ══════════════════════════════════════
-// Project: hlpxesuuqypxnubswbzh. The anon key is client-safe (RLS-protected;
-// Beta Launch Plan §5.1/§14) — service-role key & signing secrets NEVER ship.
-export const SUPABASE_URL = 'https://hlpxesuuqypxnubswbzh.supabase.co';
-export const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhscHhlc3V1cXlweG51YnN3YnpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NjIxOTEsImV4cCI6MjA5NjIzODE5MX0.aJwlUR3mTODc9j26idwW2amHwmSyMaecPAcZqHO5eZY';
-
-// T&C version in force. Bump this (and the policy text) whenever the terms that
-// disclose prompt logging change — the gate re-prompts and each prompt row is
-// stamped with the accepted version (Beta Launch Plan §8). Beta prompt data is
-// purged server-side after 30 days.
-export const CURRENT_TOS_VERSION = '2026-06-08';
-
-// ══════════════════════════════════════
 //  AUTO-UPDATE FEED
 // ══════════════════════════════════════
 // Public releases page — manual-download fallback when the in-app updater feed
@@ -234,7 +219,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
   isFirstLaunch: true,
   onboardingComplete: false,
-  tosAcceptedVersion: '',
   version: '2.0.0',
 };
 
