@@ -38,7 +38,7 @@ InvisiQ is an Electron desktop app that creates an **invisible overlay window** 
 
 1. Is **completely invisible** to all screen capture, screen sharing, and recording software (Zoom, Teams, Meet, OBS, Snipping Tool, proctoring tools)
 2. Captures the user's screen content via screenshots
-3. Sends screenshots + questions to cloud AI vision models (OpenAI, Anthropic, Google) — **cloud-only, BYOK**; the local-LLM/Ollama path was removed permanently
+3. Sends screenshots + questions to cloud AI vision models (OpenAI, Anthropic, Google, Groq, OpenRouter) **or a local Ollama server** — BYOK for cloud providers, no key needed for Ollama
 4. Displays AI responses in a chat interface with markdown + code highlighting
 5. All controlled via global keyboard shortcuts that work from any application
 
@@ -178,8 +178,7 @@ ghostai/
 │   │   │   │   ├── types.ts / provider-manager.ts / index.ts
 │   │   │   │   ├── openai-compatible.ts  # shared base (chat/stream/vision) for OpenAI-wire providers
 │   │   │   │   ├── openai.ts / groq.ts / openrouter.ts  # thin subclasses of openai-compatible (config only)
-│   │   │   │   ├── anthropic.ts / gemini.ts             # all lazy-loaded
-│   │   │   │   │       # REMOVED: ollama.ts (local LLM removed permanently — cloud-only)
+│   │   │   │   ├── anthropic.ts / gemini.ts / ollama.ts     # all lazy-loaded (ollama: bespoke, no SDK)
 │   │   │   └── speech.ts             # SpeechService: Web Speech + Whisper (OCR is tesseract.js, used in hooks)
 │   │   │
 │   │   ├── styles/globals.css
@@ -302,7 +301,7 @@ The overlay must be hidden before capturing, otherwise we get a blank spot where
 
 ### 4. AI Provider Abstraction
 
-**Cloud-only, BYOK.** Five providers ship: OpenAI, Anthropic, Google Gemini, **Groq**, and **OpenRouter** (one key → DeepSeek/Qwen/Mistral). The Ollama/local-LLM adapter was removed permanently (no `ollama.ts`, no local endpoint in `AI_API_DOMAINS`). AI calls run in the **renderer** (HTTP), never the main process.
+**Six providers ship:** OpenAI, Anthropic, Google Gemini, **Groq**, **OpenRouter** (one key → DeepSeek/Qwen/Mistral), and **Ollama** (local server, re-added for the open-source release — see `src/renderer/services/ai-providers/ollama.ts`). Ollama has no API key; its "key" field (`Settings.tsx`, `isServerUrl: true`) is a server URL defaulting to `http://localhost:11434`, and its model list is fetched dynamically from the running server rather than a static catalog. `useAI.ts` applies Ollama-only context-budget and OCR-based vision-workaround logic (small-context-window truncation, screenshot OCR via `tesseract.js` since local vision models tend to describe images rather than read their text) — entirely gated on `provider.id === 'ollama'`, so cloud providers are unaffected. AI calls run in the **renderer** (HTTP), never the main process.
 
 **OpenAI-compatible base (Groq/OpenRouter/OpenAI):** Groq (`https://api.groq.com/openai/v1`) and OpenRouter (`https://openrouter.ai/api/v1`) speak the same wire format as OpenAI, so all three extend `OpenAICompatibleProvider` (`openai-compatible.ts`) and only supply config (`baseURL`, `defaultHeaders`, `models`, `validationModel`). OpenRouter sends `HTTP-Referer`/`X-Title` attribution headers. **Two non-obvious invariants:** (1) every new provider's domain MUST be added to `AI_API_DOMAINS` in `constants.ts` or the main-process CORS bypass blocks it; (2) **`ModelConfig.id` must be globally unique across providers** — routing resolves provider purely via `providerManager.getModelById` (first match in `ALL_MODELS`), so the *same* model slug cannot be listed under two providers (that's why `qwen/qwen3.6-27b` lives only under Groq). To expose one model via multiple providers you'd need a separate `apiModel` field decoupling internal-id from wire-slug. Live key test: `node scripts/test-openai-compatible.js <groq|openrouter> <KEY>`.
 
