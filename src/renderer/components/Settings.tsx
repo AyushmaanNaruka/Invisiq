@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   X, Eye, EyeOff, Check, CircleAlert, LoaderCircle, Trash2, Server,
   Key, Keyboard, Monitor, Shield, Mic, Brain, Smartphone, Cpu,
-  UserCircle, LogOut, GraduationCap, ShieldCheck,
+  GraduationCap, ShieldCheck,
 } from 'lucide-react';
 import { providerManager } from '../services/ai-providers/provider-manager';
 import SettingsHotkeys from './SettingsHotkeys';
@@ -24,8 +24,6 @@ interface SettingsProps {
   compact?: boolean;
   isStealthFocus?: boolean;
   onToggleStealthFocus?: () => void;
-  accountEmail?: string | null;
-  onLogout?: () => Promise<void>;
   /** Re-launch the interactive walkthrough (InvisiQ Academy) in replay mode. */
   onReplayTutorial?: () => void;
 }
@@ -46,23 +44,10 @@ const PROVIDERS: { id: ProviderID; name: string; placeholder: string; isServerUr
   { id: 'ollama', name: 'Ollama (Local)', placeholder: 'http://localhost:11434', isServerUrl: true },
 ];
 
-type TabId = 'account' | 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio' | 'memory' | 'companion' | 'resilience';
+type TabId = 'api-keys' | 'hotkeys' | 'display' | 'privacy' | 'audio' | 'memory' | 'companion' | 'resilience' | 'help';
 
-export default function Settings({ isOpen, onClose, settings, onUpdateSetting, compact = false, isStealthFocus = false, onToggleStealthFocus, accountEmail, onLogout, onReplayTutorial }: SettingsProps): JSX.Element | null {
+export default function Settings({ isOpen, onClose, settings, onUpdateSetting, compact = false, isStealthFocus = false, onToggleStealthFocus, onReplayTutorial }: SettingsProps): JSX.Element | null {
   const [activeTab, setActiveTab] = useState<TabId>('api-keys');
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  const handleLogout = useCallback(async () => {
-    if (!onLogout) return;
-    setLoggingOut(true);
-    try {
-      await onLogout();
-      // On success, App's auth gate drops back to the login screen and this
-      // panel unmounts — no need to close it explicitly.
-    } finally {
-      setLoggingOut(false);
-    }
-  }, [onLogout]);
   const [keys, setKeys] = useState<Record<ProviderID, KeyState>>({
     openai: { value: '', masked: true, status: 'idle' },
     anthropic: { value: '', masked: true, status: 'idle' },
@@ -178,7 +163,6 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
   if (!isOpen) return null;
 
   const NAV_ITEMS: { id: TabId; icon: JSX.Element; label: string }[] = [
-    { id: 'account', icon: <UserCircle size={16} strokeWidth={1.75} />, label: 'Account' },
     { id: 'api-keys', icon: <Key size={16} strokeWidth={1.75} />, label: 'API Keys' },
     { id: 'hotkeys', icon: <Keyboard size={16} strokeWidth={1.75} />, label: 'Hotkeys' },
     { id: 'display', icon: <Monitor size={16} strokeWidth={1.75} />, label: 'Display' },
@@ -187,6 +171,7 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
     { id: 'memory', icon: <Brain size={16} strokeWidth={1.75} />, label: 'Memory' },
     { id: 'companion', icon: <Smartphone size={16} strokeWidth={1.75} />, label: 'Companion' },
     { id: 'resilience', icon: <Cpu size={16} strokeWidth={1.75} />, label: 'Resilience' },
+    { id: 'help', icon: <GraduationCap size={16} strokeWidth={1.75} />, label: 'Help' },
   ];
 
   return (
@@ -241,24 +226,10 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4">
-          {activeTab === 'account' && (
+          {activeTab === 'help' && (
             <div className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-text-primary text-sm font-medium">Signed in as</label>
-                <div className="flex items-center gap-3 bg-bg-input border border-border-subtle rounded-md px-3 py-2.5">
-                  <UserCircle size={20} className="text-text-secondary shrink-0" />
-                  <span className="text-sm text-text-primary truncate">
-                    {accountEmail || 'Google account'}
-                  </span>
-                </div>
-                <p className="text-text-secondary text-[10px]">
-                  You're signed in with Google. Signing out returns you to the login screen; your
-                  API keys and conversations stay on this device.
-                </p>
-              </div>
-
-              {onReplayTutorial && (
-                <div className="space-y-2 border-t border-border-subtle pt-4">
+              {onReplayTutorial ? (
+                <div className="space-y-2">
                   <label className="text-text-primary text-sm font-medium">Learn InvisiQ</label>
                   <p className="text-text-secondary text-[10px]">
                     Replay the interactive walkthrough — every feature, step by step.
@@ -273,23 +244,9 @@ export default function Settings({ isOpen, onClose, settings, onUpdateSetting, c
                     <GraduationCap size={15} /> Replay tutorial
                   </button>
                 </div>
+              ) : (
+                <p className="text-text-secondary text-[10px]">No help actions available.</p>
               )}
-
-              <button
-                onClick={handleLogout}
-                disabled={loggingOut || !onLogout}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md bg-status-error/10 text-status-error hover:bg-status-error/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {loggingOut ? (
-                  <>
-                    <LoaderCircle size={14} className="animate-spin" /> Signing out...
-                  </>
-                ) : (
-                  <>
-                    <LogOut size={14} /> Sign Out
-                  </>
-                )}
-              </button>
             </div>
           )}
           {activeTab === 'api-keys' && (
