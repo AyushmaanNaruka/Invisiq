@@ -58,90 +58,13 @@ import {
   getProctorStatus,
   panic as panicCapture,
 } from './capture-controller';
-import { login as authLogin, logout as authLogout, getStatusReady as authStatus } from './auth';
-import { getStatusReady as entitlementStatus, refresh as entitlementRefresh } from './entitlement';
-import { trackEvent, capturePrompt, acceptTos, deleteMyData } from './analytics';
-import { CURRENT_TOS_VERSION, PROVIDER_IDS } from '@shared/constants';
+import { PROVIDER_IDS } from '@shared/constants';
 
 // PROVIDER_IDS is the 5 cloud BYOK providers; ollama is a local server (no
 // API key) added separately so store:set-api-key etc. accept it.
 const VALID_PROVIDERS: ProviderID[] = [...PROVIDER_IDS, 'ollama'];
 
 export function registerIPCHandlers(): void {
-  // ══════════════════════════════════════
-  //  AUTH (Google OAuth — Beta)
-  // ══════════════════════════════════════
-
-  ipcMain.handle('auth:login', async () => {
-    try {
-      return await authLogin();
-    } catch (error) {
-      return {
-        signedIn: false,
-        email: null,
-        userId: null,
-        error: error instanceof Error ? error.message : 'login_failed',
-      };
-    }
-  });
-
-  ipcMain.handle('auth:logout', async () => {
-    return authLogout();
-  });
-
-  ipcMain.handle('auth:status', async () => {
-    return authStatus();
-  });
-
-  // ══════════════════════════════════════
-  //  ENTITLEMENT (14-day trial — Beta)
-  // ══════════════════════════════════════
-
-  ipcMain.handle('entitlement:status', async () => {
-    return entitlementStatus();
-  });
-
-  ipcMain.handle('entitlement:refresh', async () => {
-    return entitlementRefresh();
-  });
-
-  // ══════════════════════════════════════
-  //  ANALYTICS + T&C (Beta — §8)
-  // ══════════════════════════════════════
-
-  ipcMain.handle('analytics:track', (_event, args: unknown) => {
-    if (!args || typeof args !== 'object') return;
-    const { name, props } = args as { name?: unknown; props?: unknown };
-    if (typeof name !== 'string') return;
-    trackEvent(name, (props && typeof props === 'object' ? (props as Record<string, unknown>) : {}));
-  });
-
-  ipcMain.handle('analytics:capture-prompt', (_event, args: unknown) => {
-    if (!args || typeof args !== 'object') return;
-    const { prompt } = args as { prompt?: unknown };
-    if (!prompt || typeof prompt !== 'object') return;
-    const p = prompt as { content?: unknown; model?: unknown; mode?: unknown; hasImage?: unknown };
-    if (typeof p.content !== 'string') return;
-    capturePrompt({
-      content: p.content,
-      model: typeof p.model === 'string' ? p.model : undefined,
-      mode: typeof p.mode === 'string' ? p.mode : undefined,
-      hasImage: p.hasImage === true,
-    });
-  });
-
-  ipcMain.handle('analytics:delete-my-data', async () => {
-    return deleteMyData();
-  });
-
-  ipcMain.handle('tos:accept', async () => {
-    return acceptTos();
-  });
-
-  ipcMain.handle('tos:status', () => {
-    return { current: CURRENT_TOS_VERSION };
-  });
-
   // ══════════════════════════════════════
   //  OVERLAY MANAGEMENT
   // ══════════════════════════════════════

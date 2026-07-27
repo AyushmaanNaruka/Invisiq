@@ -14,9 +14,6 @@ import { initMemoryStore } from './memory';
 import { cleanupResilience } from './resilience-controller';
 import { initCaptureController, cleanupCaptureController } from './capture-controller';
 import { initInvisibleInput, cleanupInvisibleInput } from './invisible-input';
-import { initAuth } from './auth';
-import { initEntitlement } from './entitlement';
-import { trackEvent, flush as flushAnalytics } from './analytics';
 import { AI_API_DOMAINS, DEFAULT_PROCESS_NAME } from '@shared/constants';
 import { logger } from '@shared/logger';
 
@@ -108,24 +105,6 @@ app.whenReady().then(async () => {
 
   // Register IPC handlers (needed before renderer loads)
   registerIPCHandlers();
-
-  // Kick off silent auth refresh (non-blocking). The renderer's auth:status
-  // query awaits this internally, so the login gate reflects a real session
-  // without re-prompting returning users. Pure backend — no stealth impact.
-  initAuth().catch((err) => console.error('[Auth] Silent refresh failed:', err));
-
-  // Verify trial entitlement against the server (fetches the unlock fragment so
-  // API keys can decrypt while active). Awaits auth internally. entitlement:status
-  // awaits this, so the renderer's lock screen reflects a real server verdict.
-  initEntitlement().catch((err) => console.error('[Entitlement] Init failed:', err));
-
-  // Analytics (§8): privacy-safe launch event. Queued now, flushed once the
-  // auth token is available (no-op if signed out).
-  trackEvent('app_launch', { version: app.getVersion() });
-
-  // Remote kill-switch / version floor (§10.4). Runs pre-auth (anon read);
-  // fail-open. The renderer queries update:version-status to gate the UI.
-  initVersionGate().catch((err) => console.error('[VersionGate] check failed:', err));
 
   // Create the overlay window
   const overlayWindow = createOverlayWindow();
@@ -229,8 +208,6 @@ app.on('window-all-closed', () => {
 });
 
 app.on('will-quit', () => {
-  // Best-effort final analytics flush (fire-and-forget; quit doesn't await).
-  flushAnalytics().catch(() => {});
   // Unregister all global shortcuts before quitting
   unregisterAllHotkeys();
   // Stop clipboard monitor
