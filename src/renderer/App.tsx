@@ -426,8 +426,7 @@ function AppInner(): JSX.Element {
       }
 
       // Screen Awareness (rolling OCR): prepend a lightweight text snapshot of the
-      // screen so even text-only queries are screen-aware. Text-only — never sent to
-      // analytics (capturePrompt below uses the original `text`, not `aiText`).
+      // screen so even text-only queries are screen-aware.
       if (settings.privacy?.screenAwarenessRollingOcr) {
         const screenPrefix = buildScreenContextPrefix(latestOcrText);
         if (screenPrefix) {
@@ -564,7 +563,7 @@ function AppInner(): JSX.Element {
     return <OnboardingFlow onComplete={() => setShowOnboarding(false)} />;
   }
 
-  // Replay of the interactive walkthrough (launched from Settings → Account).
+  // Replay of the interactive walkthrough (launched from Settings → Help).
   // Replay mode does not touch onboarding/setup state.
   if (showTour) {
     return <OnboardingFlow mode="replay" onComplete={() => setShowTour(false)} />;
