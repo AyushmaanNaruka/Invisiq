@@ -8,11 +8,6 @@ import StatusBar from './components/StatusBar';
 import Settings from './components/Settings';
 import ConversationHistory from './components/ConversationHistory';
 import OnboardingFlow from './components/OnboardingFlow';
-import LoginScreen from './components/LoginScreen';
-import LockScreen from './components/LockScreen';
-import TrialBanner from './components/TrialBanner';
-import TosGate from './components/TosGate';
-import ForcedUpdate from './components/ForcedUpdate';
 import UpdateNotification from './components/UpdateNotification';
 import InlineRegionSelector from './components/InlineRegionSelector';
 import MeetingPanel from './components/MeetingPanel';
@@ -24,9 +19,6 @@ import { useConversationHistory } from './hooks/useConversationHistory';
 import { useAI } from './hooks/useAI';
 import { useScreenshot } from './hooks/useScreenshot';
 import { useSettings } from './hooks/useSettings';
-import { useAuth } from './hooks/useAuth';
-import { useEntitlement } from './hooks/useEntitlement';
-import { useUpdateGate } from './hooks/useUpdateGate';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useAudioTranscription } from './hooks/useAudioTranscription';
 import { useLiveTranscription } from './hooks/useLiveTranscription';
@@ -36,20 +28,11 @@ import { useMemory } from './hooks/useMemory';
 import { useTokenCost } from './hooks/useTokenCost';
 import { useInternalKeyboard } from './hooks/useInternalKeyboard';
 import { useWindowSize } from './hooks/useWindowSize';
-import { UNIVERSAL_MODE, CURRENT_TOS_VERSION, PROVIDER_IDS } from '@shared/constants';
+import { UNIVERSAL_MODE, PROVIDER_IDS } from '@shared/constants';
 import type { ProviderID, ImageAttachment } from '@shared/types';
 
 // Initialize AI providers
 import './services/ai-providers/index';
-
-// Coarse length bucket for the message_sent event (never the text itself).
-function lengthBucket(len: number): string {
-  if (len <= 50) return '0-50';
-  if (len <= 200) return '51-200';
-  if (len <= 500) return '201-500';
-  if (len <= 1000) return '501-1000';
-  return '1000+';
-}
 
 // Clipboard monitor — lives inside ToastProvider so it can show toasts
 function ClipboardListener({ onAnalyze }: { onAnalyze: (text: string) => void }): null {
@@ -80,21 +63,6 @@ function ClipboardListener({ onAnalyze }: { onAnalyze: (text: string) => void })
 
 function AppInner(): JSX.Element {
   const { settings, isLoading: settingsLoading, updateSetting } = useSettings();
-  const {
-    status: authStatus,
-    isLoading: authLoading,
-    isBusy: authBusy,
-    error: authError,
-    login: authLoginFn,
-    logout: authLogoutFn,
-  } = useAuth();
-  const {
-    entitlement,
-    isLoading: entitlementLoading,
-    isRefreshing: entitlementRefreshing,
-    refresh: refreshEntitlement,
-  } = useEntitlement(authStatus.signedIn);
-  const { gate: updateGate } = useUpdateGate();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [showTour, setShowTour] = useState(false); // replay of the academy from Settings
 
@@ -471,21 +439,6 @@ function AppInner(): JSX.Element {
       addUserMessage(text, images);
       clearAllScreenshots();
 
-      // Beta analytics (§8): capture the user's TYPED prompt (text only — never
-      // screenshots/OCR) + a privacy-safe event. Server redacts before storing.
-      window.ghostAPI.analytics.capturePrompt({
-        content: text,
-        model: settings.activeModel,
-        mode: settings.activeMode,
-        hasImage: !!images && images.length > 0,
-      });
-      window.ghostAPI.analytics.track('message_sent', {
-        lengthBucket: lengthBucket(text.length),
-        model: settings.activeModel,
-        mode: settings.activeMode,
-        hasImage: !!images && images.length > 0,
-      });
-
       // Phase 4: Auto-extract facts from user message (non-blocking)
       if (settings.memory?.enabled && settings.memory?.autoExtract) {
         autoExtractFromMessage(text).catch(() => {});
@@ -601,56 +554,9 @@ function AppInner(): JSX.Element {
     window.ghostAPI.app.quit();
   }, []);
 
-  // ── T&C acceptance (beta prompt-logging disclosure, §8) ──
-  const handleAcceptTos = useCallback(async () => {
-    await updateSetting('tosAcceptedVersion', CURRENT_TOS_VERSION);
-    window.ghostAPI.tos.accept().catch(() => {});
-    window.ghostAPI.analytics.track('tos_accepted', { version: CURRENT_TOS_VERSION });
-  }, [updateSetting]);
-
-  // Analytics: record when the trial lock is hit.
-  useEffect(() => {
-    if (entitlement.status === 'expired') {
-      window.ghostAPI.analytics.track('expired_hit', {});
-    }
-  }, [entitlement.status]);
-
-  // Forced-update gate — precedes everything (a killed/below-floor build must
-  // update before any use, even sign-in). Fail-open: default is not-required.
-  if (updateGate.required) {
-    return <ForcedUpdate gate={updateGate} />;
-  }
-
-  // Show nothing while settings/auth are loading
-  if (settingsLoading || authLoading || showOnboarding === null) {
+  // Show nothing while settings are loading
+  if (settingsLoading || showOnboarding === null) {
     return <div className="h-screen w-screen bg-bg-overlay rounded-lg" />;
-  }
-
-  // Auth gate — must sign in before anything else (precedes onboarding)
-  if (!authStatus.signedIn) {
-    return <LoginScreen onLogin={authLoginFn} isBusy={authBusy} error={authError} />;
-  }
-
-  // Entitlement gate — block until the server confirms the trial is active.
-  // Fail-closed: expired/offline/unknown all lock (the hard gate is in getApiKey).
-  if (entitlementLoading) {
-    return <div className="h-screen w-screen bg-bg-overlay rounded-lg" />;
-  }
-  if (entitlement.status !== 'active') {
-    return (
-      <LockScreen
-        entitlement={entitlement}
-        isRefreshing={entitlementRefreshing}
-        onRefresh={refreshEntitlement}
-        onSignOut={authLogoutFn}
-      />
-    );
-  }
-
-  // T&C gate — must accept the current beta terms (prompt-logging disclosure)
-  // before any use; acceptance is logged server-side as proof of disclosure.
-  if (settings.tosAcceptedVersion !== CURRENT_TOS_VERSION) {
-    return <TosGate onAccept={handleAcceptTos} />;
   }
 
   // Onboarding gate
@@ -669,7 +575,6 @@ function AppInner(): JSX.Element {
     <ClipboardListener onAnalyze={handleSend} />
     <UpdateNotification />
     <div className="flex flex-col h-screen w-screen bg-bg-overlay rounded-lg overflow-hidden select-none">
-      <TrialBanner daysLeft={entitlement.daysLeft} />
       <HeaderBar
         activeModel={settings.activeModel}
         opacity={settings.display.opacity}
@@ -765,8 +670,6 @@ function AppInner(): JSX.Element {
         compact={compact}
         isStealthFocus={isStealthFocus}
         onToggleStealthFocus={handleToggleStealthFocus}
-        accountEmail={authStatus.email}
-        onLogout={authLogoutFn}
         onReplayTutorial={() => setShowTour(true)}
       />
 
