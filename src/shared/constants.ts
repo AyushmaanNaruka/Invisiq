@@ -435,7 +435,8 @@ export const AI_API_DOMAINS = [
   'https://generativelanguage.googleapis.com/*',
   'https://api.groq.com/*',
   'https://openrouter.ai/*',
-  'http://localhost:11434/*',
+  'http://localhost:*/*',
+  'http://127.0.0.1:*/*',
 ];
 
 // ══════════════════════════════════════

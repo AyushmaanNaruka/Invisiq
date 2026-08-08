@@ -86,6 +86,19 @@ function ModelSelector({
     }
   }, [isOpen, refreshOllama]);
 
+  // Cold-start fix: if the active model isn't in the static catalog, it's
+  // likely an Ollama model selected in a previous session. Fetch the Ollama
+  // model list on mount (without requiring the user to open the dropdown)
+  // so the header displays the correct active model instead of falling back
+  // to ALL_MODELS[0].
+  useEffect(() => {
+    if (!ALL_MODELS.some((m) => m.id === activeModel) && !ollamaRefreshed.current) {
+      ollamaRefreshed.current = true;
+      refreshOllama();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Group models by provider
   const grouped = allModels.reduce<Partial<Record<ProviderID, ModelConfig[]>>>((acc, model) => {
     if (!acc[model.provider]) acc[model.provider] = [];

@@ -104,7 +104,7 @@ export class OllamaProvider implements AIProvider {
     const startTime = Date.now();
     let fullContent = '';
     let usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCostUSD: 0 };
-    let finishReason: 'stop' | 'max_tokens' | 'error' = 'stop';
+    const finishReason: 'stop' | 'max_tokens' | 'error' = 'stop';
 
     try {
       const messages = this.buildMessages(request);

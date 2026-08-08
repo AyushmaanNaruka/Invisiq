@@ -1,6 +1,0 @@
-# Supabase CLI local state
-.branches
-.temp
-
-# Real secrets — only .env.example is committed
-.env

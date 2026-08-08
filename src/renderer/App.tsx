@@ -488,7 +488,6 @@ function AppInner(): JSX.Element {
       clearAllScreenshots,
       addAssistantMessage,
       getContextMessages,
-      settings.activeMode,
       settings.activeModel,
       settings.audio?.autoIncludeTranscript,
       settings.privacy?.screenAwarenessEnabled,

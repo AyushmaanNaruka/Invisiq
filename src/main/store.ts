@@ -152,6 +152,27 @@ function migrateLegacyProcessName(): void {
 migrateLegacyProcessName();
 
 // ══════════════════════════════════════
+//  LEGACY AUTH SESSION PURGE
+// ══════════════════════════════════════
+
+/**
+ * One-time purge of the beta auth session (Google OAuth refresh token) for
+ * users upgrading from a pre-open-source install. auth.ts and its schema were
+ * already removed; this cleans up the orphaned on-disk blob it left behind.
+ */
+function purgeLegacyAuthSession(): void {
+  try {
+    if (store.has('auth' as never)) {
+      store.delete('auth' as never);
+    }
+  } catch {
+    // Best-effort — never block startup on a migration.
+  }
+}
+
+purgeLegacyAuthSession();
+
+// ══════════════════════════════════════
 //  SETTINGS
 // ══════════════════════════════════════
 

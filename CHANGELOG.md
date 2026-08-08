@@ -4,10 +4,25 @@ All notable changes to InvisiQ are documented here.
 
 ---
 
+## [Unreleased] — Open Source: Ollama Re-Add & Beta-Gate Removal
+
+### Added
+- **Ollama local-LLM support re-added** — BYOK-free, fully local inference against a user-run Ollama server. Dynamic model list (fetched from the local server, not the static cloud catalog), OCR-based vision workaround (Ollama vision models receive extracted screen text via `tesseract.js` instead of an image payload), and a broadened `AI_API_DOMAINS` CORS bypass (`http://localhost:*/*`, `http://127.0.0.1:*/*`) so any port/host the user configures works, not just the default `localhost:11434`.
+- The Model Selector now fetches the Ollama model list on cold start (not just when the dropdown is opened) so a previously-selected Ollama model displays correctly in the header after a restart.
+
+### Removed
+- **The entire beta gating stack** — no sign-in, no trial, no analytics, no kill-switch. The app now boots straight to the main UI. This removes Google OAuth (`auth.ts`/`useAuth`), the server-clocked trial (`entitlement.ts`/`useEntitlement`), prompt/event telemetry (`analytics.ts`), the T&C gate, and the remote kill-switch / version-floor gate, along with their UI (`LoginScreen`, `LockScreen`, `TosGate`, `TrialBanner`, `ForcedUpdate`) and the Supabase backend (`supabase/` edge functions, migrations, config) that served them.
+- An orphaned on-disk auth session (Google OAuth refresh token) left behind by the removed `auth.ts` on upgraded installs is now purged on first boot.
+
+### Notes
+- **Existing users with API keys saved under the old (entitlement-bound) encryption scheme will need to re-enter them once** after upgrading — the crypto v2 entitlement-bound key path no longer applies once the trial/entitlement system is gone.
+
+---
+
 ## [1.3.0] — Interactive Onboarding, Stealth-Typing UX & Brand Name
 
 ### Added
-- **InvisiQ Academy** — a premium, replayable, interactive onboarding walkthrough that teaches every feature with live mock-overlay demos (ask, screenshot, stealth typing, controls), a 3D-tilt feature gallery, and a settings tour. Replayable anytime from Settings → Account. All animations respect `prefers-reduced-motion`.
+- **InvisiQ Academy** — a premium, replayable, interactive onboarding walkthrough that teaches every feature with live mock-overlay demos (ask, screenshot, stealth typing, controls), a 3D-tilt feature gallery, and a settings tour. Replayable anytime from Settings → Help. All animations respect `prefers-reduced-motion`.
 - **API-key trust note** in the onboarding step and Settings → API Keys: keys are encrypted on-device and never sent to our servers, logged, or shared.
 - **Auto-switch model on key validation** — validating a provider's key selects that provider's default model.
 - **Visible custom caret in stealth typing** — draws a blinking caret at the tracked position (the native caret is hidden when the overlay lacks OS focus).
