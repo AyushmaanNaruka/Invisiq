@@ -2,7 +2,7 @@
 
 > A complete guide to installing, configuring, and using InvisiQ effectively.
 
-> **What's new (June 2026):** InvisiQ is now **cloud-only** (bring your own OpenAI / Anthropic / Google key — the local Ollama option was removed), uses a **single universal mode** (no mode picker, no templates), and the beta requires a **Google sign-in + 14-day trial** with a one-time **Terms & Conditions** acceptance. Global hotkeys now use the **Shift** modifier (e.g. `Ctrl+Shift+G`).
+> **What's new (July 2026):** InvisiQ now supports **6 AI providers** — OpenAI, Anthropic, Google Gemini, Groq, OpenRouter (all BYOK), and a local **Ollama** server (no key needed) — uses a **single universal mode** (no mode picker, no templates), and needs **no account or sign-in** — it opens straight to onboarding/main UI. Global hotkeys use the **Shift** modifier (e.g. `Ctrl+Shift+G`).
 
 ---
 
@@ -18,11 +18,10 @@
 8. [Smart Paste & Clipboard](#8-smart-paste--clipboard)
 9. [Voice Input & Meeting Assistant](#9-voice-input--meeting-assistant)
 10. [Conversation History & Memory](#10-conversation-history--memory)
-11. [Accounts, Trial & Privacy (Beta)](#11-accounts-trial--privacy-beta)
-12. [Settings Reference](#12-settings-reference)
-13. [Resilience Mode](#13-resilience-mode)
-14. [Troubleshooting](#14-troubleshooting)
-15. [FAQ](#15-faq)
+11. [Settings Reference](#11-settings-reference)
+12. [Resilience Mode](#12-resilience-mode)
+13. [Troubleshooting](#13-troubleshooting)
+14. [FAQ](#14-faq)
 
 ---
 
@@ -61,11 +60,11 @@ The portable `.exe` will be in the `release/` folder.
 
 ## 2. First Launch & Onboarding
 
-On first launch, InvisiQ asks you to **sign in with Google** and accept the **Terms & Conditions** (which disclose that typed prompts and usage analytics are logged during the beta). After that, your **14-day trial** starts and a **3-step onboarding wizard** appears:
+On first launch, InvisiQ opens straight to a **3-step onboarding wizard** — no account, sign-in, or trial required:
 
 ### Step 1: API Key Setup
-- Enter an API key for at least one provider (OpenAI, Anthropic, or Google)
-- Keys are validated in real-time and stored with AES-256-GCM encryption (entitlement-bound — decryptable only while your trial is active)
+- Enter an API key for at least one cloud provider (OpenAI, Anthropic, Google, Groq, or OpenRouter), or point InvisiQ at a local **Ollama** server (no key needed)
+- Keys are validated in real-time and stored with AES-256-GCM encryption, decrypted with a single machine-bound key
 
 ### Step 2: Hotkey Reference
 - Overview of all keyboard shortcuts
@@ -83,20 +82,29 @@ On first launch, InvisiQ asks you to **sign in with Google** and accept the **Te
 
 ## 3. Setting Up AI Providers
 
-### Cloud Providers
+### Cloud Providers (BYOK)
 
 | Provider | Get API Key | Cost |
 |:---------|:------------|:-----|
 | **OpenAI** | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | Pay-per-use |
 | **Anthropic** | [console.anthropic.com](https://console.anthropic.com/) | Pay-per-use |
 | **Google Gemini** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | Free tier available |
+| **Groq** | [console.groq.com/keys](https://console.groq.com/keys) | Free tier available |
+| **OpenRouter** | [openrouter.ai/keys](https://openrouter.ai/keys) | Pay-per-use (one key routes to many models) |
 
 1. Open Settings (`Ctrl+,` or gear icon)
 2. Go to **API Keys** tab
 3. Paste your key → it's validated automatically
 4. Select a model from the header dropdown (or cycle with `Ctrl+Shift+]` / `[`)
 
-> **Cloud-only.** InvisiQ no longer supports local models (Ollama). All three providers are cloud APIs and require your own key (BYOK). Screenshots are sent to the provider's vision model directly.
+### Local Provider — Ollama (no key needed)
+
+- InvisiQ also talks directly to a local **Ollama** server — no API key, nothing leaves your machine.
+- Install Ollama, pull a model (e.g. `ollama pull llama3.2`), and make sure the server is running.
+- In Settings → **API Keys**, Ollama's field is a **server URL**, not a key — it defaults to `http://localhost:11434`.
+- Once InvisiQ detects the server, its models appear in a separate **LOCAL** group in the model dropdown, fetched live from your Ollama instance rather than a fixed list.
+
+> InvisiQ supports **6 providers** total: OpenAI, Anthropic, Google Gemini, Groq, and OpenRouter (all BYOK), plus Ollama (local, no key). Screenshots are sent to whichever provider/model is active.
 
 ---
 
@@ -283,27 +291,7 @@ Configure in Settings → **Memory** tab.
 
 ---
 
-## 11. Accounts, Trial & Privacy (Beta)
-
-> Templates were removed — the single universal mode handles every task, so there's nothing to fill in or pick. Just type and send.
-
-### Sign-in & trial
-- The beta requires a **Google sign-in** and runs on a **server-clocked 14-day trial**. The remaining days show in the banner at the top of the overlay.
-- The trial is **fail-closed**: if the app can't reach the server to verify your trial (e.g. you're offline), it locks until it can re-verify. Your API keys are tied to the trial and become readable again once it's active.
-- When the trial ends, you'll see a lock screen.
-
-### What's collected (and what isn't)
-- **Collected:** usage events and the **text you type** as prompts — to improve the product. This is disclosed in the Terms & Conditions you accept on first run, and each prompt is stamped with the T&C version you accepted.
-- **Never collected:** your screenshots or any OCR'd text from them; your API keys.
-- Server-side, personal data is redacted and beta prompt rows are **purged after 30 days**.
-- **Delete your data:** Settings includes a "delete my data" action (`analytics:delete-my-data`) that removes your captured prompt history from the backend.
-
-### Forced updates / kill-switch
-- InvisiQ auto-updates from GitHub Releases. If your version is below the minimum supported floor (or a build is remotely disabled), you'll be prompted to update before continuing.
-
----
-
-## 12. Settings Reference
+## 11. Settings Reference
 
 Access via gear icon or `Ctrl+,`. Settings are organized into tabs:
 
@@ -320,7 +308,7 @@ Access via gear icon or `Ctrl+,`. Settings are organized into tabs:
 
 ---
 
-## 13. Resilience Mode
+## 12. Resilience Mode
 
 Resilience mode is an **optional advanced feature** that spawns a native C++ helper process.
 
@@ -349,7 +337,7 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 
 ---
 
-## 14. Troubleshooting
+## 13. Troubleshooting
 
 ### Overlay is visible in screenshots
 - Check that `setContentProtection(true)` is active (stealth watchdog runs every 2s)
@@ -369,8 +357,9 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 
 ### API key validation fails
 - Check that you have a valid key with credits/balance
-- Make sure your trial is active (keys are entitlement-bound and unreadable while locked)
 - For Google Gemini, use an API key from AI Studio (not Cloud Console)
+- If you're upgrading from an older beta build, keys saved under the old trial-bound encryption scheme won't decrypt — re-enter them once in Settings → API Keys
+- For Ollama, make sure the server is running and the URL in Settings → API Keys matches it (default `http://localhost:11434`)
 
 ### Shortcuts not working
 - Some shortcuts may conflict with other apps
@@ -384,7 +373,7 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 
 ---
 
-## 15. FAQ
+## 14. FAQ
 
 **Q: Is InvisiQ really invisible to all screen capture?**
 A: Yes. It uses Windows' native `WDA_EXCLUDEFROMCAPTURE` flag, which excludes the window from all capture APIs at the DWM (Desktop Window Manager) level. This includes Snipping Tool, OBS, Zoom, Teams, Meet, and proctoring software.
@@ -393,19 +382,19 @@ A: Yes. It uses Windows' native `WDA_EXCLUDEFROMCAPTURE` flag, which excludes th
 A: Currently Windows only. macOS support is on the roadmap.
 
 **Q: Is my data sent anywhere?**
-A: Your prompts and screenshots go to the AI provider you choose (OpenAI, Anthropic, or Google) — InvisiQ is cloud-only (BYOK). **During the beta**, InvisiQ also sends usage analytics and the **text you type** to its own backend to improve the product; this is disclosed in the Terms & Conditions you accept on first run. Screenshots and OCR text are never uploaded to that backend, and beta prompt data is purged after 30 days. You can delete your captured prompt data from Settings.
+A: Your prompts and screenshots go only to the AI provider/model you choose (OpenAI, Anthropic, Google, Groq, or OpenRouter for cloud; nowhere at all for a local Ollama server). InvisiQ has no backend of its own — there's no account, no analytics, and nothing typed or captured is sent to InvisiQ's developer.
 
 **Q: Are my API keys safe?**
-A: Yes. Keys are encrypted with AES-256-GCM. During the beta they're additionally **entitlement-bound** (tied to your machine + your active trial), so they're only decryptable while your trial is valid. They're never stored in plaintext.
+A: Yes. Keys are encrypted with AES-256-GCM using a machine-bound key and are never stored in plaintext.
 
 **Q: Can I use it completely offline?**
-A: No. InvisiQ is cloud-only and the beta also verifies your trial with the server at launch (fail-closed), so an internet connection is required.
+A: Cloud providers (OpenAI, Anthropic, Google, Groq, OpenRouter) need an internet connection. If you run a local Ollama server, you can use InvisiQ fully offline with local models.
 
 **Q: Why does it disguise as Runtime Broker?**
 A: Runtime Broker is a legitimate Windows system process that always runs. Using this name makes InvisiQ blend in with normal system processes in Task Manager.
 
 **Q: Do I have to sign in?**
-A: Yes — the beta requires a Google sign-in and runs on a 14-day trial. This is Act 1 of the plan; a managed backend (no BYOK) is the future direction.
+A: No — there's no account, sign-in, or trial. Add an API key (or point InvisiQ at your local Ollama server) and start using it immediately.
 
 **Q: Can I use multiple providers at once?**
 A: You can have keys for all providers entered simultaneously, but only one model is active per conversation. Switch between them anytime from the header dropdown.

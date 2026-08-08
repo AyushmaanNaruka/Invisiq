@@ -11,7 +11,7 @@
 | **Author** | Ayushmaan Singh Naruka |
 | **Related Documents** | CLAUDE.md (current behavior), InvisiQ-Beta-Launch-Plan.md |
 
-> ⚠️ **Partial-staleness notice (June 18, 2026).** The per-channel specs in §2 and the OpenAI/Anthropic/Gemini adapter contracts (§3–§6) remain accurate, but this document predates several shipped subsystems — **beta gating** (auth / entitlement / analytics / T&C), **Model B stealth capture**, **memory (RAG)**, **companion**, **resilience**, **audio**, and **export** — and the **single-mode collapse** (modes/templates removed). For the authoritative, complete channel list see **§2.0 below** and the IPC section of **CLAUDE.md**. The **Ollama** provider was removed permanently (cloud-only); ignore any local-LLM references.
+> ⚠️ **Partial-staleness notice (June 18, 2026; beta-gating references removed July 25, 2026).** The per-channel specs in §2 and the OpenAI/Anthropic/Gemini adapter contracts (§3–§6) remain accurate for those three providers, but this document predates several shipped subsystems — **Model B stealth capture**, **memory (RAG)**, **companion**, **resilience**, **audio**, and **export** — and the **single-mode collapse** (modes/templates removed). For the authoritative, complete channel list see **§2.0 below** and the IPC section of **CLAUDE.md**. **Ollama is supported again** (re-added for the open-source release) alongside Groq and OpenRouter, none of which are documented in §3–§6 below. Groq/OpenRouter speak the same OpenAI-wire format as §4 (see `src/renderer/services/ai-providers/openai-compatible.ts`); Ollama uses a bespoke, non-OpenAI-compatible request/response format — see `src/renderer/services/ai-providers/ollama.ts` for the source of truth. The beta-gating stack (auth / entitlement / analytics / T&C) that once appeared here has been removed entirely — see CLAUDE.md's "Beta Launch Gating — Removed for Open Source" section.
 
 ---
 
@@ -92,11 +92,6 @@ The complete set of channels registered in `src/main/ipc-handlers.ts` / exposed 
 
 **Invoke (`ipcRenderer.invoke` → `ipcMain.handle`):**
 ```
-# Beta gating (Supabase)
-auth:login  auth:logout  auth:status
-entitlement:status  entitlement:refresh
-analytics:track  analytics:capture-prompt  analytics:delete-my-data
-tos:accept  tos:status
 # Overlay / window
 overlay:toggle  overlay:hide  overlay:show  overlay:set-opacity
 overlay:set-position  overlay:set-size  overlay:get-bounds  overlay:set-passthrough
@@ -115,7 +110,7 @@ conversation:save  conversation:load  conversation:list  conversation:delete  co
 export:conversation  export:save-dialog
 memory:search  memory:add  memory:delete  memory:list  memory:clear-all  memory:stats  memory:extract
 # Update / audio / companion / resilience
-update:check  update:download  update:install  update:version-status  update:open-releases
+update:check  update:download  update:install  update:open-releases
 audio:start-system-capture  audio:stop-system-capture  audio:capture-status
 companion:start  companion:stop  companion:status  companion:devices
 resilience:start-agent  resilience:stop-agent  resilience:send-command  resilience:status

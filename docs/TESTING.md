@@ -136,18 +136,6 @@ Run after any change to `overlay.ts`, `capture-controller.ts`, `resilience-contr
 - [ ] Keyboard shortcuts: Ctrl+, opens settings, Ctrl+L×2 clears conversation
 - [ ] System tray: optional toggle, show/hide from tray, quit from tray
 
-### Phase 5 — Beta Gating (Auth · Trial · Analytics · Updates)
-
-- [ ] Login: Google sign-in gate appears on first launch; signing in proceeds
-- [ ] T&C gate: shown when `tosAcceptedVersion !== CURRENT_TOS_VERSION`; accept to continue
-- [ ] Trial: TrialBanner shows remaining days; entitlement is server-clocked
-- [ ] Fail-closed: with no network at launch, the app locks (LockScreen) instead of granting access
-- [ ] Entitlement-bound keys: API keys are unreadable while locked, readable once trial is active
-- [ ] Analytics: `analytics:track` events + `analytics:capture-prompt` fire on send (typed text only — never screenshots/OCR)
-- [ ] Delete-my-data: removes captured prompt history from the backend
-- [ ] Version gate: a below-floor / remotely-killed build shows ForcedUpdate and blocks use
-- [ ] Auto-update: NSIS feed check/download/install works end-to-end
-
 ---
 
 ## Regression Testing Guidelines

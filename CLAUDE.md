@@ -46,7 +46,7 @@ The core mechanism is Windows' `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)
 
 **Single universal mode.** There is no user-facing mode picker or template library. InvisiQ uses ONE intent-adaptive system prompt (`UNIVERSAL_MODE` in `src/shared/constants.ts`); the model infers what's needed (answer-first for questions, algorithm-first for code, talking points for meetings) from the message + screenshot. See §1d.
 
-**Beta is gated & monetized.** The shipping beta requires Google sign-in, enforces a server-clocked 14-day trial (fail-closed), captures analytics + prompts (disclosed via a T&C gate), and honors a remote kill-switch + minimum-version floor. See "Beta Launch — Auth, Trial, Analytics & Kill-Switch" below. This is Act 1 of a two-act plan (BYOK beta → own AI backend); see `docs/InvisiQ-Beta-Launch-Plan.md`.
+**Open source, ungated.** InvisiQ boots straight to onboarding/main UI — no Google sign-in, no trial, no analytics/prompt-capture, no T&C gate, no remote kill-switch or version floor. That entire gating stack was removed for the open-source release; see "Beta Launch Gating — Removed for Open Source" below.
 
 ---
 
@@ -80,8 +80,6 @@ All project documentation lives in the `/docs` directory. **Read the relevant do
 | AI (Anthropic) | @anthropic-ai/sdk | latest |
 | AI (Google) | @google/generative-ai | latest |
 | OCR | tesseract.js | 5.x |
-| Backend (Beta) | Supabase (Postgres + Edge Functions) | — |
-| Auth (Beta) | Google OAuth (via Supabase) | — |
 | Storage | electron-store | latest (with encryption) |
 | Auto-Update | electron-updater (NSIS feed) | latest |
 | Markdown | react-markdown + rehype-highlight | latest |
@@ -122,7 +120,7 @@ ghostai/
 │   │   ├── invisible-input.ts        # Legacy WH_KEYBOARD_LL hook (uiohook-napi) — capture fallback tier
 │   │   ├── capture-controller.ts     # Model B capture session: epoch, heartbeat, degradation ladder
 │   │   ├── resilience-controller.ts  # Spawns + pipes to ghostai_helper.exe (named pipe, JSON)
-│   │   ├── crypto.ts                 # AES-256-GCM; v1 machine key + v2 entitlement-bound key
+│   │   ├── crypto.ts                 # AES-256-GCM; single machine-only key
 │   │   ├── store.ts                  # electron-store with encryption + schema backfill
 │   │   ├── ipc-handlers.ts           # All ipcMain.handle() registrations
 │   │   ├── conversations.ts          # Filesystem-based conversation CRUD
@@ -133,11 +131,8 @@ ghostai/
 │   │   ├── companion-server.ts       # HTTP + WebSocket companion server (QR pairing)
 │   │   ├── memory.ts                 # TF-IDF MemoryStore (local RAG)
 │   │   ├── export-service.ts         # Conversation export: JSON / MD / TXT / PDF
-│   │   ├── updater.ts                # electron-updater (NSIS feed) + version-gate
-│   │   ├── tray.ts                   # Optional system tray icon (default off)
-│   │   ├── auth.ts                   # Beta: Google OAuth via Supabase
-│   │   ├── entitlement.ts            # Beta: server-clocked 14-day trial (fail-closed)
-│   │   └── analytics.ts              # Beta: event + prompt capture (T&C-gated, server-redacted)
+│   │   ├── updater.ts                # electron-updater (NSIS feed)
+│   │   └── tray.ts                   # Optional system tray icon (default off)
 │   │
 │   ├── preload/
 │   │   └── index.ts                  # contextBridge — exposes ghostAPI to renderer
@@ -157,9 +152,7 @@ ghostai/
 │   │   │   ├── SettingsHotkeys / SettingsDisplay / SettingsPrivacy / SettingsAudio
 │   │   │   ├── SettingsMemory / SettingsCompanion / SettingsResilience
 │   │   │   ├── OnboardingFlow / OnboardingApiKey / OnboardingHotkeys / OnboardingStealthTest
-│   │   │   ├── LoginScreen.tsx / LockScreen.tsx        # Beta: auth + trial-locked gates
-│   │   │   ├── TosGate.tsx / TrialBanner.tsx           # Beta: T&C gate + trial countdown
-│   │   │   ├── ForcedUpdate.tsx / UpdateNotification.tsx
+│   │   │   ├── UpdateNotification.tsx
 │   │   │   └── ui/                   # GhostButton/Input/Card/Tooltip/Badge/Divider + animations
 │   │   │           # REMOVED: ModeSelector, CustomModeEditor, TemplateLibrary (single-mode collapse)
 │   │   │
@@ -169,9 +162,8 @@ ghostai/
 │   │   │   ├── useAudioTranscription.ts / useLiveTranscription.ts / useMeetingAssistant.ts
 │   │   │   ├── useCodeDetection.ts / useMemory.ts
 │   │   │   ├── useTokenCost.ts / useWindowSize.ts / useInternalKeyboard.ts (Ctrl+, / Ctrl+K / Ctrl+L)
-│   │   │   ├── useCapture.ts         # Model B stealth typing: capture state + key events (seq/epoch)
-│   │   │   └── useAuth.ts / useEntitlement.ts / useUpdateGate.ts   # Beta gates
-│   │   │           # REMOVED: useTemplates (single-mode collapse)
+│   │   │   └── useCapture.ts         # Model B stealth typing: capture state + key events (seq/epoch)
+│   │   │           # REMOVED: useTemplates (single-mode collapse); useAuth/useEntitlement/useUpdateGate (beta-gating removal)
 │   │   │
 │   │   ├── services/
 │   │   │   ├── ai-providers/
@@ -185,8 +177,8 @@ ghostai/
 │   │   └── types/global.d.ts         # Window.ghostAPI + SpeechRecognition types
 │   │
 │   └── shared/                       # Types shared between main + renderer
-│       ├── types.ts                  # AppSettings, ChatMessage, Mode, Auth/Entitlement/VersionGate, capture types
-│       ├── constants.ts              # Default hotkeys, UNIVERSAL_MODE, models, Supabase config, IPC whitelist
+│       ├── types.ts                  # AppSettings, ChatMessage, Mode, capture types
+│       ├── constants.ts              # Default hotkeys, UNIVERSAL_MODE, models, IPC whitelist
 │       ├── errors.ts                 # InvisiQError enum + helpers
 │       └── logger.ts                 # Production-safe logger
 │
@@ -332,11 +324,6 @@ All IPC channels follow this pattern: `{domain}:{action}`
 
 Invoke channels (`ipcRenderer.invoke` → `ipcMain.handle`):
 ```
-# Beta gating
-auth:login            auth:logout           auth:status
-entitlement:status    entitlement:refresh
-analytics:track       analytics:capture-prompt   analytics:delete-my-data
-tos:accept            tos:status
 # Overlay / window
 overlay:toggle  overlay:hide  overlay:show  overlay:set-opacity
 overlay:set-position  overlay:set-size  overlay:get-bounds
@@ -359,7 +346,7 @@ conversation:search  conversation:export  conversation:delete-all
 export:conversation  export:save-dialog
 memory:search  memory:add  memory:delete  memory:list  memory:clear-all  memory:stats  memory:extract
 # Update / audio / companion / resilience
-update:check  update:download  update:install  update:version-status  update:open-releases
+update:check  update:download  update:install  update:open-releases
 audio:start-system-capture  audio:stop-system-capture  audio:capture-status
 companion:start  companion:stop  companion:status  companion:devices
 resilience:start-agent  resilience:stop-agent  resilience:send-command  resilience:status
@@ -929,5 +916,5 @@ npm install @types/uuid --save-dev
 
 ---
 
-*Last updated: June 18, 2026 — Phase 5 complete: Beta Launch (Supabase auth/trial/analytics/T&C/kill-switch), cloud-only (Ollama removed), Alt→Shift hotkeys, real NSIS auto-update, and the single universal mode collapse (modes + templates removed, §1d). Model B default-on stealth (§1c) remains current.*
+*Last updated: July 25, 2026 — Beta gating stack (Supabase auth/trial/analytics/T&C/kill-switch) removed for open source, Ollama re-added (BYOK cloud providers + local Ollama), Alt→Shift hotkeys, real NSIS auto-update, and the single universal mode collapse (modes + templates removed, §1d). Model B default-on stealth (§1c) remains current.*
 *This file should be updated whenever major architecture decisions change.*
