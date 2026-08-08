@@ -60,11 +60,11 @@ All project documentation lives in the `/docs` directory. **Read the relevant do
 | `docs/InvisiQ-Wireframes.md` | UI mockups, design system, component hierarchy, animations | Working on any UI component |
 | `docs/InvisiQ-API-Contract.md` | IPC channels, AI provider interfaces, data models, types | Working on IPC, AI integration, or data layer |
 | `docs/InvisiQ-Planning.md` | Market research, architecture decisions, Claude Code commands | Understanding why decisions were made |
-| `docs/InvisiQ-Beta-Launch-Plan.md` | Two-act monetization plan, Supabase backend, trial/auth/analytics/kill-switch design | Working on backend, auth, entitlement, or telemetry |
+| `docs/InvisiQ-Beta-Launch-Plan.md` | Two-act monetization plan, Supabase backend, trial/auth/analytics/kill-switch design | Historical reference only — the backend it describes was removed |
 | `docs/RELEASE.md` | Build, sign, and publish the auto-update (NSIS) release | Cutting a release |
 | `docs/TESTING.md` | Stealth matrix, benchmarks, manual checklists | Verifying stealth or pre-release QA |
 
-> **Note:** `InvisiQ-PRD.md`, `InvisiQ-Wireframes.md`, `InvisiQ-Planning.md`, and the root `documentation.md` are **historical design specs** (frozen ~June 3, 2026). They carry a status banner and predate the single-mode collapse, Ollama removal, and the beta-launch track. Trust this file (CLAUDE.md) and the API contract for current behavior.
+> **Note:** `InvisiQ-PRD.md`, `InvisiQ-Wireframes.md`, `InvisiQ-Planning.md`, and the root `documentation.md` are **historical design specs** (frozen ~June 3, 2026). They carry a status banner and predate the single-mode collapse and the original beta-launch gating decision (since reversed — see the Beta Launch row above). Trust this file (CLAUDE.md) and the API contract for current behavior.
 
 ---
 

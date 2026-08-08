@@ -20,7 +20,7 @@ This guide walks you through everything you need to use InvisiQ day to day.
 8. [Copy & Paste Anywhere](#8-copy--paste-anywhere)
 9. [Voice & Meetings](#9-voice--meetings)
 10. [History & Memory](#10-history--memory)
-11. [Your Account, Trial & Privacy](#11-your-account-trial--privacy)
+11. [Privacy](#11-privacy)
 12. [Settings](#12-settings)
 13. [Troubleshooting](#13-troubleshooting)
 14. [FAQ](#14-faq)
@@ -32,14 +32,13 @@ This guide walks you through everything you need to use InvisiQ day to day.
 ### Install & launch
 
 1. Download the latest InvisiQ release and run it — no installer wizardry, no admin rights needed.
-2. On first launch, **sign in with Google** and accept the **Terms & Conditions**.
-3. Your **14-day free trial** starts automatically.
+2. On first launch, InvisiQ opens straight to onboarding — **no account, sign-in, or trial required**.
 
 ### First-run setup (3 quick steps)
 
 | Step | What happens |
 |:-----|:-------------|
-| **1. Add an API key** | Paste a key from OpenAI, Anthropic, or Google. It's validated instantly and encrypted on your machine. |
+| **1. Add an API key** | Paste a key from OpenAI, Anthropic, Google, Groq, or OpenRouter — or point InvisiQ at a local **Ollama** server (no key needed). It's validated instantly and encrypted on your machine. |
 | **2. Learn the hotkeys** | A quick reference of the shortcuts you'll use most. Nothing to configure. |
 | **3. Stealth self-test** | InvisiQ shows a test pattern, you take a screenshot, and confirm it's invisible. |
 
@@ -58,6 +57,8 @@ InvisiQ is **bring-your-own-key (BYOK)** — you connect your own account with o
 | **OpenAI** | platform.openai.com/api-keys | Pay-per-use |
 | **Anthropic (Claude)** | console.anthropic.com | Pay-per-use |
 | **Google Gemini** | aistudio.google.com/apikey | Free tier available |
+| **Groq** | console.groq.com/keys | Free tier available |
+| **OpenRouter** | openrouter.ai/keys | Pay-per-use (one key routes to many models) |
 
 **To add or change a key:**
 1. Open **Settings** (`Ctrl+,` or the gear icon)
@@ -65,9 +66,17 @@ InvisiQ is **bring-your-own-key (BYOK)** — you connect your own account with o
 3. Paste your key — it validates automatically
 4. Pick a model from the dropdown in the header bar (or cycle with `Ctrl+Shift+]` / `Ctrl+Shift+[`)
 
-You can store keys for all three providers at once and switch models anytime. Your keys are encrypted and never leave your device except to call the provider you chose.
+You can store keys for all of them at once and switch models anytime. Your keys are encrypted and never leave your device except to call the provider you chose.
 
-> **New to AI keys?** Google Gemini has a free tier and is the easiest place to start.
+### Local provider — Ollama (no key needed)
+
+InvisiQ can also talk directly to a local **Ollama** server — no API key, nothing leaves your machine:
+1. Install Ollama and pull a model (e.g. `ollama pull llama3.2`)
+2. Make sure the Ollama server is running
+3. In **Settings → API Keys**, Ollama's field is a **server URL**, not a key — it defaults to `http://localhost:11434`
+4. Once InvisiQ detects the server, its models appear in a separate **LOCAL** group in the model dropdown
+
+> **New to AI keys?** Google Gemini and Groq both have free tiers and are the easiest places to start. Prefer nothing to leave your machine at all? Use Ollama.
 
 ---
 
@@ -202,23 +211,13 @@ InvisiQ can remember useful facts across conversations so you don't repeat yours
 
 ---
 
-## 11. Your Account, Trial & Privacy
+## 11. Privacy
 
-### Sign-in & trial
-- The beta requires a **Google sign-in** and a **14-day trial**. Days remaining show in a banner at the top of the overlay.
-- The trial is verified with our server, so **an internet connection is required**. If InvisiQ can't reach the server, it locks until it can re-verify.
+InvisiQ is fully open-source and runs entirely on your machine — there's no account, no sign-in, and no backend collecting your data.
 
-### What we collect — and what we don't
-- **Collected during the beta:** usage events and the **text you type** as prompts, to improve the product. This is disclosed in the Terms & Conditions you accept on first run.
-- **Never collected:** your screenshots, any text read from them, or your API keys.
-- Personal data is redacted on our side, and beta prompt data is **deleted after 30 days**.
-- You can wipe your captured prompt history anytime with **"Delete my data"** in Settings.
-
-### Your API keys
-Keys are encrypted with AES-256 on your machine and tied to your active trial. They're never stored in plain text and only ever sent to the provider you chose.
-
-### Updates
-InvisiQ updates itself automatically. Occasionally you may be asked to update before continuing so everyone's on a supported version.
+- **No telemetry.** InvisiQ doesn't send usage events, prompts, or screenshots anywhere except the AI provider/model you choose — and nowhere at all if you use a local Ollama server.
+- **Your API keys** are encrypted with AES-256 on your machine. They're never stored in plain text and only ever sent to the provider you chose.
+- **Screenshots** are never saved to disk — they're cleared from memory after you send them.
 
 ---
 
@@ -228,11 +227,10 @@ Open with the gear icon or `Ctrl+,`.
 
 | Tab | What you can do |
 |:----|:----------------|
-| **Account** | See your signed-in email and sign out |
 | **API Keys** | Add and validate provider keys |
 | **Hotkeys** | Customize every shortcut |
 | **Display** | Theme, opacity, font size, window size and position |
-| **Privacy** | Stealth options, clear data, delete my data |
+| **Privacy** | Stealth options, process name, clear data, open data folder |
 | **Audio** | Speech engine, language, meeting transcript |
 | **Memory** | Turn memory on/off, auto-capture, clear |
 | **Companion** | Pair a phone via QR code |
@@ -249,7 +247,7 @@ Make sure you're on Windows 10 (version 2004 or newer) — stealth relies on a c
 Another app may be using the same combination. Go to **Settings → Hotkeys** and re-record it — conflicts are flagged automatically.
 
 **My API key won't validate.**
-Confirm the key is correct and your provider account has credits. For Google Gemini, use a key from **AI Studio**, not Google Cloud Console. Also check that your trial is active — keys are unreadable while the app is locked.
+Confirm the key is correct and your provider account has credits. For Google Gemini, use a key from **AI Studio**, not Google Cloud Console. For Ollama, make sure the server is running and the URL in Settings → API Keys matches it (default `http://localhost:11434`).
 
 **Typing isn't going into InvisiQ.**
 Press `Ctrl+Shift+I` (or click the input box) to start stealth typing. Look for the glowing border that confirms it's live.
@@ -268,20 +266,20 @@ Yes — on Windows it uses the OS-level capture-exclusion feature, so it's hidde
 Windows only for now. Other platforms are on the roadmap.
 
 **Where do my prompts and screenshots go?**
-To the AI provider you connect (OpenAI, Anthropic, or Google). During the beta, InvisiQ also collects usage events and your typed prompts to improve the product — disclosed in the Terms & Conditions. Your screenshots and API keys are never sent to us.
+To the AI provider/model you choose (OpenAI, Anthropic, Google, Groq, or OpenRouter) — or nowhere at all if you run a local Ollama server. InvisiQ has no backend of its own: there's no account, no analytics, and nothing typed or captured is ever sent to InvisiQ's developer.
 
 **Are my API keys safe?**
-Yes. They're encrypted on your device, tied to your active trial, and never stored in plain text.
+Yes. They're encrypted on your device with AES-256 and never stored in plain text.
 
 **Can I use it offline?**
-No — it needs internet to reach your AI provider and to verify your trial.
+Cloud providers (OpenAI, Anthropic, Google, Groq, OpenRouter) need an internet connection. If you run a local Ollama server, you can use InvisiQ fully offline with local models.
 
 **Do I have to sign in?**
-Yes, the beta requires a Google sign-in and a 14-day trial.
+No — there's no account, sign-in, or trial. Add an API key (or point InvisiQ at your local Ollama server) and start using it immediately.
 
 **Can I use more than one provider?**
 You can store keys for all of them and switch models anytime, but one model is active per conversation.
 
 ---
 
-*Need a hand? Reach us through the contact details in the app's Terms & Conditions.*
+*Need a hand? Open an issue on the project's GitHub repository.*

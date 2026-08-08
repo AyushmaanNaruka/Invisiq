@@ -401,4 +401,4 @@ A: You can have keys for all providers entered simultaneously, but only one mode
 
 ---
 
-*Last updated: March 13, 2026 — Phase 5*
+*Last updated: July 2026 — Ollama re-added, Supabase auth/trial/analytics/kill-switch removed (open-source de-gate)*

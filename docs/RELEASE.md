@@ -47,12 +47,7 @@ running the app. The auto-update stack is `electron-updater` → GitHub Releases
 - **Normal path:** 10s after launch the app checks the feed ([updater.ts](../src/main/updater.ts)).
   If newer → toast "Update vX available" → Download → "Install & Restart"
   (`quitAndInstall`). `autoInstallOnAppQuit = true` also applies it on next quit.
-- **Forced path (kill-switch / version floor):** set `min_version` or add the build
-  to `killed_versions` in the Supabase `app_config` row. On next launch the build
-  shows the blocking [ForcedUpdate](../src/renderer/components/ForcedUpdate.tsx)
-  screen, which auto-checks → auto-downloads → Install & Restart, with a
-  **"Download manually"** link to the releases page as the fallback. **Fail-open:**
-  a network/parse error never blocks a healthy build.
+  **Fail-open:** a network/parse error never blocks a healthy build.
 
 ---
 
@@ -65,10 +60,6 @@ This is the only real proof the updater works — do it once on a clean machine:
 3. Bump to **N+1** (1.2.1), `npm run publish`, un-draft.
 4. Relaunch the installed N build. Within ~10s it should detect N+1, download, and
    on Install & Restart relaunch as **N+1**. Confirm `app.getVersion()` shows N+1.
-5. **Forced-update check:** set `min_version = N+1` in `app_config`, launch an N
-   build → confirm the blocking screen appears AND completes the update (not a dead
-   end). Then test with the feed unreachable → confirm "Download manually" opens the
-   releases page.
 
 ---
 
