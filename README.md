@@ -732,7 +732,7 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 <p align="center">
-  Built by <a href="https://github.com/Nezeon"><strong>Ayushmaan Singh Naruka</strong></a>
+  Built by <a href="https://github.com/Ayushmaannaruka"><strong>Ayushmaan Singh Naruka</strong></a>
 </p>
 
 <p align="center">
