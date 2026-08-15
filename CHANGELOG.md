@@ -30,7 +30,7 @@ All notable changes to InvisiQ are documented here.
 ### Changed
 - **Stealth typing follows focus** — clicking another app turns capture OFF (keystrokes go there); clicking InvisiQ's input turns it back ON (helper `WH_MOUSE_LL` + clean exit).
 - **Stealth typing can no longer outlive overlay visibility** — hiding the overlay (any path) tears down the capture hook, so keystrokes never leak into a hidden window.
-- **Process / executable name is now the brand `InvisiQ`** (was the interim neutral `Helio`). Safe — visual invisibility (WDA) is name-independent and the realistic market can't enumerate processes; not a return to the toxic `RuntimeBroker` impersonation. See `docs/InvisiQ-Stealth-Commercialization.md`.
+- **Process / executable name is now the brand `InvisiQ`** (was the interim neutral `Helio`). Safe — visual invisibility (WDA) is name-independent, so the process name buys no invisibility to give up; not a return to the toxic `RuntimeBroker` impersonation.
 
 ### Removed
 - **Click-through (passthrough) overlay** feature removed entirely (hook, HeaderBar toggle, `Ctrl+Shift+P`, IPC, setting). The internal hidden-overlay click pass-through (correctness) is unchanged.

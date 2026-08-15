@@ -11,11 +11,11 @@
 - **Tagline:** Your AI copilot that sees everything, but is seen by no one.
 - **Type:** Invisible AI desktop overlay assistant
 - **Author:** Ayushmaan Singh Naruka
-- **License:** Personal Use / MIT
+- **License:** MIT (see `LICENSE`; installer terms in `assets/license.txt` must stay consistent with it)
 
 ### Brand vs. disguise (the DE-IMPERSONATED split)
 
-"InvisiQ" is the **user-facing brand** — use it in UI, docs, system prompts, and any text a user sees. The **process image name is now also `InvisiQ`** (June 2026 brand-trust decision, superseding the interim neutral `Helio`). This is SAFE: visual invisibility (`WDA_EXCLUDEFROMCAPTURE`) is **name-independent**, and the realistic market (Bucket A — Zoom/Teams/Meet/Proctorio/Honorlock) **cannot enumerate processes**, so the brand name costs nothing there; the only trade-off is that a recognizable name is easier for Bucket-B desktop lockdown browsers (Mettl/Respondus/SEB) to add to a process-name blocklist (a future-popularity risk, not a present one). Crucially, `InvisiQ` is **honest** — it does NOT reintroduce the toxic `RuntimeBroker` + `Microsoft.Windows.RuntimeBroker` + `author: "Microsoft Corporation"` impersonation that was removed (that impersonation was an EDR/AV red flag — CrowdStrike Falcon terminated it at runtime — and a code-signing / legal blocker). Rationale + the Bucket A vs B decision tree is in `docs/InvisiQ-Stealth-Commercialization.md`. The split:
+"InvisiQ" is the **user-facing brand** — use it in UI, docs, system prompts, and any text a user sees. The **process image name is now also `InvisiQ`** (June 2026 brand-trust decision, superseding the interim neutral `Helio`). This is SAFE because visual invisibility (`WDA_EXCLUDEFROMCAPTURE`) is **name-independent** — the process name buys no invisibility, so there is nothing to trade away by using the honest one. Crucially, `InvisiQ` does NOT reintroduce the toxic `RuntimeBroker` + `Microsoft.Windows.RuntimeBroker` + `author: "Microsoft Corporation"` impersonation that was removed (that impersonation was an EDR/AV red flag — CrowdStrike Falcon terminated it at runtime — and a code-signing / legal blocker). **Do not reintroduce vendor impersonation in any form.** The split:
 
 - **User-facing (productName: InvisiQ):** installer heading ("InvisiQ Setup"), installer filename, Start Menu + search label, uninstaller / Installed Apps entry. `electron-builder.yml` → `productName: InvisiQ`, `copyright/legalTrademarks/author: InvisiQ`.
 - **Process image name (the .exe proctoring enumerates) — the brand name `InvisiQ`, honest (no impersonation):**
@@ -56,15 +56,13 @@ All project documentation lives in the `/docs` directory. **Read the relevant do
 
 | Document | Purpose | Read When |
 |---|---|---|
-| `docs/InvisiQ-PRD.md` | Full product requirements, use cases, functional specs, roadmap | Starting any new feature; understanding requirements |
 | `docs/InvisiQ-Wireframes.md` | UI mockups, design system, component hierarchy, animations | Working on any UI component |
 | `docs/InvisiQ-API-Contract.md` | IPC channels, AI provider interfaces, data models, types | Working on IPC, AI integration, or data layer |
-| `docs/InvisiQ-Planning.md` | Market research, architecture decisions, Claude Code commands | Understanding why decisions were made |
 | `docs/InvisiQ-Beta-Launch-Plan.md` | Two-act monetization plan, Supabase backend, trial/auth/analytics/kill-switch design | Historical reference only — the backend it describes was removed |
 | `docs/RELEASE.md` | Build, sign, and publish the auto-update (NSIS) release | Cutting a release |
 | `docs/TESTING.md` | Stealth matrix, benchmarks, manual checklists | Verifying stealth or pre-release QA |
 
-> **Note:** `InvisiQ-PRD.md`, `InvisiQ-Wireframes.md`, `InvisiQ-Planning.md`, and the root `documentation.md` are **historical design specs** (frozen ~June 3, 2026). They carry a status banner and predate the single-mode collapse and the original beta-launch gating decision (since reversed — see the Beta Launch row above). Trust this file (CLAUDE.md) and the API contract for current behavior.
+> **Note:** `InvisiQ-Wireframes.md` is a **historical design spec** (frozen ~June 3, 2026) — still the reference for the design system, but it predates the single-mode collapse and the beta-gating reversal. Three sibling specs (`InvisiQ-PRD.md`, `InvisiQ-Planning.md`, root `documentation.md`) were **unpublished in the open-source cleanup** because they contradicted shipped behavior; PRD and Planning remain on disk untracked, `documentation.md` survives in git history only. Trust this file (CLAUDE.md) and the API contract for current behavior.
 
 ---
 
@@ -105,9 +103,7 @@ ghostai/
 │   ├── RELEASE.md                    # Release/publish runbook
 │   ├── TESTING.md                    # Stealth matrix + QA checklists
 │   ├── TUTORIAL.md                   # End-user usage guide
-│   ├── InvisiQ-PRD.md                # ⚠ historical design spec
-│   ├── InvisiQ-Wireframes.md         # ⚠ historical design spec
-│   └── InvisiQ-Planning.md           # ⚠ historical design spec
+│   └── InvisiQ-Wireframes.md         # ⚠ historical design spec
 │
 ├── src/
 │   ├── main/                         # Electron Main Process (Node.js)

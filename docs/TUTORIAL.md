@@ -39,7 +39,7 @@ npm run dev
 
 ### Option B: Portable Executable (Production)
 
-1. Download the latest `Runtime Broker 1.2.0.exe` from [GitHub Releases](https://github.com/Nezeon/InvisiQ/releases)
+1. Download the latest `InvisiQ-Setup.exe` from [GitHub Releases](https://github.com/Nezeon/InvisiQ/releases)
 2. Place it anywhere on your system (Desktop, Documents, etc.)
 3. Double-click to run — no installation needed
 
@@ -314,14 +314,19 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 
 ### What It Does
 - Runs `ghostai_helper.exe` alongside InvisiQ
-- Communicates via Windows named pipes (`\\.\pipe\InvisiQ`)
-- The helper can inject a Detours DLL that forces `WDA_EXCLUDEFROMCAPTURE` on windows
-- Provides an additional layer of stealth beyond Electron's built-in content protection
+- Communicates via a randomized, user-SID-restricted Windows named pipe
+- Hosts the suppressing `WH_KEYBOARD_LL` hook out-of-process, so you can type into the
+  overlay without it taking foreground focus. The hook is installed **only while you are
+  actively typing** — an idle helper carries no keyboard-hook footprint
+- Exits automatically if InvisiQ dies, so a crash can never orphan the hook
+
+> An earlier design also injected a Detours DLL to force `WDA_EXCLUDEFROMCAPTURE` onto
+> other processes. That was removed — it is not in the codebase.
 
 ### Setup
-1. Compile `ghostai_helper.cpp` and `ghostai_core.cpp` (requires MSVC + Detours)
-2. Place `ghostai_helper.exe` and `ghostai_core.dll` in the `resources/` folder
-3. Open Settings → **Resilience** tab
+1. Build the helper with `npm run build:helper` (requires CMake + MSVC, or MinGW g++).
+   Packaged builds bundle it automatically via `extraResources`
+2. Open Settings → **Resilience** tab
 4. Click **Start Agent** → the helper launches and connects
 5. Enable **Auto-Start** to launch automatically with InvisiQ
 
@@ -351,8 +356,9 @@ Resilience mode is an **optional advanced feature** that spawns a native C++ hel
 - Or use `portable` target instead of `nsis` in `electron-builder.yml`
 
 ### App shows wrong name in Task Manager
-- Update `package.json` description to "Runtime Broker"
-- Verify `electron-builder.yml` has `executableName: RuntimeBroker`
+- The expected name is **InvisiQ** — impersonating a Windows system process is deliberately no longer done
+- Verify `electron-builder.yml` has `executableName: InvisiQ`, matching `DEFAULT_PROCESS_NAME` in `src/shared/constants.ts`
+- A custom name set in Settings → Privacy overrides the default at runtime
 - Rebuild with `npm run package`
 
 ### API key validation fails
@@ -390,8 +396,8 @@ A: Yes. Keys are encrypted with AES-256-GCM using a machine-bound key and are ne
 **Q: Can I use it completely offline?**
 A: Cloud providers (OpenAI, Anthropic, Google, Groq, OpenRouter) need an internet connection. If you run a local Ollama server, you can use InvisiQ fully offline with local models.
 
-**Q: Why does it disguise as Runtime Broker?**
-A: Runtime Broker is a legitimate Windows system process that always runs. Using this name makes InvisiQ blend in with normal system processes in Task Manager.
+**Q: Does it disguise itself as a Windows system process?**
+A: No — not any more. Earlier builds shipped as "Runtime Broker" with Microsoft metadata; that impersonation was removed. It was an antivirus/EDR red flag (CrowdStrike Falcon terminated it at runtime) and a code-signing blocker, and it bought nothing: invisibility comes from `WDA_EXCLUDEFROMCAPTURE`, which is independent of the process name. InvisiQ now runs under its own name. You can still set a custom process name in Settings → Privacy.
 
 **Q: Do I have to sign in?**
 A: No — there's no account, sign-in, or trial. Add an API key (or point InvisiQ at your local Ollama server) and start using it immediately.

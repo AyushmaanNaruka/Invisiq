@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-1.2.0-00B894?style=for-the-badge&labelColor=0a0f1a" alt="Version" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-1.3.0-00B894?style=for-the-badge&labelColor=0a0f1a" alt="Version" /></a>
   <a href="#"><img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D4?style=for-the-badge&logo=windows&logoColor=white&labelColor=0a0f1a" alt="Platform" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-FDCB6E?style=for-the-badge&labelColor=0a0f1a" alt="License" /></a>
   <a href="#"><img src="https://img.shields.io/badge/electron-33+-47848F?style=for-the-badge&logo=electron&logoColor=white&labelColor=0a0f1a" alt="Electron" /></a>
@@ -30,11 +30,34 @@
 
 ## What is InvisiQ?
 
-InvisiQ is a desktop overlay that sits on top of every application on your screen — **completely invisible to all screen capture, screen sharing, recording software, and proctoring tools**. It uses Windows' native `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` API to make the overlay window undetectable.
+InvisiQ is a desktop AI assistant that lives in an overlay on top of everything else — and **stays out of your screen shares, recordings, and screenshots**. It uses Windows' native `SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)` API, the same OS mechanism password managers and banking apps use to keep themselves out of captured frames.
+
+The point is that your assistant is *yours*. Ask it something mid-demo and it doesn't end up in the recording. Keep notes open during a call and they don't land in the shared frame. No "let me stop sharing for a second."
 
 Capture your screen, ask questions, get real-time AI responses with streaming — all through a sleek interface controlled entirely by keyboard shortcuts. Bring your own API key for **OpenAI, Anthropic, Google Gemini, Groq, or OpenRouter**, or skip the key entirely and run a **local Ollama** model. Conversations, settings, and API keys stay encrypted on your machine.
 
 > **No sign-in, no trial, no telemetry.** InvisiQ is fully open-source and runs entirely on your machine — no account, no gate, no expiration. BYOK cloud provider keys (OpenAI, Anthropic, Google Gemini) are optional and added in Settings → API Keys, or skip cloud providers entirely and run fully free/offline against a local Ollama server (install Ollama, `ollama pull <model>`, then point InvisiQ at it in Settings).
+
+<br/>
+
+## 🔍 Why this is open source
+
+An app that hides from screen capture and installs a keyboard hook is exactly the kind of app you should not run on trust. So don't — read it.
+
+Everything that could worry you is in this repo and documented rather than buried:
+
+| Concern | Where to look | What you'll find |
+|:--------|:--------------|:-----------------|
+| "It hides from capture" | [`src/main/overlay.ts`](src/main/overlay.ts) | One documented Windows API call, `setContentProtection(true)` |
+| "It hooks my keyboard" | [`native/ghostai-helper/src/main.cpp`](native/ghostai-helper/src/main.cpp) | Hook installed **only while you're typing into InvisiQ**, removed the moment you stop. Zero disk writes, zero network, no keystrokes in logs |
+| "Where do my API keys go" | [`src/main/crypto.ts`](src/main/crypto.ts) | AES-256-GCM, machine-derived key, never leaves your device |
+| "What does it phone home about" | Nothing to look at | No analytics, no accounts, no backend. The only outbound call it makes on its own is the GitHub Releases update check, which you can turn off |
+
+**It does not impersonate anything.** Earlier builds shipped as `RuntimeBroker.exe` with Microsoft metadata. That was removed — it was an EDR red flag, a code-signing blocker, and it bought nothing, since capture-exclusion is independent of the process name. It runs as `InvisiQ.exe`, under its own name.
+
+**Security software may still flag it.** A capture-excluded window plus a keyboard hook resembles what surveillance tooling does, and heuristic AV can't tell intent from behavior. That's precisely why the source is public: the difference between this and spyware is *auditable*, not just asserted.
+
+**On where you use it:** InvisiQ can't tell whether you're allowed to use it. You can. Exams, interviews, certifications, and many workplaces prohibit assistance tools — that's between you and them, and using it somewhere it isn't permitted is on you, not on the tool. See §4 of [the install terms](assets/license.txt).
 
 <br/>
 
@@ -44,8 +67,8 @@ Capture your screen, ask questions, get real-time AI responses with streaming �
 <tr>
 <td width="50%" valign="top">
 
-### 👻 Invisible Overlay
-The window is **excluded from all capture APIs** at the OS level. Snipping Tool, OBS, Zoom, Teams, Meet, proctoring software — none of them can see it. This is a native Windows compositing feature, not a hack.
+### 👻 Capture-Excluded Overlay
+The window is **excluded from capture APIs** at the OS level, so it never appears in a screen share, recording, or screenshot — Snipping Tool, OBS, Zoom, Teams, Meet. This is a documented Windows compositing feature, not a hack: you can read the one call that does it in [`overlay.ts`](src/main/overlay.ts).
 
 </td>
 <td width="50%" valign="top">
@@ -72,14 +95,14 @@ API keys are encrypted with a machine-specific key derived via **PBKDF2** (100k 
 <tr>
 <td width="50%" valign="top">
 
-### 🕵️ Process Camouflage
-The app disguises itself as **Runtime Broker** — a legitimate Windows system process. Custom `AppUserModelId`, matching copyright metadata, and configurable process names make it undetectable in Task Manager.
+### 🕵️ Honest, Low-Profile Process
+The app runs under its **own name, `InvisiQ`** — it does **not** impersonate Windows system processes or any other vendor. Invisibility comes from the OS compositor (`WDA_EXCLUDEFROMCAPTURE`), which is name-independent, so no disguise is needed. The process name is configurable in Settings → Privacy.
 
 </td>
 <td width="50%" valign="top">
 
-### 🛡️ Resilience Mode
-Optional native C++ helper process communicates via **Windows named pipes**. Detours-based API hooking forces `WDA_EXCLUDEFROMCAPTURE` on target windows. Auto-start, status monitoring, and graceful shutdown.
+### 🛡️ Stealth Typing Helper
+A native C++ helper process, spoken to over a randomized, user-SID-restricted **Windows named pipe**. It hosts a suppressing keyboard hook out-of-process so you can type into the overlay without it ever taking foreground focus — installed only while you're actively typing, and self-terminating if InvisiQ dies.
 
 </td>
 </tr>
@@ -120,8 +143,10 @@ Copy AI responses or code blocks directly into any application with **Smart Past
 </td>
 <td width="50%" valign="top">
 
-### 🎤 Voice Input + Meeting Assistant
-Dual engine speech recognition: **Web Speech API** + **Whisper**. Live meeting assistant with system audio capture, auto-question detection, and AI-powered suggestions. Code detection via periodic OCR.
+### 🎤 Voice Input <sub>· meeting assistant is experimental</sub>
+**Microphone** voice input works today via the Web Speech API (with a Whisper option). Code detection via periodic OCR also works.
+
+> ⚠️ **System-audio capture and the live meeting assistant are incomplete.** The loopback capture path is a stub that emits silence, and live transcription appends a placeholder instead of calling Whisper. The UI is wired up, the pipeline behind it is not — treat it as scaffolding, not a feature. Contributions welcome.
 
 </td>
 </tr>
@@ -134,8 +159,8 @@ Per-request, per-conversation, and per-session token and cost tracking in the st
 </td>
 <td width="50%" valign="top">
 
-### 📦 Portable Distribution
-Single portable `.exe` — no installer needed. Just download, double-click, and run. No registry entries. No Start Menu shortcuts. Clean and untraceable.
+### 📦 Simple Install + Auto-Update
+A standard NSIS installer with a normal Start Menu entry and an Uninstall entry in Installed Apps — nothing hidden from your own machine. Updates arrive through the signed GitHub Releases feed, and you can turn the check off.
 
 </td>
 </tr>
@@ -208,12 +233,12 @@ Single portable `.exe` — no installer needed. Just download, double-click, and
 ║  │                      │  │                                        │  ║
 ║  │  Named Pipe Server   │  │  ┌──────────┐ ┌────────┐ ┌─────────┐ │  ║
 ║  │  JSON command/resp   │  │  │ Chat UI  │ │Settings│ │Onboard- │ │  ║
-║  │  Detours DLL inject  │  │  │ Panel    │ │ Panel  │ │ing Flow │ │  ║
-║  │                      │  │  └──────────┘ └────────┘ └─────────┘ │  ║
-║  │  ghostai_core.dll    │  │                                        │  ║
-║  │  ├ Hook SetWindow    │  │  ┌──────────────────────────────────┐ │  ║
-║  │  │ DisplayAffinity   │  │  │         AI Provider Layer         │ │  ║
-║  │  └ Force WDA_EXCLUDE │  │  │                                  │ │  ║
+║  │                      │  │  │ Panel    │ │ Panel  │ │ing Flow │ │  ║
+║  │  Suppressing         │  │  └──────────┘ └────────┘ └─────────┘ │  ║
+║  │  WH_KEYBOARD_LL hook │  │                                        │  ║
+║  │  ├ Installed only    │  │  ┌──────────────────────────────────┐ │  ║
+║  │  │ during capture    │  │  │         AI Provider Layer         │ │  ║
+║  │  └ Parent-death exit │  │  │                                  │ │  ║
 ║  │                      │  │  │  ┌────────┐ ┌──────────┐         │ │  ║
 ║  └──────────────────────┘  │  │  │ OpenAI │ │Anthropic │         │ │  ║
 ║                            │  │  │ GPT-4o │ │ Claude   │         │ │  ║
@@ -296,22 +321,22 @@ User presses Ctrl+Shift+S
   Self-Healing      │  └─ Re-applies content protection    │
                     │     in case of state drops           │
                     │                                      │
-  Layer 3:          │  Process Camouflage                  │
-  Identity          │  ├─ EXE name: RuntimeBroker.exe      │
-  Disguise          │  ├─ Product: Runtime Broker           │
-                    │  ├─ Author: Microsoft Corporation    │
-                    │  ├─ AppUserModelId: Microsoft.*      │
-                    │  └─ Config dir: %APPDATA%\Runtime*   │
+  Layer 3:          │  Honest Identity (no impersonation)  │
+  Identity          │  ├─ EXE name: InvisiQ.exe            │
+                    │  ├─ Product: InvisiQ                 │
+                    │  ├─ Author: InvisiQ                  │
+                    │  ├─ AppUserModelId: com.ghostai.app  │
+                    │  └─ Process name: configurable       │
                     │                                      │
   Layer 4:          │  Window Hiding                       │
   UI Hiding         │  ├─ skipTaskbar: true                │
                     │  ├─ Alt-Tab: hidden                  │
                     │  └─ No desktop/start menu shortcuts  │
                     │                                      │
-  Layer 5:          │  Resilience Agent (Optional)         │
-  Native Helper     │  ├─ Named pipe communication         │
-                    │  ├─ Detours API hooking              │
-                    │  └─ Force WDA_EXCLUDEFROMCAPTURE     │
+  Layer 5:          │  Capture Helper (stealth typing)     │
+  Native Helper     │  ├─ SID-locked named pipe            │
+                    │  ├─ Suppressing WH_KEYBOARD_LL       │
+                    │  └─ Hooked only while typing         │
                     │                                      │
                     └──────────────────────────────────────┘
 ```
@@ -356,7 +381,7 @@ Channels: {domain}:{action}
 | Runtime | Electron 33+ | Desktop shell, system APIs, content protection |
 | Frontend | React 18 | Component UI with hooks |
 | Language | TypeScript 5 (strict) | Type safety across all processes |
-| Native | C++ (Detours + Win32) | API hooking, named pipes, process hiding |
+| Native | C++ (Win32) | Suppressing keyboard hook, named-pipe server |
 | Styling | TailwindCSS 3 + Framer Motion 11 | Utility-first theming + animations |
 | Build | electron-vite 5 | Unified main/preload/renderer builds |
 | AI (Cloud, BYOK) | openai, @anthropic-ai/sdk, @google/generative-ai | Provider SDKs with streaming (lazy-loaded) |
@@ -376,6 +401,7 @@ Channels: {domain}:{action}
 - **Node.js** 18+ and **npm** 9+
 - **Windows 10** version 2004 or later (required for `WDA_EXCLUDEFROMCAPTURE`)
 - (Optional) An API key from a cloud provider: [OpenAI](https://platform.openai.com/api-keys) / [Anthropic](https://console.anthropic.com/) / [Google AI Studio](https://aistudio.google.com/apikey) — or install [Ollama](https://ollama.com) and pull a model to run fully free/offline
+- (Only to **package**, not to run in dev) A C++ toolchain for the native capture helper: **CMake + Visual Studio Build Tools** (preferred), or **MinGW g++** as a fallback. `npm run build:helper` picks whichever it finds.
 
 ### Install & Run
 
@@ -543,11 +569,11 @@ There are no built-in modes or templates to choose from anymore — a single int
 | **Stealth Watchdog** | Re-applies content protection every 2 seconds |
 | **Key Encryption** | AES-256-GCM; machine-specific key (PBKDF2, 100K iters, SHA-512) |
 | **Process Isolation** | `contextIsolation: true`, `nodeIntegration: false`, IPC-only communication |
-| **Process Disguise** | Appears as "Runtime Broker" with Microsoft Corporation metadata |
+| **Process Identity** | Runs as `InvisiQ.exe` under its own name — no impersonation of Windows or any other vendor. Invisibility does not depend on the process name. |
 | **Data Residency** | Conversations, settings, and API keys stay encrypted on your machine. No telemetry, no analytics, no sign-in — nothing is sent to a backend. |
 | **API Architecture** | BYOK (Bring Your Own Key) for cloud providers, or a local Ollama server. AI calls go direct to the provider (or your own machine for Ollama) — never through a backend. No auth, trial, or analytics backend. |
 | **Screenshot Lifecycle** | Screenshots cleared from memory after sending. Not persisted to disk. |
-| **Portable Build** | No installer, no registry entries, no Start Menu — just a standalone `.exe` |
+| **Install Footprint** | Standard NSIS installer: Start Menu entry, Uninstall entry in Installed Apps, config under `%APPDATA%`. Nothing concealed from the machine's owner. |
 
 <br/>
 
@@ -601,10 +627,12 @@ ghostai/
 │       ├── errors.ts
 │       └── logger.ts
 │
-├── ghostai_core.cpp             # Detours DLL (API hooking)
-├── ghostai_helper.cpp           # Named pipe server (native helper)
-├── docs/                        # PRD, Wireframes, API Contract, Testing
+├── native/ghostai-helper/       # Win32 C++ capture helper (out-of-process)
+│   ├── src/main.cpp             # Suppressing WH_KEYBOARD_LL hook + pipe server
+│   └── CMakeLists.txt           # Built by `npm run build:helper`
+├── docs/                        # API Contract, Wireframes, Testing, Tutorial, Release
 ├── scripts/
+│   ├── build-helper.js          # Compiles the native helper (MSVC or MinGW)
 │   └── verify-build.ts          # Pre-build security/stealth checks
 ├── electron-builder.yml
 ├── tailwind.config.ts
@@ -631,9 +659,9 @@ ghostai/
 - [x] ~~Custom modes with color picker~~ (removed — single universal mode)
 - [x] Smart paste — paste AI responses into any app
 - [x] Clipboard monitoring with toast notifications
-- [x] Voice input (Web Speech API + Whisper)
-- [x] Live transcript panel + meeting mode auto-context
-- [x] Enhanced stealth (process disguise, alt-tab hiding, watchdog)
+- [x] Voice input (Web Speech API + Whisper) — microphone only
+- [x] Live transcript panel + meeting transcript auto-context
+- [x] Enhanced stealth (alt-tab hiding, watchdog; process *disguise* later removed)
 
 ### Phase 3 — Production Polish ✅
 - [x] Multi-monitor support with hot-plug detection
@@ -646,8 +674,8 @@ ghostai/
 
 ### Phase 4 — Invisible Intelligence Platform ✅
 - [x] Enterprise design system (Framer Motion, GhostButton, GhostCard)
-- [x] Click-through overlay + inline region selector
-- [x] Live meeting assistant (system audio + auto-question detection)
+- [x] ~~Click-through overlay~~ (removed) + inline region selector
+- [ ] Live meeting assistant (system audio + auto-question detection) — **UI only; capture + transcription are stubs**
 - [x] Companion mode (HTTP/WS server + QR pairing)
 - [x] ~~20+ prompt templates across 8 categories~~ (removed — single universal mode)
 - [x] TF-IDF memory system (RAG) with auto-extraction
@@ -655,7 +683,7 @@ ghostai/
 
 ### Phase 5 — Beta Launch + Stealth Hardening ✅
 - [x] **Model B default-on stealth** — suppressing out-of-process capture helper, logical-focus typing, degradation ladder
-- [x] Native C++ helper + named pipe; full process camouflage (Runtime Broker disguise)
+- [x] Native C++ helper + named pipe (the Runtime Broker disguise shipped here was later **removed** — see Phase 7)
 - [x] **Google sign-in** + **server-clocked 14-day trial** (fail-closed) on a Supabase backend
 - [x] **Analytics + prompt capture** behind a T&C gate; **remote kill-switch + minimum-version floor**
 - [x] **Real auto-update** (NSIS feed) + forced-update path

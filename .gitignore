@@ -1,13 +1,37 @@
 node_modules/
 out/
-release/
-release-test*/
-release-preview/
+# Any packaged-build output dir: release/, release-preview/, release-130/, …
+release*/
 *.env
 *.env.local
 .DS_Store
 Thumbs.db
+desktop.ini
 *.log
+
+# Supabase CLI local state (leaks the linked project ref)
+supabase/.temp/
+
+# Marketing / launch collateral — kept locally, not part of the source distribution
+*.mp4
+InvisiQ-Launch-video*.html
+InvisiQ-v*-update.html
+InvisiQ-*-Technical-Brief.docx
+scripts/render-video.js
+scripts/gen-beta-brief.py
+
+# Design mockups used for prompting — reference only, not source
+claude-design/
+
+# Internal commercial/positioning memos — kept locally, not published
+docs/InvisiQ-Stealth-Commercialization.md
+docs/InvisiQ-PostBeta-Upgrade-Plan.md
+
+# Frozen pre-launch specs (June 2026) that contradict current behaviour — they
+# described modes, templates and a trial that no longer exist, so publishing them
+# only generates confused issues. Kept locally; also in git history.
+docs/InvisiQ-PRD.md
+docs/InvisiQ-Planning.md
 
 # Claude Code
 .claude/

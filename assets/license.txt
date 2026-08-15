@@ -1,54 +1,55 @@
-InvisiQ - Beta Terms of Use
+InvisiQ - Terms of Use
 
-Last updated: June 19, 2026
+Last updated: August 15, 2026
 
 Please read these terms before installing. By installing or using InvisiQ
 (the "Software"), you agree to the terms below. If you do not agree, do not
 install or use the Software.
 
 
-1. BETA SOFTWARE
-   InvisiQ is pre-release beta software provided for evaluation. It may contain
-   bugs, change without notice, lose data, or stop working at any time. Beta
-   access is offered as a time-limited trial and may end or change at any time.
+1. OPEN SOURCE (MIT LICENSE)
+   InvisiQ is free and open-source software, released under the MIT License.
+   You may use, copy, modify, and redistribute it, including commercially,
+   subject to the MIT License terms. The full license text ships with the
+   Software and is available in the LICENSE file of the source repository.
+   There is no trial period, no subscription, no account, and no expiration.
 
 
-2. BRING YOUR OWN KEY (BYOK)
-   InvisiQ connects to third-party AI providers (such as OpenAI, Anthropic, and
-   Google) using API keys that you supply. You are solely responsible for those
+2. BRING YOUR OWN KEY (BYOK) AND LOCAL MODELS
+   InvisiQ connects to third-party AI providers (such as OpenAI, Anthropic,
+   Google, Groq, and OpenRouter) using API keys that you supply, or to a local
+   Ollama server that you run yourself. You are solely responsible for those
    accounts, for all usage charges they incur, and for complying with each
    provider's own terms. Your API keys are encrypted and stored only on your
-   own device. We never transmit them to, or store them on, our servers, and
-   they are never included in the prompt text or usage analytics we collect
-   (see Section 3). Requests to the AI providers are sent directly from your
-   device using your key.
+   own device. Requests to the AI providers are sent directly from your device
+   using your key.
 
 
-3. WHAT WE COLLECT DURING THE BETA
-   To improve the Software, the TEXT of the prompts you send may be stored on our
-   servers. We do NOT store your screenshots or the contents of your screen. API
-   keys and obvious personal information are stripped before storage. Prompt text
-   is deleted after 30 days, and you can delete yours at any time from
-   Settings > Privacy. Basic, non-identifying usage analytics may also be
-   collected to understand how features are used.
+3. WHAT WE COLLECT: NOTHING
+   InvisiQ has no telemetry, no analytics, and no accounts. Your prompts,
+   screenshots, conversations, settings, and API keys never leave your device
+   except in the requests you make directly to the AI provider you configured.
+   The authors operate no servers that receive your data. The only outbound
+   connections the Software makes on its own are update checks against the
+   public GitHub Releases feed, which you can disable in Settings.
 
 
 4. ACCEPTABLE USE
-   You are responsible for using InvisiQ lawfully and in accordance with the rules
-   of any environment in which you use it - including exams, interviews,
+   You are responsible for using InvisiQ lawfully and in accordance with the
+   rules of any environment in which you use it - including exams, interviews,
    certifications, and workplaces. Many such settings prohibit assistance tools.
    Do not use InvisiQ where it is not permitted. You, not the authors, are
    responsible for how you choose to use the Software.
 
 
 5. HOW THE SOFTWARE RUNS ON YOUR DEVICE
-   To work as intended and to reduce interference from screen-capture and
-   monitoring tools, the Software is designed to run discreetly. Among other
-   measures, it may operate under a generic, system-style process name (for
-   example, "Runtime Broker") rather than a branded one. By using the Software
-   you acknowledge and consent to this behavior. The Software is published by the
-   InvisiQ team and is not affiliated with, endorsed by, or sponsored by any
-   other company or product whose name any process or component may resemble.
+   To work as intended, the Software runs as a screen-capture-excluded overlay
+   window and, while you are actively typing into it, installs a keyboard hook
+   so it can receive keystrokes without taking foreground focus. It runs under
+   its own name, "InvisiQ", and does not impersonate any other application or
+   vendor. By using the Software you acknowledge and consent to this behavior.
+   Security software may flag these mechanisms; the source is public so that
+   this behavior can be independently audited.
 
 
 6. NO WARRANTY
@@ -59,15 +60,11 @@ install or use the Software.
 
 7. LIMITATION OF LIABILITY
    TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL THE AUTHORS OR
-   COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
-   FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE - INCLUDING ANY
-   AI-PROVIDER COSTS, LOST DATA, OR CONSEQUENCES OF RELYING ON THE SOFTWARE'S
-   OUTPUT.
+   COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY
+   ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE -
+   INCLUDING ANY AI-PROVIDER COSTS, LOST DATA, OR CONSEQUENCES OF RELYING ON
+   THE SOFTWARE'S OUTPUT.
 
 
 8. CONTACT
    Questions about these terms: hello.invisiq@gmail.com
-
-
-These beta terms are provided in good faith for the InvisiQ beta program and are
-pending formal legal review.
