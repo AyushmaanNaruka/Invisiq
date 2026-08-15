@@ -407,8 +407,8 @@ Channels: {domain}:{action}
 
 ```bash
 # Clone the repository
-git clone https://github.com/Nezeon/InvisiQ.git
-cd InvisiQ
+git clone https://github.com/AyushmaanNaruka/Invisiq.git
+cd Invisiq
 
 # Install dependencies
 npm install

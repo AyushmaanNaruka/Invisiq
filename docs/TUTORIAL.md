@@ -39,7 +39,7 @@ npm run dev
 
 ### Option B: Portable Executable (Production)
 
-1. Download the latest `InvisiQ-Setup.exe` from [GitHub Releases](https://github.com/Nezeon/InvisiQ/releases)
+1. Download the latest `InvisiQ-Setup.exe` from [GitHub Releases](https://github.com/Ghost-AI-Interview/invisiq-releases/releases)
 2. Place it anywhere on your system (Desktop, Documents, etc.)
 3. Double-click to run — no installation needed
 
